@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.4.33205.214
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StockSignalScanner", "StockSignalScanner\StockSignalScanner.csproj", "{8B89C3B3-CAEA-49AB-BBBC-5812D832A40C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StockSignalScanner", "StockSignalScanner\StockSignalScanner.csproj", "{8B89C3B3-CAEA-49AB-BBBC-5812D832A40C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestProject", "TestProject\TestProject.csproj", "{0A3531D6-9511-4F08-A90C-34E0E126280A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{8B89C3B3-CAEA-49AB-BBBC-5812D832A40C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8B89C3B3-CAEA-49AB-BBBC-5812D832A40C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8B89C3B3-CAEA-49AB-BBBC-5812D832A40C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0A3531D6-9511-4F08-A90C-34E0E126280A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0A3531D6-9511-4F08-A90C-34E0E126280A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0A3531D6-9511-4F08-A90C-34E0E126280A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0A3531D6-9511-4F08-A90C-34E0E126280A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
