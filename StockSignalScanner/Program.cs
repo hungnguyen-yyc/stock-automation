@@ -1,6 +1,7 @@
 ﻿using log4net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Diagnostics;
 
 namespace TickerList
 {
@@ -103,6 +104,8 @@ namespace TickerList
                     }
                     Thread.Sleep(60000);
                 }
+
+                Process.Start("explorer.exe", scanFolderPath);
             }
         }
 
