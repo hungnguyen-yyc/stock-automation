@@ -31,7 +31,10 @@ namespace TickerList
                 var mix = new List<string>();
                 try
                 {
-                    Directory.Delete(scanFolderPath, true);
+                    if (Directory.Exists(scanFolderPath))
+                    {
+                        Directory.Delete(scanFolderPath, true);
+                    }
                     CreateScanDirectories(folderPath, scanFolderPath, last14DaysCrossFolder, last5DaysCrossFolder);
                 }catch(Exception)
                 {
