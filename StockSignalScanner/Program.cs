@@ -5,6 +5,8 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Numerics;
+using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices.ComTypes;
 using System.Security.Cryptography;
 using System.Text;
@@ -20,127 +22,119 @@ namespace TickerList
     {
         static string API_KEY = "bc00404c44fcc9fe338ac768f222f6ab";
         private static readonly ILog log = LogManager.GetLogger(typeof(Program));
-        private static List<Stock> POPULAR_STOCKS = new List<Stock>
-        {
-            new Stock
-            {
-                Symbol = "AMC",
-                Name = "AMC Entertainment Holdings, Inc.",
-                Price = 4.4m,
-                Exchange = "New York Stock Exchange",
-                ExchangeShortName = "NYSE",
-                Type = "stock"
-            },
-            new Stock
-            {
-                Symbol = "GME",
-                Name = "GameStop Corp.",
-                Price = 20.08m,
-                Exchange = "New York Stock Exchange",
-                ExchangeShortName = "NYSE",
-                Type = "stock"
-            },
-            new Stock
-            {
-                Symbol = "AAPL",
-                Name = "Apple Inc.",
-                Price = 131.86m,
-                Exchange = "NASDAQ Global Select",
-                ExchangeShortName = "NASDAQ",
-                Type = "stock"
-            },
-            new Stock
-            {
-                Symbol = "TSLA",
-                Name = "Tesla, Inc.",
-                Price = 123.15m,
-                Exchange = "NASDAQ Global Select",
-                ExchangeShortName = "NASDAQ",
-                Type = "stock"
-            },
-            new Stock
-            {
-                Symbol = "AMZN",
-                Name = "Amazon.com, Inc.",
-                Price = 85.25m,
-                Exchange = "NASDAQ Global Select",
-                ExchangeShortName = "NASDAQ",
-                Type = "stock"
-            },
-            new Stock
-            {
-                Symbol = "META",
-                Name = "Meta Platforms, Inc.",
-                Price = 118.04m,
-                Exchange = "NASDAQ Global Select",
-                ExchangeShortName = "NASDAQ",
-                Type = "stock"
-            },
-            new Stock
-            {
-                Symbol = "MARA",
-                Name = "Marathon Digital Holdings, Inc.",
-                Price = 3.62m,
-                Exchange = "NASDAQ Capital Market",
-                ExchangeShortName = "NASDAQ",
-                Type = "stock"
-            },
-        };
+        private static readonly int[] CROSSES_IN_LAST_DAYS = new int[] { 14, 5 };
 
         public static async Task Main(string[] args)
         {
             using (var httpClient = new HttpClient())
             {
                 // https://financialmodelingprep.com/api/v3/financial-statement-symbol-lists?apikey=e2b2a6d07ebf89ca33bb96b0b590daab
-                var northAmericaStocks = POPULAR_STOCKS; //await GetStocksFromUSCANExchanges(API_KEY); // update to get correct exchanges
-                
+                var northAmericaStocks = await GetStocksFromUSCANExchanges(API_KEY); // update to get correct exchanges
+
                 var random = new Random();
                 var randomNumber = random.Next(1, northAmericaStocks.Count() - 1);
                 var nowTime = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
                 var nowDate = DateTime.Now.ToString("yyyy-MM-dd");
                 var folderPath = @"C:\Users\hnguyen\Documents\stock-scan-logs";
-                if (!Directory.Exists(folderPath))
-                {
-                    Directory.CreateDirectory(folderPath);
-                }
                 var scanFolderPath = Path.Combine(folderPath, nowDate);
-                if (!Directory.Exists(scanFolderPath))
+                var last14DaysCrossFolder = Path.Combine(scanFolderPath, "crosses-in-last-14");
+                var last5DaysCrossFolder = Path.Combine(scanFolderPath, "crosses-in-last-5");
+                try
                 {
-                    Directory.CreateDirectory(scanFolderPath);
+                    Directory.Delete(scanFolderPath, true);
+                    CreateScanDirectories(folderPath, scanFolderPath, last14DaysCrossFolder, last5DaysCrossFolder);
+                }catch(Exception)
+                {
+
                 }
-                foreach (var stock in northAmericaStocks.Skip(randomNumber))
+
+                //var stocks = northAmericaStocks;
+                var batches = northAmericaStocks.Chunk(290);
+                foreach (var stocks in batches)
                 {
-                    try
+                    foreach (var stock in stocks)
                     {
-                        var tickerActionString = "";
-                        var fileName = Path.Combine(scanFolderPath, $"{stock.Symbol}-{nowTime}.csv");
-                        using (StreamWriter outputFile = new StreamWriter(fileName, true))
+                        try
                         {
-                            outputFile.WriteLine("Time,Ticker,Exchange,PriceClose,Volume,RSI,StochasticK,StochasticD,MACD,MACDSignal,RSICheck,StochCheck,MACDCheck");
-                            var data = await RunScan(stock.Symbol, stock.ExchangeShortName, API_KEY);
-                            if (data != null)
+                            var tickerActionString = "";
+                            var fileName = Path.Combine(scanFolderPath, $"{stock.Symbol}-{nowTime}.csv");
+                            Console.WriteLine($"Getting data for {stock.Name} - {stock.Symbol}");
+                            var allIndicatorCrossed5 = false;
+                            var allIndicatorCrossed14 = false;
+                            using (StreamWriter outputFile = new StreamWriter(fileName, true))
                             {
-                                var reverse = data.OrderByDescending(d => d.Date).ToList();
-                                if (reverse.Count() > 0)
+                                outputFile.WriteLine("Time,Ticker,Exchange,PriceClose,Volume,RSI,StochasticK,StochasticD,MACD,MACDSignal,RSICheck,StochCheck,MACDCheck,RSICrossDirectionLast14Days,StochCrossDirectionLast14Days,MACDCrossDirectionLast14Days");
+                                var data = await RunScan(stock.Symbol, stock.ExchangeShortName, API_KEY);
+                                if (data != null)
                                 {
-                                    tickerActionString = reverse.FirstOrDefault().GetRecommendTickerAction();
-                                }
-                                foreach (var datum in reverse)
-                                {
-                                    outputFile.WriteLine(datum.ToString());
+                                    var reverse = data.OrderByDescending(d => d.Date).ToList();
+                                    if (reverse.Count() > 0)
+                                    {
+                                        tickerActionString = reverse.FirstOrDefault().GetRecommendTickerAction();
+                                    }
+                                    foreach (var datum in reverse)
+                                    {
+                                        var crossAbove14 = datum.MACDCrossDirectionLast14Days == CrossDirection.CROSS_ABOVE
+                                            && datum.RSICrossDirectionLast14Days == CrossDirection.CROSS_ABOVE
+                                            && datum.StochCrossDirectionLast14Days == CrossDirection.CROSS_ABOVE;
+                                        var crossBelow14 = datum.MACDCrossDirectionLast14Days == CrossDirection.CROSS_BELOW
+                                            && datum.RSICrossDirectionLast14Days == CrossDirection.CROSS_BELOW
+                                            && datum.StochCrossDirectionLast14Days == CrossDirection.CROSS_BELOW;
+                                        var crossAbove5 = datum.MACDCrossDirectionLast5Days == CrossDirection.CROSS_ABOVE
+                                            && datum.RSICrossDirectionLast5Days == CrossDirection.CROSS_ABOVE
+                                            && datum.StochCrossDirectionLast5Days == CrossDirection.CROSS_ABOVE;
+                                        var crossBelow5 = datum.MACDCrossDirectionLast5Days == CrossDirection.CROSS_BELOW
+                                            && datum.RSICrossDirectionLast5Days == CrossDirection.CROSS_BELOW
+                                            && datum.StochCrossDirectionLast5Days == CrossDirection.CROSS_BELOW;
+                                        allIndicatorCrossed5 = crossAbove5 || crossBelow5;
+                                        allIndicatorCrossed14 = crossAbove14 || crossBelow14;
+                                        outputFile.WriteLine(datum.ToString());
+                                    }
                                 }
                             }
+                            // this is because this list is for only one stock
+                            if (allIndicatorCrossed5)
+                            {
+                                File.Move(fileName, Path.Combine(last5DaysCrossFolder, $"{tickerActionString}-{stock.Symbol}-{nowTime}.csv"));
+                                continue;
+                            }
+                            if (allIndicatorCrossed14)
+                            {
+                                File.Move(fileName, Path.Combine(last14DaysCrossFolder, $"{tickerActionString}-{stock.Symbol}-{nowTime}.csv"));
+                                continue;
+                            }
+                            File.Move(fileName, Path.Combine(scanFolderPath, $"{tickerActionString}-{stock.Symbol}-{nowTime}.csv"));
                         }
-                        File.Move(fileName, Path.Combine(scanFolderPath, $"{stock.Symbol}-{nowTime}-{tickerActionString}.csv"));
-                    }
-                    catch (Exception ex)
-                    {
-                        using (StreamWriter outputFile = new StreamWriter(Path.Combine(scanFolderPath, $"error-{stock.Symbol}-{nowTime}.txt"), true))
+                        catch (Exception ex)
                         {
-                            outputFile.WriteLine(ex.StackTrace);
+                            using (StreamWriter outputFile = new StreamWriter(Path.Combine(scanFolderPath, $"error-{stock.Symbol}-{nowTime}.txt"), true))
+                            {
+                                outputFile.WriteLine(ex.StackTrace);
+                            }
                         }
                     }
+                    Thread.Sleep(60000);
                 }
+            }
+        }
+
+        private static void CreateScanDirectories(string folderPath, string scanFolderPath, string last14DaysCrossFolder, string last5DaysCrossFolder)
+        {
+            if (!Directory.Exists(folderPath))
+            {
+                Directory.CreateDirectory(folderPath);
+            }
+            if (!Directory.Exists(scanFolderPath))
+            {
+                Directory.CreateDirectory(scanFolderPath);
+            }
+            if (!Directory.Exists(last14DaysCrossFolder))
+            {
+                Directory.CreateDirectory(last14DaysCrossFolder);
+            }
+            if (!Directory.Exists(last5DaysCrossFolder))
+            {
+                Directory.CreateDirectory(last5DaysCrossFolder);
             }
         }
 
@@ -175,6 +169,30 @@ namespace TickerList
             (List<decimal> rsiValues, List<DateTime> rsiTimes) = GetRSI(prices, rsiPeriod);
             (List<decimal> macdValues, List<decimal> macdSignalValues, List<DateTime> macdTimes) = GetMACD(prices, macdShortPeriod, macdLongPeriod, macdSignalPeriod);
             (List<decimal> kValues, List<decimal> dValues, List<DateTime> stochasticTimes) = GetStochastic(prices, stochasticPeriod);
+            CrossDirection macdCrossCheck14 = CrossDirection.NO_CROSS;
+            CrossDirection stochCrossCheck14 = CrossDirection.NO_CROSS;
+            CrossDirection rsiCrossCheck14 = CrossDirection.NO_CROSS;
+            CrossDirection macdCrossCheck5 = CrossDirection.NO_CROSS;
+            CrossDirection stochCrossCheck5 = CrossDirection.NO_CROSS;
+            CrossDirection rsiCrossCheck5 = CrossDirection.NO_CROSS;
+
+            foreach (var days in CROSSES_IN_LAST_DAYS)
+            {
+                List<(DateTime, decimal)> macdLine = macdTimes.Zip(macdValues, (t, v) => (t, v)).Skip(macdTimes.Count - days).ToList();
+                List<(DateTime, decimal)> signalLine = macdTimes.Zip(macdSignalValues, (t, v) => (t, v)).Skip(macdTimes.Count - days).ToList();
+                List<(DateTime, decimal)> kLine = stochasticTimes.Zip(kValues, (t, v) => (t, v)).Skip(macdTimes.Count - days).ToList();
+                List<(DateTime, decimal)> dLine = stochasticTimes.Zip(dValues, (t, v) => (t, v)).Skip(macdTimes.Count - days).ToList();
+                List<(DateTime, decimal)> rsiLine = rsiTimes.Zip(rsiValues, (t, v) => (t, v)).Skip(macdTimes.Count - days).ToList();
+                List<(DateTime, decimal)> rsi50Line = rsiTimes.Select(r => (r, 50m)).Take(days).ToList();
+
+                // base on this https://www.youtube.com/watch?v=R1cKTKV6-gc
+                macdCrossCheck14 = GetCrossDirection(macdLine, signalLine);
+                stochCrossCheck14 = GetCrossDirection(kLine, dLine);
+                rsiCrossCheck14 = GetCrossDirection(rsiLine, rsi50Line);
+                macdCrossCheck5 = GetCrossDirection(macdLine, signalLine);
+                stochCrossCheck5 = GetCrossDirection(kLine, dLine);
+                rsiCrossCheck5 = GetCrossDirection(rsiLine, rsi50Line);
+            }
 
             // Loop through the RSI values
             for (int i = 0; i < rsiValues.Count; i++)
@@ -199,6 +217,12 @@ namespace TickerList
                     Ticker = ticker,
                     PriceClose = price.Close,
                     Volume = price.Volume,
+                    MACDCrossDirectionLast14Days = macdCrossCheck14,
+                    RSICrossDirectionLast14Days = rsiCrossCheck14,
+                    StochCrossDirectionLast14Days = stochCrossCheck14,
+                    MACDCrossDirectionLast5Days = macdCrossCheck5,
+                    RSICrossDirectionLast5Days = rsiCrossCheck5,
+                    StochCrossDirectionLast5Days = stochCrossCheck5,
                 });
             }
 
@@ -208,12 +232,12 @@ namespace TickerList
         public static async Task<IEnumerable<Stock>> GetStocksFromUSCANExchanges(string apiKey)
         {
             List<string> exchanges = new List<string>() { "NYSE", "NasdaqNM", "AMEX", "TSX", "TSXV", "MX" };
-            string baseUrl = "https://financialmodelingprep.com/api/v3";
+            string baseUrl = "https://financialmodelingprep.com/api/v3/stock-screener?volumeMoreThan=5000000&";
 
             using (var httpClient = new HttpClient())
             {
                 // Set the criteria for the search
-                string url = $"{baseUrl}/stock/list?apikey={apiKey}";
+                string url = $"{baseUrl}/stock-screener?volumeMoreThan=5000000&apikey={apiKey}";
 
                 // Send the request and get the response
                 var response = await httpClient.GetAsync(url);
@@ -223,7 +247,7 @@ namespace TickerList
                 var stocks = JArray.Parse(responseString).ToObject<List<Stock>>();
 
                 // Filter the results by exchange short name
-                var filteredStocks = stocks.Where(s => exchanges.Contains(s.ExchangeShortName)).ToList();
+                var filteredStocks = stocks.Where(s => exchanges.Any(ex => ex.ToLower().Contains(s.ExchangeShortName.ToLower()))).ToList();
 
                 return filteredStocks;
             }
@@ -294,8 +318,8 @@ namespace TickerList
             List<DateTime> times = prices.Select(p => p.Date.DateTime).ToList();
 
             // Calculate the MACD value
-            List<decimal> shortEMA = pineEMA(closePrices.ToList(), shortPeriod);
-            List<decimal> longEMA = pineEMA(closePrices.ToList(), longPeriod);
+            List<decimal> shortEMA = CalculateEMA(closePrices.ToList(), shortPeriod);
+            List<decimal> longEMA = CalculateEMA(closePrices.ToList(), longPeriod);
 
             // Calculate the MACD and signal values
             for (int i = 0; i < closePrices.Count; i++)
@@ -306,14 +330,14 @@ namespace TickerList
                 macdTimes.Add(times[i]);
             }
 
-            signalValues.AddRange(pineEMA(macdValues, signalPeriod));
+            signalValues.AddRange(CalculateEMA(macdValues, signalPeriod));
 
             // Return the MACD, signal, and time values
             return (macdValues, signalValues, macdTimes);
         }
 
 
-        private static List<decimal> pineEMA(List<decimal> src, int length)
+        private static List<decimal> CalculateEMA(List<decimal> src, int length)
         {
             decimal alpha = 2.0m / (length + 1);
             List<decimal> sum = new List<decimal>();
@@ -350,9 +374,16 @@ namespace TickerList
                     var closePrice = closePrices[i];
                     decimal minPrice = lowPrices.Skip(i - period + 1).Take(period).Min();
                     decimal maxPrice = highPrices.Skip(i - period + 1).Take(period).Max();
-                    var k = 100 * (closePrice - minPrice) / (maxPrice - minPrice);
-                    // Calculate the K value
-                    kValues.Add(k);
+
+                    if (minPrice == maxPrice)
+                    {
+                        kValues.Add(0);
+                    } else
+                    {
+                        var k = 100 * (closePrice - minPrice) / (maxPrice - minPrice);
+                        // Calculate the K value
+                        kValues.Add(k);
+                    }
                 }
                 else
                 {
@@ -380,6 +411,48 @@ namespace TickerList
             return (kValues, dValues, stochasticTimes);
         }
 
+        private static CrossDirection GetCrossDirection(List<(DateTime, decimal)> line1, List<(DateTime, decimal)> line2)
+        {
+            // Check that the lists have at least two elements each
+            if (line1.Count < 2 || line2.Count < 2)
+            {
+                return CrossDirection.NO_CROSS;
+            }
+
+            // Initialize variables to track the previous values of line1 and line2
+            decimal prevLine1Value = line1[0].Item2;
+            decimal prevLine2Value = line2[0].Item2;
+
+            // Initialize a variable to track the cross direction
+            CrossDirection crossDirection = CrossDirection.NO_CROSS;
+
+            // Iterate through the rest of the elements in the lists
+            for (int i = 1; i < line1.Count; i++)
+            {
+                // Get the current values of line1 and line2
+                decimal currLine1Value = line1[i].Item2;
+                decimal currLine2Value = line2[i].Item2;
+
+                // Check if line1 crossed above line2
+                if (prevLine1Value < prevLine2Value && currLine1Value > currLine2Value)
+                {
+                    crossDirection = CrossDirection.CROSS_ABOVE;
+                }
+
+                // Check if line1 crossed below line2
+                if (prevLine1Value > prevLine2Value && currLine1Value < currLine2Value)
+                {
+                    crossDirection = CrossDirection.CROSS_BELOW;
+                }
+
+                // Update the previous values of line1 and line2 for the next iteration
+                prevLine1Value = currLine1Value;
+                prevLine2Value = currLine2Value;
+            }
+
+            // Return the cross direction
+            return crossDirection;
+        }
     }
 
     public class StockData
@@ -394,69 +467,54 @@ namespace TickerList
         public decimal Signal { get; set; }
         public decimal PriceClose { get; set; }
         public decimal Volume { get; set; }
-        public TickerAction MACDCheck => MACD > Signal ? TickerAction.BUY : TickerAction.SELL;
-        public TickerAction RSICheck => RSI > 50 ? TickerAction.BUY : TickerAction.SELL;
-        public TickerAction StochCheck
+        public CrossDirection RSICrossDirectionLast14Days { get; set; }
+        public CrossDirection MACDCrossDirectionLast14Days { get; set; }
+        public CrossDirection StochCrossDirectionLast14Days { get; set; }
+        public CrossDirection RSICrossDirectionLast5Days { get; set; }
+        public CrossDirection MACDCrossDirectionLast5Days { get; set; }
+        public CrossDirection StochCrossDirectionLast5Days { get; set; }
+        public TickerAction MACDStatus => MACD > Signal ? TickerAction.OVERSOLD : TickerAction.OVERBOUGHT;
+        public TickerAction RSIStatus
+        {
+            get
+            {
+                if(RSI <= 30)
+                {
+                    return TickerAction.OVERSOLD;
+                } 
+                else if (RSI >= 70)
+                {
+                    return TickerAction.OVERBOUGHT;
+                }
+                return TickerAction.MIXED;
+            }
+        }
+        public TickerAction StochStatus
         {
             get
             {
                 if (StochasticD >= 80 && StochasticK >= 80)
                 {
-                    return TickerAction.SELL;
+                    return TickerAction.OVERBOUGHT;
                 }
 
                 if (StochasticD <= 20 && StochasticK <= 20)
                 {
-                    return TickerAction.BUY;
+                    return TickerAction.OVERSOLD;
                 }
 
-                return TickerAction.NO_ACTION;
-            }
-        }
-        public TickerAction ChatGPTIndicator { 
-            get
-            {
-                if (RSI < 30 && MACD > Signal && StochasticK < 20 && StochasticD < 20)
-                {
-                    return TickerAction.BUY;
-                }
-                else if (RSI > 70 && MACD < Signal && StochasticK > 80 && StochasticD > 80)
-                {
-                    return TickerAction.SELL;
-                }
-                else
-                {
-                    return TickerAction.NO_ACTION;
-                }
-            }
-        }
-        // https://www.youtube.com/watch?v=R1cKTKV6-gc
-        public TickerAction YoutubeIndicator {
-            get
-            {
-                if (RSI > 50 && MACD > Signal && StochasticK < 20 && StochasticD < 20)
-                {
-                    return TickerAction.BUY;
-                }
-                else if (RSI < 50 && MACD < Signal && StochasticK > 80 && StochasticD > 80)
-                {
-                    return TickerAction.SELL;
-                }
-                else
-                {
-                    return TickerAction.NO_ACTION;
-                }
+                return TickerAction.MIXED;
             }
         }
 
         public override string ToString()
         {
-            return $"{Date.ToString("yyyy-MM-dd-HH-mm-ss")},{Ticker},{Exchange},{PriceClose},{Volume},{RSI},{StochasticK},{StochasticD},{MACD},{Signal},{RSICheck},{StochCheck},{MACDCheck}";
+            return $"{Date.ToString("yyyy-MM-dd-HH-mm-ss")},{Ticker},{Exchange},{PriceClose},{Volume},{RSI},{StochasticK},{StochasticD},{MACD},{Signal},{RSIStatus},{StochStatus},{MACDStatus},{RSICrossDirectionLast14Days},{StochCrossDirectionLast14Days},{MACDCrossDirectionLast14Days}";
         }
 
         public string GetRecommendTickerAction()
         {
-            return $"{RSICheck}-{StochCheck}-{MACDCheck}";
+            return $"RSI_{RSICrossDirectionLast14Days}_MACD_{MACDCrossDirectionLast14Days}_{StochCrossDirectionLast14Days}_{StochStatus}_{Math.Round(StochasticK, 2)}_{Math.Round(StochasticD, 2)}";
         }
     }
 
@@ -494,16 +552,17 @@ namespace TickerList
         public decimal ChangeOverTime { get; set; }
     }
 
-    public enum MACDStatus
-    {
-        MACD_ABOVE_SIGNAL,
-        MACD_UNDER_SIGNAL
+    public enum CrossDirection 
+    { 
+        CROSS_ABOVE, 
+        CROSS_BELOW, 
+        NO_CROSS 
     }
 
     public enum TickerAction
     {
-        BUY,
-        SELL,
-        NO_ACTION
+        OVERSOLD,
+        OVERBOUGHT,
+        MIXED
     }
 }
