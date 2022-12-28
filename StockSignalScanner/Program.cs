@@ -45,7 +45,7 @@ namespace TickerList
                 var batches = northAmericaStocks.Chunk(290);
                 foreach (var stocks in batches)
                 {
-                    foreach (var stock in stocks)
+                    foreach (var stock in stocks.OrderBy(s => s.Symbol))
                     {
                         try
                         {
@@ -84,30 +84,29 @@ namespace TickerList
                             }
                         }
                     }
-                    using (StreamWriter outputFile = new StreamWriter(Path.Combine(scanFolderPath, "all-crosses-last-5-days.txt"), true))
-                    {
-                        foreach (var item in allCrosses5)
-                        {
-                            outputFile.WriteLine(item);
-                        }
-                    }
-                    using (StreamWriter outputFile = new StreamWriter(Path.Combine(scanFolderPath, "all-crosses-last-14-days.txt"), true))
-                    {
-                        foreach (var item in allCrosses14)
-                        {
-                            outputFile.WriteLine(item);
-                        }
-                    }
-                    using (StreamWriter outputFile = new StreamWriter(Path.Combine(scanFolderPath, "mix.txt"), true))
-                    {
-                        foreach (var item in mix)
-                        {
-                            outputFile.WriteLine(item);
-                        }
-                    }
                     Thread.Sleep(60000);
                 }
-
+                using (StreamWriter outputFile = new StreamWriter(Path.Combine(scanFolderPath, "all-crosses-last-5-days.txt"), true))
+                {
+                    foreach (var item in allCrosses5)
+                    {
+                        outputFile.WriteLine(item);
+                    }
+                }
+                using (StreamWriter outputFile = new StreamWriter(Path.Combine(scanFolderPath, "all-crosses-last-14-days.txt"), true))
+                {
+                    foreach (var item in allCrosses14)
+                    {
+                        outputFile.WriteLine(item);
+                    }
+                }
+                using (StreamWriter outputFile = new StreamWriter(Path.Combine(scanFolderPath, "mix.txt"), true))
+                {
+                    foreach (var item in mix)
+                    {
+                        outputFile.WriteLine(item);
+                    }
+                }
                 Process.Start("explorer.exe", scanFolderPath);
             }
         }
