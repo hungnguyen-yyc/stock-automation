@@ -1,4 +1,4 @@
-﻿namespace TickerList
+﻿namespace StockSignalScanner.Models
 {
     public class StockData
     {
@@ -23,10 +23,10 @@
         {
             get
             {
-                if(RSI <= 30)
+                if (RSI <= 30)
                 {
                     return RSIStatus.OVERSOLD;
-                } 
+                }
                 else if (RSI >= 70)
                 {
                     return RSIStatus.OVERBOUGHT;
@@ -51,7 +51,7 @@
                 return RSIStatus.MIXED;
             }
         }
-        
+
         public bool AllCrossesAbove14 => MACDCrossDirectionLast14Days == CrossDirection.CROSS_ABOVE
                                             && RSICrossDirectionLast14Days == CrossDirection.CROSS_ABOVE
                                             && StochCrossDirectionLast14Days == CrossDirection.CROSS_ABOVE;
@@ -67,6 +67,14 @@
         public bool AllCrossesBelow5 => MACDCrossDirectionLast5Days == CrossDirection.CROSS_BELOW
                                             && RSICrossDirectionLast5Days == CrossDirection.CROSS_BELOW
                                             && StochCrossDirectionLast5Days == CrossDirection.CROSS_BELOW;
+
+        public bool AllCrossesAbove14WithStochastic => AllCrossesAbove14 && StochasticK <= 20 && StochasticD <= 20;
+
+        public bool AllCrossesBelow14WithStochastic => AllCrossesBelow14 && StochasticK >= 80 && StochasticD >= 80;
+
+        public bool AllCrossesAbove5WithStochastic => AllCrossesAbove5 && StochasticK <= 20 && StochasticD <= 20;
+
+        public bool AllCrossesBelow5WithStochastic => AllCrossesBelow5 && StochasticK >= 80 && StochasticD >= 80;
 
         public override string ToString()
         {

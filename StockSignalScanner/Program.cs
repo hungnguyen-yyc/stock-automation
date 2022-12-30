@@ -1,11 +1,13 @@
 ﻿using log4net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using StockSignalScanner.Models;
 using System.Diagnostics;
+using System.Text;
 
-namespace TickerList
+namespace StockSignalScanner
 {
-    public class Program
+    public partial class Program
     {
         static string API_KEY = "bc00404c44fcc9fe338ac768f222f6ab";
         private static readonly ILog log = LogManager.GetLogger(typeof(Program));
@@ -24,10 +26,10 @@ namespace TickerList
                 var nowDate = DateTime.Now.ToString("yyyy-MM-dd");
                 var folderPath = @"C:\Users\hnguyen\Documents\stock-scan-logs";
                 var scanFolderPath = Path.Combine(folderPath, nowDate);
-                var last14DaysCrossFolder = Path.Combine(scanFolderPath, "crosses-in-last-14");
-                var last5DaysCrossFolder = Path.Combine(scanFolderPath, "crosses-in-last-5");
                 var allCrosses5 = new List<string>();
+                var allCrosses5WithStochastic = new List<string>();
                 var allCrosses14 = new List<string>();
+                var allCrosses14WithStochastic = new List<string>();
                 var mix = new List<string>();
                 try
                 {
@@ -35,21 +37,21 @@ namespace TickerList
                     {
                         Directory.Delete(scanFolderPath, true);
                     }
-                    CreateScanDirectories(folderPath, scanFolderPath, last14DaysCrossFolder, last5DaysCrossFolder);
-                }catch(Exception)
+                    CreateScanDirectories(folderPath, scanFolderPath);
+                }
+                catch (Exception)
                 {
 
                 }
 
-                //var stocks = northAmericaStocks;
-                var batches = northAmericaStocks.Chunk(290);
+                var batches = northAmericaStocks.OrderBy(s => s.Symbol).Chunk(290);
                 foreach (var stocks in batches)
                 {
-                    foreach (var stock in stocks.OrderBy(s => s.Symbol))
+                    foreach (var stock in stocks)
                     {
                         try
                         {
-                            Console.WriteLine($"Getting data for {stock.Name} - {stock.Symbol}");
+                            Console.WriteLine($"Start processing for {stock.Name} - {stock.Symbol}");
                             var data = await RunScan(stock.Symbol, stock.ExchangeShortName, API_KEY);
                             if (data != null)
                             {
@@ -62,10 +64,18 @@ namespace TickerList
                                         if (datum.AllCrossesAbove5 || datum.AllCrossesBelow5)
                                         {
                                             allCrosses5.Add(datum.GetRecommendTickerAction());
+                                            if (datum.AllCrossesAbove5WithStochastic || datum.AllCrossesBelow5WithStochastic)
+                                            {
+                                                allCrosses5WithStochastic.Add(datum.GetRecommendTickerAction());
+                                            }
                                         }
-                                        else if (datum.AllCrossesAbove14 || datum.AllCrossesBelow14) 
+                                        else if (datum.AllCrossesAbove14 || datum.AllCrossesBelow14)
                                         {
                                             allCrosses14.Add(datum.GetRecommendTickerAction());
+                                            if (datum.AllCrossesAbove14WithStochastic || datum.AllCrossesBelow14WithStochastic)
+                                            {
+                                                allCrosses14WithStochastic.Add(datum.GetRecommendTickerAction());
+                                            }
                                         }
                                         else
                                         {
@@ -96,6 +106,20 @@ namespace TickerList
                 using (StreamWriter outputFile = new StreamWriter(Path.Combine(scanFolderPath, "all-crosses-last-14-days.txt"), true))
                 {
                     foreach (var item in allCrosses14)
+                    {
+                        outputFile.WriteLine(item);
+                    }
+                }
+                using (StreamWriter outputFile = new StreamWriter(Path.Combine(scanFolderPath, "all-crosses-last-5-days-with-stochastic.txt"), true))
+                {
+                    foreach (var item in allCrosses5WithStochastic)
+                    {
+                        outputFile.WriteLine(item);
+                    }
+                }
+                using (StreamWriter outputFile = new StreamWriter(Path.Combine(scanFolderPath, "all-crosses-last-14-days-with-stochastic.txt"), true))
+                {
+                    foreach (var item in allCrosses14WithStochastic)
                     {
                         outputFile.WriteLine(item);
                     }
@@ -197,7 +221,7 @@ namespace TickerList
          */
         #endregion
 
-        private static void CreateScanDirectories(string folderPath, string scanFolderPath, string last14DaysCrossFolder, string last5DaysCrossFolder)
+        private static void CreateScanDirectories(string folderPath, string scanFolderPath)
         {
             if (!Directory.Exists(folderPath))
             {
@@ -207,18 +231,34 @@ namespace TickerList
             {
                 Directory.CreateDirectory(scanFolderPath);
             }
-            if (!Directory.Exists(last14DaysCrossFolder))
+        }
+
+        private static async Task<List<StockData>> RunHourScan(string ticker, string exchange, string apiKey)
+        {
+            string API_ENDPOINT = $"https://financialmodelingprep.com/api/v3/historical-chart/1hour/{ticker}?apikey={apiKey}";
+
+            HttpClient client = new HttpClient();
+            HttpResponseMessage response = await client.GetAsync(API_ENDPOINT);
+
+            if (response.IsSuccessStatusCode)
             {
-                Directory.CreateDirectory(last14DaysCrossFolder);
+                string content = await response.Content.ReadAsStringAsync();
+                var prices = JArray.Parse(content).ToObject<List<HistoricalPrice>>();
+
+                if (prices == null)
+                {
+                    return null;
+                }
+
+                var reverse = prices.OrderBy(p => p.Date).ToList();
+                return GetIndicators(ticker, exchange, reverse, 14, 12, 26, 9, 14);
             }
-            if (!Directory.Exists(last5DaysCrossFolder))
-            {
-                Directory.CreateDirectory(last5DaysCrossFolder);
-            }
+            return null;
         }
 
         private static async Task<List<StockData>> RunScan(string ticker, string exchange, string apiKey)
         {
+            Console.WriteLine($"Getting data for {ticker}");
             string API_ENDPOINT = $"https://financialmodelingprep.com/api/v3/historical-price-full/{ticker}?apikey={apiKey}";
 
             HttpClient client = new HttpClient();
@@ -227,7 +267,7 @@ namespace TickerList
             if (response.IsSuccessStatusCode)
             {
                 string content = await response.Content.ReadAsStringAsync();
-                HistoricalPrice prices = JsonConvert.DeserializeObject<HistoricalPrice>(content);
+                TickerHistoricalPrice prices = JsonConvert.DeserializeObject<TickerHistoricalPrice>(content);
 
                 if (prices == null || prices.Historical == null)
                 {
@@ -235,12 +275,13 @@ namespace TickerList
                 }
 
                 var reverse = prices.Historical.OrderBy(p => p.Date).ToList();
+                Console.WriteLine($"Analyzing data for {ticker}");
                 return GetIndicators(ticker, exchange, reverse, 14, 12, 26, 9, 14);
             }
             return null;
         }
 
-        public static List<StockData> GetIndicators(string ticker, string exchange, List<Price> prices, int rsiPeriod, int macdShortPeriod, int macdLongPeriod, int macdSignalPeriod, int stochasticPeriod)
+        public static List<StockData> GetIndicators(string ticker, string exchange, List<HistoricalPrice> prices, int rsiPeriod, int macdShortPeriod, int macdLongPeriod, int macdSignalPeriod, int stochasticPeriod)
         {
             var result = new List<StockData>();
 
@@ -248,6 +289,7 @@ namespace TickerList
             (List<decimal> rsiValues, List<DateTime> rsiTimes) = GetRSI(prices, rsiPeriod);
             (List<decimal> macdValues, List<decimal> macdSignalValues, List<DateTime> macdTimes) = GetMACD(prices, macdShortPeriod, macdLongPeriod, macdSignalPeriod);
             (List<decimal> kValues, List<decimal> dValues, List<DateTime> stochasticTimes) = GetStochastic(prices, stochasticPeriod);
+
             CrossDirection macdCrossCheck14 = CrossDirection.NO_CROSS;
             CrossDirection stochCrossCheck14 = CrossDirection.NO_CROSS;
             CrossDirection rsiCrossCheck14 = CrossDirection.NO_CROSS;
@@ -284,7 +326,7 @@ namespace TickerList
             for (int i = 0; i < rsiValues.Count; i++)
             {
                 // Get the RSI, MACD, and stochastic values for the current time period
-                Price price = prices[i];
+                HistoricalPrice price = prices[i];
                 decimal rsiValue = rsiValues[i];
                 decimal macdValue = macdValues[i];
                 decimal macdSignalValue = macdSignalValues[i];
@@ -308,7 +350,7 @@ namespace TickerList
                     StochCrossDirectionLast14Days = stochCrossCheck14,
                     MACDCrossDirectionLast5Days = macdCrossCheck5,
                     RSICrossDirectionLast5Days = rsiCrossCheck5,
-                    StochCrossDirectionLast5Days = stochCrossCheck5,
+                    StochCrossDirectionLast5Days = stochCrossCheck5
                 });
             }
 
@@ -339,7 +381,7 @@ namespace TickerList
             }
         }
 
-        private static (List<decimal> rsiValues, List<DateTime> rsiTimes) GetRSI(List<Price> prices, int period)
+        private static (List<decimal> rsiValues, List<DateTime> rsiTimes) GetRSI(List<HistoricalPrice> prices, int period)
         {
             // Initialize lists to store the RSI and time values
             List<decimal> rsiValues = new List<decimal>();
@@ -392,7 +434,7 @@ namespace TickerList
         }
 
 
-        public static (List<decimal> macdValues, List<decimal> signalValues, List<DateTime> macdTimes) GetMACD(List<Price> prices, int shortPeriod, int longPeriod, int signalPeriod)
+        public static (List<decimal> macdValues, List<decimal> signalValues, List<DateTime> macdTimes) GetMACD(List<HistoricalPrice> prices, int shortPeriod, int longPeriod, int signalPeriod)
         {
             // Initialize lists to store the MACD, signal, and time values
             List<decimal> macdValues = new List<decimal>();
@@ -437,7 +479,7 @@ namespace TickerList
             return sum;
         }
 
-        public static (List<decimal> kValues, List<decimal> dValues, List<DateTime> stochasticTimes) GetStochastic(List<Price> prices, int period)
+        public static (List<decimal> kValues, List<decimal> dValues, List<DateTime> stochasticTimes) GetStochastic(List<HistoricalPrice> prices, int period)
         {
             // Initialize lists to store the K, D, and time values
             List<decimal> kValues = new List<decimal>();
@@ -464,7 +506,8 @@ namespace TickerList
                     if (minPrice == maxPrice)
                     {
                         kValues.Add(0);
-                    } else
+                    }
+                    else
                     {
                         var k = 100 * (closePrice - minPrice) / (maxPrice - minPrice);
                         // Calculate the K value

@@ -1,4 +1,4 @@
-﻿namespace TickerList
+﻿namespace StockSignalScanner.Models
 {
     public enum RSIStatus
     {
