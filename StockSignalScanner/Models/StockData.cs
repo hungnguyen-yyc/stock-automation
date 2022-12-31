@@ -52,6 +52,27 @@
             }
         }
 
+        public bool StochasticInOverboughtLast5Days { get; set; }
+        public bool StochasticInOversoldLast5Days { get; set; }
+        public bool StochasticInOverboughtLast14Days { get; set; }
+        public bool StochasticInOversoldLast14Days { get; set; }
+
+        public (List<decimal> SqueezeIndicator, List<decimal> MomentumIndicator, List<bool> SqueezeStart, List<bool> SqueezeStop) SqueezeMomentum { get; set; }
+        public (bool IsSqueeze, List<DateTimeOffset> SqueezeStarts, List<DateTimeOffset> SqueezeEnds) SqueezeMomentumV2 { get; set; }
+
+
+        public bool MACDRSICrossesAbove14 => MACDCrossDirectionLast14Days == CrossDirection.CROSS_ABOVE
+                                            && RSICrossDirectionLast14Days == CrossDirection.CROSS_ABOVE;
+
+        public bool MACDRSICrossesBelow14 => MACDCrossDirectionLast14Days == CrossDirection.CROSS_BELOW
+                                            && RSICrossDirectionLast14Days == CrossDirection.CROSS_BELOW;
+
+        public bool MACDRSICrossesAbove5 => MACDCrossDirectionLast5Days == CrossDirection.CROSS_ABOVE
+                                            && RSICrossDirectionLast5Days == CrossDirection.CROSS_ABOVE;
+
+        public bool MACDRSICrossesBelow5 => MACDCrossDirectionLast5Days == CrossDirection.CROSS_BELOW
+                                            && RSICrossDirectionLast5Days == CrossDirection.CROSS_BELOW;
+
         public bool AllCrossesAbove14 => MACDCrossDirectionLast14Days == CrossDirection.CROSS_ABOVE
                                             && RSICrossDirectionLast14Days == CrossDirection.CROSS_ABOVE
                                             && StochCrossDirectionLast14Days == CrossDirection.CROSS_ABOVE;
@@ -75,6 +96,14 @@
         public bool AllCrossesAbove5WithStochastic => AllCrossesAbove5 && StochasticK <= 20 && StochasticD <= 20;
 
         public bool AllCrossesBelow5WithStochastic => AllCrossesBelow5 && StochasticK >= 80 && StochasticD >= 80;
+
+        public bool MACDRSICrossesAbove14WithStochastic => MACDRSICrossesAbove14 && StochasticK <= 20 && StochasticD <= 20;
+
+        public bool MACDRSICrossesBelow14WithStochastic => MACDRSICrossesBelow14 && StochasticK >= 80 && StochasticD >= 80;
+
+        public bool MACDRSICrossesAbove5WithStochastic => MACDRSICrossesAbove5 && StochasticK <= 20 && StochasticD <= 20;
+
+        public bool MACDRSICrossesBelow5WithStochastic => MACDRSICrossesBelow5 && StochasticK >= 80 && StochasticD >= 80;
 
         public override string ToString()
         {

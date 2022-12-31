@@ -1,6 +1,7 @@
 ﻿using log4net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using StockSignalScanner.Indicators;
 using StockSignalScanner.Models;
 using System.Diagnostics;
 using System.Text;
@@ -26,10 +27,13 @@ namespace StockSignalScanner
                 var nowDate = DateTime.Now.ToString("yyyy-MM-dd");
                 var folderPath = @"C:\Users\hnguyen\Documents\stock-scan-logs";
                 var scanFolderPath = Path.Combine(folderPath, nowDate);
+                var rsiMacdCrosses5 = new List<string>();
                 var allCrosses5 = new List<string>();
                 var allCrosses5WithStochastic = new List<string>();
+                var rsiMacdCrosses14 = new List<string>();
                 var allCrosses14 = new List<string>();
                 var allCrosses14WithStochastic = new List<string>();
+                var squeezeMomentum = new List<string>();
                 var mix = new List<string>();
                 try
                 {
@@ -44,9 +48,10 @@ namespace StockSignalScanner
 
                 }
 
-                var batches = northAmericaStocks.OrderBy(s => s.Symbol).Chunk(290);
-                foreach (var stocks in batches)
+                var batches = northAmericaStocks.OrderBy(s => s.Symbol).Chunk(290).ToArray();
+                for (int si = 0; si < batches.Count(); si++)
                 {
+                    var stocks = batches[si];
                     foreach (var stock in stocks)
                     {
                         try
@@ -61,6 +66,42 @@ namespace StockSignalScanner
                                     var datum = reverse.FirstOrDefault();
                                     if (datum != null)
                                     {
+                                        if (datum.SqueezeMomentumV2.IsSqueeze)
+                                        {
+                                            if (!Directory.Exists(Path.Combine(scanFolderPath, "squeeze-momentum")))
+                                            {
+                                                Directory.CreateDirectory(Path.Combine(scanFolderPath, "squeeze-momentum"));
+                                            }
+                                            //if (!Directory.Exists(Path.Combine(scanFolderPath, "squeeze-momentum", datum.Ticker)))
+                                            //{
+                                            //    Directory.CreateDirectory(Path.Combine(scanFolderPath, "squeeze-momentum", datum.Ticker));
+                                            //}
+                                            var sb = new StringBuilder();
+                                            for (int smi = 0; smi < datum.SqueezeMomentumV2.SqueezeStarts.Count(); smi++)
+                                            {
+                                                sb.Append(datum.SqueezeMomentumV2.SqueezeStarts[smi].ToString("yyyy-MM-dd"));
+                                                sb.Append(" - ");
+                                                if (smi >= datum.SqueezeMomentumV2.SqueezeEnds.Count())
+                                                {
+                                                    sb.Append("ITS HAPPENING!!!!!!!!");
+                                                }
+                                                else
+                                                {
+                                                    sb.Append(datum.SqueezeMomentumV2.SqueezeEnds[smi].ToString("yyyy-MM-dd"));
+                                                }
+                                                sb.AppendLine();
+                                            }
+                                            File.WriteAllText(Path.Combine(scanFolderPath, "squeeze-momentum", $"{datum.Ticker}.txt"), sb.ToString());
+                                        }
+
+                                        if (datum.MACDRSICrossesAbove5WithStochastic || datum.MACDRSICrossesBelow5WithStochastic)
+                                        {
+                                            rsiMacdCrosses5.Add(datum.GetRecommendTickerAction());
+                                        }
+                                        if (datum.MACDRSICrossesAbove14WithStochastic || datum.MACDRSICrossesBelow14WithStochastic)
+                                        {
+                                            rsiMacdCrosses14.Add(datum.GetRecommendTickerAction());
+                                        }
                                         if (datum.AllCrossesAbove5 || datum.AllCrossesBelow5)
                                         {
                                             allCrosses5.Add(datum.GetRecommendTickerAction());
@@ -94,7 +135,10 @@ namespace StockSignalScanner
                             }
                         }
                     }
-                    Thread.Sleep(60000);
+                    if (si < batches.Count() - 1)
+                    {
+                        Thread.Sleep(50000);
+                    }
                 }
                 using (StreamWriter outputFile = new StreamWriter(Path.Combine(scanFolderPath, "all-crosses-last-5-days.txt"), true))
                 {
@@ -120,6 +164,20 @@ namespace StockSignalScanner
                 using (StreamWriter outputFile = new StreamWriter(Path.Combine(scanFolderPath, "all-crosses-last-14-days-with-stochastic.txt"), true))
                 {
                     foreach (var item in allCrosses14WithStochastic)
+                    {
+                        outputFile.WriteLine(item);
+                    }
+                }
+                using (StreamWriter outputFile = new StreamWriter(Path.Combine(scanFolderPath, "rsi-macd-crosses-last-5-days-with-stochastic.txt"), true))
+                {
+                    foreach (var item in rsiMacdCrosses5)
+                    {
+                        outputFile.WriteLine(item);
+                    }
+                }
+                using (StreamWriter outputFile = new StreamWriter(Path.Combine(scanFolderPath, "rsi-macd-crosses-last-14-days-with-stochastic.txt"), true))
+                {
+                    foreach (var item in rsiMacdCrosses14)
                     {
                         outputFile.WriteLine(item);
                     }
@@ -289,6 +347,8 @@ namespace StockSignalScanner
             (List<decimal> rsiValues, List<DateTime> rsiTimes) = GetRSI(prices, rsiPeriod);
             (List<decimal> macdValues, List<decimal> macdSignalValues, List<DateTime> macdTimes) = GetMACD(prices, macdShortPeriod, macdLongPeriod, macdSignalPeriod);
             (List<decimal> kValues, List<decimal> dValues, List<DateTime> stochasticTimes) = GetStochastic(prices, stochasticPeriod);
+            //var squeezeMomentum = null;// SqueezeMomentumIndicator.Calculate(prices, 14, 2, 14, 14);
+            var squeezeMomentumV3 = SqueezeMomentumIndicator.CalculateV3(prices, 20, 2, 20, 1.5, true);
 
             CrossDirection macdCrossCheck14 = CrossDirection.NO_CROSS;
             CrossDirection stochCrossCheck14 = CrossDirection.NO_CROSS;
@@ -296,6 +356,10 @@ namespace StockSignalScanner
             CrossDirection macdCrossCheck5 = CrossDirection.NO_CROSS;
             CrossDirection stochCrossCheck5 = CrossDirection.NO_CROSS;
             CrossDirection rsiCrossCheck5 = CrossDirection.NO_CROSS;
+            var stochasticInOverboughtLast5Days = false;
+            var stochasticInOversoldLast5Days = false;
+            var stochasticInOverboughtLast14Days = false;
+            var stochasticInOversoldLast14Days = false;
 
             foreach (var days in CROSSES_IN_LAST_DAYS)
             {
@@ -313,12 +377,16 @@ namespace StockSignalScanner
                     macdCrossCheck14 = GetCrossDirection(macdLine, signalLine);
                     stochCrossCheck14 = GetCrossDirection(kLine, dLine);
                     rsiCrossCheck14 = GetCrossDirection(rsiLine, rsi50Line);
+                    stochasticInOverboughtLast14Days = kLine.Select(k => k.Item2).Any(k => k >= 80) && dLine.Select(k => k.Item2).Any(k => k >= 80);
+                    stochasticInOversoldLast14Days = kLine.Select(k => k.Item2).Any(k => k <= 20) && dLine.Select(k => k.Item2).Any(k => k <= 20);
                 }
                 if (days == 5)
                 {
                     macdCrossCheck5 = GetCrossDirection(macdLine, signalLine);
                     stochCrossCheck5 = GetCrossDirection(kLine, dLine);
                     rsiCrossCheck5 = GetCrossDirection(rsiLine, rsi50Line);
+                    stochasticInOverboughtLast5Days = kLine.Select(k => k.Item2).Any(k => k >= 80) && dLine.Select(k => k.Item2).Any(k => k >= 80);
+                    stochasticInOverboughtLast5Days = kLine.Select(k => k.Item2).Any(k => k <= 20) && dLine.Select(k => k.Item2).Any(k => k <= 20);
                 }
             }
 
@@ -350,7 +418,12 @@ namespace StockSignalScanner
                     StochCrossDirectionLast14Days = stochCrossCheck14,
                     MACDCrossDirectionLast5Days = macdCrossCheck5,
                     RSICrossDirectionLast5Days = rsiCrossCheck5,
-                    StochCrossDirectionLast5Days = stochCrossCheck5
+                    StochCrossDirectionLast5Days = stochCrossCheck5,
+                    StochasticInOverboughtLast14Days = stochasticInOverboughtLast14Days,
+                    StochasticInOverboughtLast5Days = stochasticInOverboughtLast5Days,
+                    StochasticInOversoldLast14Days = stochasticInOversoldLast14Days,
+                    StochasticInOversoldLast5Days = stochasticInOversoldLast5Days,
+                    SqueezeMomentumV2 = squeezeMomentumV3,
                 });
             }
 

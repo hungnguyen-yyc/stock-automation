@@ -1,8 +1,6 @@
 using Newtonsoft.Json.Linq;
-using StockSignalScanner.models;
+using StockSignalScanner;
 using StockSignalScanner.Models;
-using System;
-using TickerList;
 
 namespace TestProject
 {
@@ -12,7 +10,7 @@ namespace TestProject
         public void TestGetStochastic()
         {
             var file = File.ReadAllText(@"C:\Users\hnguyen\source\repos\StockSignalScanner\StockSignalScanner\testdata.json");
-            var stocks = JArray.Parse(file).ToObject<List<TickerHistoricalPrice>>().OrderBy(p => p.Date).ToList();
+            var stocks = JArray.Parse(file).ToObject<List<HistoricalPrice>>().OrderBy(p => p.Date).ToList();
 
             // Act
             var result = Program.GetMACD(stocks, 12, 26, 9);
