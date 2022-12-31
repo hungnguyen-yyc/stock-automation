@@ -66,33 +66,6 @@ namespace StockSignalScanner
                                     var datum = reverse.FirstOrDefault();
                                     if (datum != null)
                                     {
-                                        if (datum.SqueezeMomentumV2.IsSqueeze)
-                                        {
-                                            if (!Directory.Exists(Path.Combine(scanFolderPath, "squeeze-momentum")))
-                                            {
-                                                Directory.CreateDirectory(Path.Combine(scanFolderPath, "squeeze-momentum"));
-                                            }
-                                            //if (!Directory.Exists(Path.Combine(scanFolderPath, "squeeze-momentum", datum.Ticker)))
-                                            //{
-                                            //    Directory.CreateDirectory(Path.Combine(scanFolderPath, "squeeze-momentum", datum.Ticker));
-                                            //}
-                                            var sb = new StringBuilder();
-                                            for (int smi = 0; smi < datum.SqueezeMomentumV2.SqueezeStarts.Count(); smi++)
-                                            {
-                                                sb.Append(datum.SqueezeMomentumV2.SqueezeStarts[smi].ToString("yyyy-MM-dd"));
-                                                sb.Append(" - ");
-                                                if (smi >= datum.SqueezeMomentumV2.SqueezeEnds.Count())
-                                                {
-                                                    sb.Append("ITS HAPPENING!!!!!!!!");
-                                                }
-                                                else
-                                                {
-                                                    sb.Append(datum.SqueezeMomentumV2.SqueezeEnds[smi].ToString("yyyy-MM-dd"));
-                                                }
-                                                sb.AppendLine();
-                                            }
-                                            File.WriteAllText(Path.Combine(scanFolderPath, "squeeze-momentum", $"{datum.Ticker}.txt"), sb.ToString());
-                                        }
 
                                         if (datum.MACDRSICrossesAbove5WithStochastic || datum.MACDRSICrossesBelow5WithStochastic)
                                         {
@@ -134,10 +107,6 @@ namespace StockSignalScanner
                                 outputFile.WriteLine(ex.StackTrace);
                             }
                         }
-                    }
-                    if (si < batches.Count() - 1)
-                    {
-                        Thread.Sleep(50000);
                     }
                 }
                 using (StreamWriter outputFile = new StreamWriter(Path.Combine(scanFolderPath, "all-crosses-last-5-days.txt"), true))
@@ -301,7 +270,7 @@ namespace StockSignalScanner
             if (response.IsSuccessStatusCode)
             {
                 string content = await response.Content.ReadAsStringAsync();
-                var prices = JArray.Parse(content).ToObject<List<HistoricalPrice>>();
+                var prices = JArray.Parse(content).ToObject<List<IPrice>>();
 
                 if (prices == null)
                 {
@@ -309,7 +278,7 @@ namespace StockSignalScanner
                 }
 
                 var reverse = prices.OrderBy(p => p.Date).ToList();
-                return GetIndicators(ticker, exchange, reverse, 14, 12, 26, 9, 14);
+                return GetIndicators(ticker, exchange, reverse, 5, 8, 21, 5, 5);
             }
             return null;
         }
@@ -325,28 +294,46 @@ namespace StockSignalScanner
             if (response.IsSuccessStatusCode)
             {
                 string content = await response.Content.ReadAsStringAsync();
-                TickerHistoricalPrice prices = JsonConvert.DeserializeObject<TickerHistoricalPrice>(content);
+                var prices = JsonConvert.DeserializeObject<TickerHistoricalPrice>(content);
 
                 if (prices == null || prices.Historical == null)
                 {
                     return null;
                 }
 
-                var reverse = prices.Historical.OrderBy(p => p.Date).ToList();
+                var reverse = prices.Historical
+                    .OrderBy(p => p.Date)
+                    .Select(p => (IPrice)new HistoricalPrice
+                    {
+                        Date = p.Date,
+                        AdjClose = p.AdjClose,
+                        Close = p.Close,
+                        Change = p.Change,
+                        ChangeOverTime = p.ChangeOverTime,
+                        ChangePercent = p.ChangePercent,
+                        High = p.High,
+                        Label = p.Label,
+                        Low = p.Low,
+                        Open = p.Open,
+                        UnadjustedVolume = p.UnadjustedVolume,
+                        Volume = p.Volume,
+                        Vwap = p.Vwap,
+                    })
+                    .ToList();
                 Console.WriteLine($"Analyzing data for {ticker}");
                 return GetIndicators(ticker, exchange, reverse, 14, 12, 26, 9, 14);
             }
             return null;
         }
 
-        public static List<StockData> GetIndicators(string ticker, string exchange, List<HistoricalPrice> prices, int rsiPeriod, int macdShortPeriod, int macdLongPeriod, int macdSignalPeriod, int stochasticPeriod)
+        public static List<StockData> GetIndicators(string ticker, string exchange, List<IPrice> prices, int rsiPeriod, int macdShortPeriod, int macdLongPeriod, int macdSignalPeriod, int stochasticPeriod)
         {
             var result = new List<StockData>();
 
             // Get the RSI, MACD, and stochastic values and times
-            (List<decimal> rsiValues, List<DateTime> rsiTimes) = GetRSI(prices, rsiPeriod);
-            (List<decimal> macdValues, List<decimal> macdSignalValues, List<DateTime> macdTimes) = GetMACD(prices, macdShortPeriod, macdLongPeriod, macdSignalPeriod);
-            (List<decimal> kValues, List<decimal> dValues, List<DateTime> stochasticTimes) = GetStochastic(prices, stochasticPeriod);
+            (List<decimal> rsiValues, List<DateTime> rsiTimes) = RSIIndicator.GetRSI(prices, rsiPeriod);
+            (List<decimal> macdValues, List<decimal> macdSignalValues, List<DateTime> macdTimes) = MACDIndicator.GetMACD(prices, macdShortPeriod, macdLongPeriod, macdSignalPeriod);
+            (List<decimal> kValues, List<decimal> dValues, List<DateTime> stochasticTimes) = StochasticIndicator.GetStochastic(prices, stochasticPeriod);
             //var squeezeMomentum = null;// SqueezeMomentumIndicator.Calculate(prices, 14, 2, 14, 14);
             var squeezeMomentumV3 = SqueezeMomentumIndicator.CalculateV3(prices, 20, 2, 20, 1.5, true);
 
@@ -374,17 +361,17 @@ namespace StockSignalScanner
 
                 if (days == 14)
                 {
-                    macdCrossCheck14 = GetCrossDirection(macdLine, signalLine);
-                    stochCrossCheck14 = GetCrossDirection(kLine, dLine);
-                    rsiCrossCheck14 = GetCrossDirection(rsiLine, rsi50Line);
+                    macdCrossCheck14 = CrossDirectionDetector.GetCrossDirection(macdLine, signalLine);
+                    stochCrossCheck14 = CrossDirectionDetector.GetCrossDirection(kLine, dLine);
+                    rsiCrossCheck14 = CrossDirectionDetector.GetCrossDirection(rsiLine, rsi50Line);
                     stochasticInOverboughtLast14Days = kLine.Select(k => k.Item2).Any(k => k >= 80) && dLine.Select(k => k.Item2).Any(k => k >= 80);
                     stochasticInOversoldLast14Days = kLine.Select(k => k.Item2).Any(k => k <= 20) && dLine.Select(k => k.Item2).Any(k => k <= 20);
                 }
                 if (days == 5)
                 {
-                    macdCrossCheck5 = GetCrossDirection(macdLine, signalLine);
-                    stochCrossCheck5 = GetCrossDirection(kLine, dLine);
-                    rsiCrossCheck5 = GetCrossDirection(rsiLine, rsi50Line);
+                    macdCrossCheck5 = CrossDirectionDetector.GetCrossDirection(macdLine, signalLine);
+                    stochCrossCheck5 = CrossDirectionDetector.GetCrossDirection(kLine, dLine);
+                    rsiCrossCheck5 = CrossDirectionDetector.GetCrossDirection(rsiLine, rsi50Line);
                     stochasticInOverboughtLast5Days = kLine.Select(k => k.Item2).Any(k => k >= 80) && dLine.Select(k => k.Item2).Any(k => k >= 80);
                     stochasticInOverboughtLast5Days = kLine.Select(k => k.Item2).Any(k => k <= 20) && dLine.Select(k => k.Item2).Any(k => k <= 20);
                 }
@@ -394,7 +381,7 @@ namespace StockSignalScanner
             for (int i = 0; i < rsiValues.Count; i++)
             {
                 // Get the RSI, MACD, and stochastic values for the current time period
-                HistoricalPrice price = prices[i];
+                IPrice price = prices[i];
                 decimal rsiValue = rsiValues[i];
                 decimal macdValue = macdValues[i];
                 decimal macdSignalValue = macdSignalValues[i];
@@ -433,12 +420,12 @@ namespace StockSignalScanner
         public static async Task<IEnumerable<Stock>> GetStocksFromUSCANExchanges(string apiKey)
         {
             List<string> exchanges = new List<string>() { "NYSE", "NasdaqNM", "AMEX", "TSX", "TSXV", "MX" };
-            string baseUrl = "https://financialmodelingprep.com/api/v3/stock-screener?volumeMoreThan=5000000&";
+            string baseUrl = "https://financialmodelingprep.com/api/v3";
 
             using (var httpClient = new HttpClient())
             {
                 // Set the criteria for the search
-                string url = $"{baseUrl}/stock-screener?volumeMoreThan=5000000&apikey={apiKey}";
+                string url = $"{baseUrl}/stock-screener?volumeMoreThan=3000000&priceLowerThan=20&apikey={apiKey}";
 
                 // Send the request and get the response
                 var response = await httpClient.GetAsync(url);
@@ -452,208 +439,6 @@ namespace StockSignalScanner
 
                 return filteredStocks;
             }
-        }
-
-        private static (List<decimal> rsiValues, List<DateTime> rsiTimes) GetRSI(List<HistoricalPrice> prices, int period)
-        {
-            // Initialize lists to store the RSI and time values
-            List<decimal> rsiValues = new List<decimal>();
-            List<DateTime> rsiTimes = new List<DateTime>();
-
-            // Extract the close prices and times from the Price objects
-            List<decimal> closePrices = prices.Select(p => p.Close).ToList();
-            List<DateTime> times = prices.Select(p => p.Date.DateTime).ToList();
-
-            // Initialize variables to store the average gain and average loss
-            decimal avgGain = 0;
-            decimal avgLoss = 0;
-
-            // Calculate the RSI values using a sliding window
-            for (int i = 0; i < closePrices.Count; i++)
-            {
-                // Check if we have enough data to calculate the RSI value
-                if (i >= period)
-                {
-                    // Calculate the change in price from the previous period
-                    decimal change = closePrices[i] - closePrices[i - 1];
-
-                    // Update the average gain and average loss
-                    if (change > 0)
-                    {
-                        avgGain = (avgGain * (period - 1) + change) / period;
-                        avgLoss = avgLoss * (period - 1) / period;
-                    }
-                    else
-                    {
-                        avgGain = avgGain * (period - 1) / period;
-                        avgLoss = (avgLoss * (period - 1) - change) / period;
-                    }
-
-                    // Calculate the RSI value
-                    rsiValues.Add(avgLoss == 0 ? 100 : 100 - (100 / (1 + (avgGain / avgLoss))));
-                }
-                else
-                {
-                    // Set the RSI value to zero until we have enough data
-                    rsiValues.Add(0);
-                }
-
-                // Add the time value
-                rsiTimes.Add(times[i]);
-            }
-
-            // Return the RSI and time values
-            return (rsiValues, rsiTimes);
-        }
-
-
-        public static (List<decimal> macdValues, List<decimal> signalValues, List<DateTime> macdTimes) GetMACD(List<HistoricalPrice> prices, int shortPeriod, int longPeriod, int signalPeriod)
-        {
-            // Initialize lists to store the MACD, signal, and time values
-            List<decimal> macdValues = new List<decimal>();
-            List<decimal> signalValues = new List<decimal>();
-            List<DateTime> macdTimes = new List<DateTime>();
-
-            // Extract the close prices and times from the Price objects
-            List<decimal> closePrices = prices.Select(p => p.Close).ToList();
-            List<DateTime> times = prices.Select(p => p.Date.DateTime).ToList();
-
-            // Calculate the MACD value
-            List<decimal> shortEMA = CalculateEMA(closePrices.ToList(), shortPeriod);
-            List<decimal> longEMA = CalculateEMA(closePrices.ToList(), longPeriod);
-
-            // Calculate the MACD and signal values
-            for (int i = 0; i < closePrices.Count; i++)
-            {
-                macdValues.Add(shortEMA[i] - longEMA[i]);
-
-                // Add the time value
-                macdTimes.Add(times[i]);
-            }
-
-            signalValues.AddRange(CalculateEMA(macdValues, signalPeriod));
-
-            // Return the MACD, signal, and time values
-            return (macdValues, signalValues, macdTimes);
-        }
-
-
-        private static List<decimal> CalculateEMA(List<decimal> src, int length)
-        {
-            decimal alpha = 2.0m / (length + 1);
-            List<decimal> sum = new List<decimal>();
-
-            for (int i = 0; i < src.Count; i++)
-            {
-                decimal previousSum = (i == 0 ? 0 : sum[i - 1]);
-                sum.Add(alpha * src[i] + (1 - alpha) * previousSum);
-            }
-
-            return sum;
-        }
-
-        public static (List<decimal> kValues, List<decimal> dValues, List<DateTime> stochasticTimes) GetStochastic(List<HistoricalPrice> prices, int period)
-        {
-            // Initialize lists to store the K, D, and time values
-            List<decimal> kValues = new List<decimal>();
-            List<decimal> dValues = new List<decimal>();
-            List<DateTime> stochasticTimes = new List<DateTime>();
-
-            // Extract the close, high, and low prices and times from the Price objects
-            List<decimal> closePrices = prices.Select(p => p.Close).ToList();
-            List<decimal> highPrices = prices.Select(p => p.High).ToList();
-            List<decimal> lowPrices = prices.Select(p => p.Low).ToList();
-            List<DateTime> times = prices.Select(p => p.Date.DateTime).ToList();
-
-            // Calculate the K and D values
-            for (int i = 0; i < closePrices.Count; i++)
-            {
-                // Check if we have enough data to calculate the K value
-                if (i >= period - 1)
-                {
-                    // Calculate the minimum and maximum prices over the previous period
-                    var closePrice = closePrices[i];
-                    decimal minPrice = lowPrices.Skip(i - period + 1).Take(period).Min();
-                    decimal maxPrice = highPrices.Skip(i - period + 1).Take(period).Max();
-
-                    if (minPrice == maxPrice)
-                    {
-                        kValues.Add(0);
-                    }
-                    else
-                    {
-                        var k = 100 * (closePrice - minPrice) / (maxPrice - minPrice);
-                        // Calculate the K value
-                        kValues.Add(k);
-                    }
-                }
-                else
-                {
-                    // Set the K and D values to zero until we have enough data
-                    kValues.Add(0);
-                }
-
-                // Calculate the D value
-                if (i >= period + 2)
-                {
-                    // Calculate the 3-day simple moving average of the K values
-                    var d = kValues.Skip(i - 2).Take(3).Average();
-                    dValues.Add(d);
-                }
-                else
-                {
-                    dValues.Add(0);
-                }
-
-                // Add the time value
-                stochasticTimes.Add(times[i]);
-            }
-
-            // Return the K, D, and time values
-            return (kValues, dValues, stochasticTimes);
-        }
-
-        private static CrossDirection GetCrossDirection(List<(DateTime, decimal)> line1, List<(DateTime, decimal)> line2)
-        {
-            // Check that the lists have at least two elements each
-            if (line1.Count < 2 || line2.Count < 2)
-            {
-                return CrossDirection.NO_CROSS;
-            }
-
-            // Initialize variables to track the previous values of line1 and line2
-            decimal prevLine1Value = line1[0].Item2;
-            decimal prevLine2Value = line2[0].Item2;
-
-            // Initialize a variable to track the cross direction
-            CrossDirection crossDirection = CrossDirection.NO_CROSS;
-
-            // Iterate through the rest of the elements in the lists
-            for (int i = 1; i < line1.Count; i++)
-            {
-                // Get the current values of line1 and line2
-                decimal currLine1Value = line1[i].Item2;
-                decimal currLine2Value = line2[i].Item2;
-
-                // Check if line1 crossed above line2
-                if (prevLine1Value < prevLine2Value && currLine1Value > currLine2Value)
-                {
-                    crossDirection = CrossDirection.CROSS_ABOVE;
-                }
-
-                // Check if line1 crossed below line2
-                if (prevLine1Value > prevLine2Value && currLine1Value < currLine2Value)
-                {
-                    crossDirection = CrossDirection.CROSS_BELOW;
-                }
-
-                // Update the previous values of line1 and line2 for the next iteration
-                prevLine1Value = currLine1Value;
-                prevLine2Value = currLine2Value;
-            }
-
-            // Return the cross direction
-            return crossDirection;
         }
     }
 }

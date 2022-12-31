@@ -10,7 +10,7 @@ namespace StockSignalScanner.Indicators
 {
     public static class BollingerBands
     {
-        public static List<(decimal LowerBand, decimal UpperBand)> Calculate(List<HistoricalPrice> prices, int period, decimal standardDeviation)
+        public static List<(decimal LowerBand, decimal UpperBand)> Calculate(List<IPrice> prices, int period, decimal standardDeviation)
         {
             // Calculate the moving average values
             var movingAverages = MovingAverage.Calculate(prices, period);

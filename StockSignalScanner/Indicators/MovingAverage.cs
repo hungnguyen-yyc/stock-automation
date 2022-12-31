@@ -9,7 +9,7 @@ namespace StockSignalScanner.Indicators
 {
     public static class MovingAverage
     {
-        public static List<decimal> Calculate(List<HistoricalPrice> prices, int period)
+        public static List<decimal> Calculate(List<IPrice> prices, int period)
         {
             // Initialize a list to store the moving average values
             var movingAverages = new List<decimal>();

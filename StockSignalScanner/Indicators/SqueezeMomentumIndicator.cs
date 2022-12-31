@@ -9,7 +9,7 @@ namespace StockSignalScanner.Indicators
 {
     public static class SqueezeMomentumIndicator
     {
-        public static (List<decimal> SqueezeIndicator, List<decimal> MomentumIndicator, List<bool> SqueezeStart, List<bool> SqueezeStop) Calculate(List<HistoricalPrice> prices, int bollingerBandPeriod, decimal bollingerBandStandardDeviation, int keltnerChannelPeriod, int atrPeriod)
+        public static (List<decimal> SqueezeIndicator, List<decimal> MomentumIndicator, List<bool> SqueezeStart, List<bool> SqueezeStop) Calculate(List<IPrice> prices, int bollingerBandPeriod, decimal bollingerBandStandardDeviation, int keltnerChannelPeriod, int atrPeriod)
         {
             // Calculate the Bollinger Bands values
             var bollingerBands = BollingerBands.Calculate(prices, bollingerBandPeriod, bollingerBandStandardDeviation);
@@ -51,7 +51,7 @@ namespace StockSignalScanner.Indicators
             return (squeezeIndicator, momentumIndicator, squeezeStart, squeezeStop);
         }
 
-        public static (bool IsSqueeze, DateTimeOffset SqueezeStart, DateTimeOffset SqueezeEnd) CalculateV2(List<HistoricalPrice> prices, int bollingerPeriod, decimal bollingerStandardDeviation, int keltnerPeriod, int keltnerAtrPeriod)
+        public static (bool IsSqueeze, DateTimeOffset SqueezeStart, DateTimeOffset SqueezeEnd) CalculateV2(List<IPrice> prices, int bollingerPeriod, decimal bollingerStandardDeviation, int keltnerPeriod, int keltnerAtrPeriod)
         {
             // Calculate the Bollinger Band values
             var bollingerBands = BollingerBands.Calculate(prices, bollingerPeriod, bollingerStandardDeviation);
@@ -103,7 +103,7 @@ namespace StockSignalScanner.Indicators
             return (isSqueeze, squeezeStart, squeezeEnd);
         }
 
-        public static (bool IsSqueeze, List<DateTimeOffset> SqueezeStarts, List<DateTimeOffset> SqueezeEnds) CalculateV3(List<HistoricalPrice> prices, int bollingerPeriod, double bollingerMultFactor, int keltnerPeriod, double keltnerMultFactor, bool useTrueRange)
+        public static (bool IsSqueeze, List<DateTimeOffset> SqueezeStarts, List<DateTimeOffset> SqueezeEnds) CalculateV3(List<IPrice> prices, int bollingerPeriod, double bollingerMultFactor, int keltnerPeriod, double keltnerMultFactor, bool useTrueRange)
         {
             // Initialize variables to track the squeeze and squeeze start/end
             bool isSqueeze = false;
@@ -169,7 +169,7 @@ namespace StockSignalScanner.Indicators
 
     public static class EnumerableExtensions
     {
-        public static IEnumerable<double> Stdev(this IEnumerable<HistoricalPrice> prices, Func<HistoricalPrice, double> selector, int period)
+        public static IEnumerable<double> Stdev(this IEnumerable<IPrice> prices, Func<IPrice, double> selector, int period)
         {
             return Enumerable.Range(0, prices.Count()).Select(i =>
             {
@@ -181,7 +181,7 @@ namespace StockSignalScanner.Indicators
             });
         }
 
-        public static IEnumerable<double> Sma(this IEnumerable<HistoricalPrice> prices, Func<HistoricalPrice, double> selector, int period)
+        public static IEnumerable<double> Sma(this IEnumerable<IPrice> prices, Func<IPrice, double> selector, int period)
         {
             return Enumerable.Range(0, prices.Count()).Select(i =>
             {
@@ -199,7 +199,7 @@ namespace StockSignalScanner.Indicators
             });
         }
 
-        public static double TrueRange(this HistoricalPrice price)
+        public static double TrueRange(this IPrice price)
         {
             return Math.Max(Convert.ToDouble(price.High - price.Low), Math.Max(Convert.ToDouble(price.High - price.Close), Convert.ToDouble(price.Close - price.Low)));
         }

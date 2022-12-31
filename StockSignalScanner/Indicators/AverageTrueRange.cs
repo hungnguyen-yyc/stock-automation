@@ -4,7 +4,7 @@ namespace StockSignalScanner.Indicators
 {
     public static class AverageTrueRange
     {
-        public static List<decimal> Calculate(List<HistoricalPrice> prices, int period)
+        public static List<decimal> Calculate(List<IPrice> prices, int period)
         {
             // Initialize a list to store the average true range (ATR) values
             var atrValues = new List<decimal>();
@@ -40,7 +40,7 @@ namespace StockSignalScanner.Indicators
             return atrValues;
         }
 
-        private static decimal TrueRange(HistoricalPrice currentPrice, HistoricalPrice previousPrice)
+        private static decimal TrueRange(IPrice currentPrice, IPrice previousPrice)
         {
             // Calculate the maximum of the absolute difference between the high and low prices, and the absolute difference between the high and previous close prices, and the absolute difference between the low and previous close prices
             decimal maxAbsoluteDifference = Math.Max(Math.Abs(currentPrice.High - currentPrice.Low), Math.Abs(currentPrice.High - previousPrice.Close));

@@ -10,7 +10,7 @@ namespace StockSignalScanner.Indicators
 {
     public static class KeltnerChannel
     {
-        public static List<(decimal LowerChannel, decimal UpperChannel)> Calculate(List<HistoricalPrice> prices, int period, int atrPeriod)
+        public static List<(decimal LowerChannel, decimal UpperChannel)> Calculate(List<IPrice> prices, int period, int atrPeriod)
         {
             // Calculate the average true range (ATR) values
             var atrValues = AverageTrueRange.Calculate(prices, atrPeriod);
