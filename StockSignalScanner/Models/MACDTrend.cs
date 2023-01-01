@@ -3,6 +3,7 @@
     public enum MACDTrend
     {
         BULLISH,
-        BEARISH
+        BEARISH,
+        MEET
     }
 }

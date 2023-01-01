@@ -5,7 +5,7 @@ namespace StockSignalScanner
     internal static class RSIIndicator
     {
 
-        public static (List<decimal> rsiValues, List<DateTime> rsiTimes) GetRSI(List<IPrice> prices, int period)
+        public static (List<decimal> rsiValues, List<DateTime> rsiTimes) GetRSI(IList<IPrice> prices, int period)
         {
             // Initialize lists to store the RSI and time values
             List<decimal> rsiValues = new List<decimal>();

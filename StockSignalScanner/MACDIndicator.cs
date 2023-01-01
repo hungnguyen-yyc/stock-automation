@@ -6,7 +6,7 @@ namespace StockSignalScanner
     {
 
 
-        public static (List<decimal> macdValues, List<decimal> signalValues, List<DateTime> macdTimes) GetMACD(List<IPrice> prices, int shortPeriod, int longPeriod, int signalPeriod)
+        public static (List<decimal> macdValues, List<decimal> signalValues, List<DateTime> macdTimes) GetMACD(IList<IPrice> prices, int shortPeriod, int longPeriod, int signalPeriod)
         {
             // Initialize lists to store the MACD, signal, and time values
             List<decimal> macdValues = new List<decimal>();

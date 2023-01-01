@@ -2,7 +2,7 @@
 {
     public class TickerHistoricalPrice
     {
-        public string Ticker { get; set; }
+        public string Symbol { get; set; }
         public IList<HistoricalPrice> Historical { get; set; }
     }
 }
