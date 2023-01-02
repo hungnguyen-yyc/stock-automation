@@ -116,15 +116,26 @@ namespace StockSignalScanner.Models
         public bool HasOverboughtOrOversoldFollowedByMACDCrossLastNDays(int n = 5)
         {
             var roomToSkip = -5 - n; // n is the number we want to check for cross in, but we also want to check for a number before that(5);
-            (List<decimal> macdValues, List<decimal> macdSignalValues, List<DateTime> macdTimes) = MACDIndicator.GetMACD(_priceOrderByDateAsc, _macdShortPeriod, _macdLongPeriod, _macdSignalPeriod);
+            (List<decimal> macdValues, List<decimal> signalValues, List<DateTime> macdTimes) = MACDIndicator.GetMACD(_priceOrderByDateAsc, _macdShortPeriod, _macdLongPeriod, _macdSignalPeriod);
             (List<decimal> kValues, List<decimal> dValues, List<DateTime> stochasticTimes) = StochasticIndicator.GetStochastic(_priceOrderByDateAsc, _stochasticPeriod, _smoothK, _smoothD);
-            var macdLine = macdTimes.Zip(macdValues, (t, v) => (t, v)).Skip(macdValues.Count + roomToSkip).ToList();
-            var signalLine = macdTimes.Zip(macdSignalValues, (t, v) => (t, v)).Skip(macdSignalValues.Count + roomToSkip).ToList();
-            var kLine = stochasticTimes.Zip(kValues, (t, v) => (t, v)).ToList();
-            var dLine = stochasticTimes.Zip(dValues, (t, v) => (t, v)).ToList();
+            var macdLine = macdTimes
+                .Zip(macdValues, (t, v) => (t, v))
+                .Skip(macdValues.Count + roomToSkip)
+                .ToList();
+            var signalLine = macdTimes
+                .Zip(signalValues, (t, v) => (t, v))
+                .Skip(signalValues.Count + roomToSkip)
+                .ToList();
+            var kLine = stochasticTimes
+                .Zip(kValues, (t, v) => (t, v))
+                .ToList();
+            var dLine = stochasticTimes
+                .Zip(dValues, (t, v) => (t, v))
+                .ToList();
             var crosses = CrossDirectionDetector.GetCrossDirectionWithTime(macdLine, signalLine);
             var latestCrossTime = crosses.LastOrDefault(c => c.Value != CrossDirection.NO_CROSS).Key;
             var latestCrossDirection = crosses.LastOrDefault(c => c.Value != CrossDirection.NO_CROSS).Value;
+            // should check for stoch as well?
             if (latestCrossTime != default) 
             {
                 var direction = crosses.Last().Value;

@@ -21,7 +21,6 @@ namespace StockSignalScanner
                 var northAmericaStocks = await GetStocksFromUSCANExchanges(10000000, API_KEY); // update to get correct exchanges
 
                 var random = new Random();
-                var randomNumber = random.Next(1, northAmericaStocks.Count() - 1);
                 var nowTime = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
                 var nowDate = DateTime.Now.ToString("yyyy-MM-dd");
                 var folderPath = @"C:\Users\hnguyen\Documents\stock-scan-logs";
@@ -111,7 +110,6 @@ namespace StockSignalScanner
                         outputFile.WriteLine(item);
                     }
                 }
-                Process.Start("explorer.exe", scanFolderPath);
             }
         }
 
