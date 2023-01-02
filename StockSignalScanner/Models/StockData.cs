@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json.Linq;
+using StockSignalScanner.Indicators;
 using System;
 using System.Diagnostics;
 using System.Reflection;

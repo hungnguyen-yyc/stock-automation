@@ -1,6 +1,6 @@
 ﻿using StockSignalScanner.Models;
 
-namespace StockSignalScanner
+namespace StockSignalScanner.Indicators
 {
     internal static class StochasticIndicator
     {

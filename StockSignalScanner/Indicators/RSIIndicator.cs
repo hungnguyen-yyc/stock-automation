@@ -1,6 +1,6 @@
 ﻿using StockSignalScanner.Models;
 
-namespace StockSignalScanner
+namespace StockSignalScanner.Indicators
 {
     internal static class RSIIndicator
     {
@@ -41,7 +41,7 @@ namespace StockSignalScanner
                     }
 
                     // Calculate the RSI value
-                    rsiValues.Add(avgLoss == 0 ? 100 : 100 - (100 / (1 + (avgGain / avgLoss))));
+                    rsiValues.Add(avgLoss == 0 ? 100 : 100 - 100 / (1 + avgGain / avgLoss));
                 }
                 else
                 {

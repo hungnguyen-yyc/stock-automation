@@ -1,6 +1,6 @@
 ﻿using StockSignalScanner.Models;
 
-namespace StockSignalScanner
+namespace StockSignalScanner.Indicators
 {
     internal static class MACDIndicator
     {
@@ -44,7 +44,7 @@ namespace StockSignalScanner
 
             for (int i = 0; i < src.Count; i++)
             {
-                decimal previousSum = (i == 0 ? 0 : sum[i - 1]);
+                decimal previousSum = i == 0 ? 0 : sum[i - 1];
                 sum.Add(alpha * src[i] + (1 - alpha) * previousSum);
             }
 
