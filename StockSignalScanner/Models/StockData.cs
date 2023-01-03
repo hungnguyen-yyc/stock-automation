@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json.Linq;
 using StockSignalScanner.Indicators;
 using System;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Reflection;
 using System.Security.Cryptography;
@@ -93,14 +94,36 @@ namespace StockSignalScanner.Models
                                             && RSICrossDirectionLast5Days == CrossDirection.CROSS_BELOW
                                             && StochCrossDirectionLast5Days == CrossDirection.CROSS_BELOW;
 
-        public override string ToString()
+        public string GetTickerStatusLast5Days()
         {
-            return $"{Symbol},{ExchangeShortName},{RSICrossDirectionLast14Days},{StochCrossDirectionLast14Days},{MACDCrossDirectionLast14Days}";
+            var patterns = CandlestickPatternsLast5Days();
+            var patternString = string.Join(" - ", patterns.Select(s => s.ToString()).ToArray());
+            return $"{Symbol}_MACD_{MACDCrossDirectionLast5Days}_STOCHASTICS_{StochCrossDirectionLast5Days}_PATTERNS_{patternString}";
         }
 
-        public string GetRecommendTickerAction()
+        public string GetTickerStatusLast14Days()
         {
-            return $"{Symbol}_RSI_{RSICrossDirectionLast14Days}_MACD_{MACDCrossDirectionLast14Days}_STOCHASTICS_{StochCrossDirectionLast14Days}";
+            var patterns = CandlestickPatternsLast14Days();
+            var patternString = string.Join(" - ", patterns.Select(s => s.ToString()).ToArray());
+            return $"{Symbol}_MACD_{MACDCrossDirectionLast14Days}_STOCHASTICS_{StochCrossDirectionLast14Days}_PATTERNS_{patternString}";
+        }
+
+        private IEnumerable<CandlestickPatternType> CandlestickPatternsLast5Days()
+        {
+            var prices = _priceOrderByDateAsc
+                .Skip(_priceOrderByDateAsc.Count() - 5)
+                .Take(5)
+                .ToList();
+            return CandlestickPatternDetector.Detect(prices);
+        }
+
+        private IEnumerable<CandlestickPatternType> CandlestickPatternsLast14Days()
+        {
+            var prices = _priceOrderByDateAsc
+                .Skip(_priceOrderByDateAsc.Count() - 14)
+                .Take(14)
+                .ToList();
+            return CandlestickPatternDetector.Detect(prices);
         }
 
         /**
@@ -136,7 +159,7 @@ namespace StockSignalScanner.Models
             var crosses = CrossDirectionDetector.GetCrossDirectionWithTime(macdLine, signalLine);
             var latestCrossTime = crosses.LastOrDefault(c => c.Value != CrossDirection.NO_CROSS).Key;
             var latestCrossDirection = crosses.LastOrDefault(c => c.Value != CrossDirection.NO_CROSS).Value;
-            // should check for stoch as well?
+
             if (latestCrossTime != default) 
             {
                 var direction = crosses.Last().Value;

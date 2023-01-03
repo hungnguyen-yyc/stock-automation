@@ -56,19 +56,19 @@ namespace StockSignalScanner
                             {
                                 if (data.HasOverboughtOrOversoldFollowedByMACDCrossLastNDays())
                                 {
-                                    overboughtOrOversoldFollowedByMACDCrossLast5Days.Add(data.GetRecommendTickerAction());
+                                    overboughtOrOversoldFollowedByMACDCrossLast5Days.Add(data.GetTickerStatusLast5Days());
                                 }
                                 if (data.AllCrossesAbove5 || data.AllCrossesBelow5)
                                 {
-                                    allCrosses5.Add(data.GetRecommendTickerAction());
+                                    allCrosses5.Add(data.GetTickerStatusLast5Days());
                                 }
                                 else if (data.AllCrossesAbove14 || data.AllCrossesBelow14)
                                 {
-                                    allCrosses14.Add(data.GetRecommendTickerAction());
+                                    allCrosses14.Add(data.GetTickerStatusLast14Days());
                                 }
                                 else
                                 {
-                                    mix.Add(data.GetRecommendTickerAction());
+                                    mix.Add(data.GetTickerStatusLast5Days());
                                 }
                             }
                         }
