@@ -5,7 +5,7 @@ namespace StockSignalScanner.Indicators
     internal static class StochasticIndicator
     {
 
-        public static (List<decimal> kValues, List<decimal> dValues, List<DateTime> stochasticTimes) GetStochastic(IList<IPrice> prices, int period, int smoothK = 1, int smoothD = 3)
+        public static (List<decimal> kValues, List<decimal> dValues, List<DateTime> stochasticTimes) GetStochastic(IList<IPrice> prices, int period, int smoothK, int smoothD)
         {
             // Initialize lists to store the K, D, and time values
             List<decimal> kValues = new List<decimal>();
@@ -39,13 +39,6 @@ namespace StockSignalScanner.Indicators
                         // Calculate the K value
                         kValues.Add(k);
                     }
-
-                    if (kValues.Count >= smoothK)
-                    {
-                        // Calculate the moving average of the K values
-                        var average = kValues.Skip(kValues.Count - smoothK).Take(smoothK).Average();
-                        kValues[kValues.Count - 1] = average;
-                    }
                 }
                 else
                 {
@@ -67,6 +60,18 @@ namespace StockSignalScanner.Indicators
 
                 // Add the time value
                 stochasticTimes.Add(times[i]);
+            }
+
+            for (int i = kValues.Count - 1; i >= 0; i--)
+            {
+                var ave = kValues.Skip(i - smoothK + 1).Take(smoothK).Average();
+                kValues[i] = ave;
+            }
+
+            for (int i = kValues.Count - 1; i >= 0; i--)
+            {
+                var ave = kValues.Skip(i - smoothD + 1).Take(smoothD).Average();
+                dValues[i] = ave;
             }
 
             // Return the K, D, and time values

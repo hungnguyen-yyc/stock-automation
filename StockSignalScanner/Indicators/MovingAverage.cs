@@ -31,6 +31,37 @@ namespace StockSignalScanner.Indicators
             // Return the list of moving average values
             return movingAverages;
         }
+
+        public static decimal Calculate(IList<decimal> values, int period)
+        {
+            if (values == null)
+            {
+                throw new ArgumentNullException(nameof(values));
+            }
+
+            if (values.Count == 0)
+            {
+                throw new ArgumentException("The input list must not be empty.", nameof(values));
+            }
+
+            if (period <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(period), "The period must be a positive integer.");
+            }
+
+            if (period > values.Count)
+            {
+                throw new ArgumentOutOfRangeException(nameof(period), "The period must not be longer than the number of values in the input list.");
+            }
+
+            decimal sum = 0;
+            for (int i = values.Count - period; i < values.Count; i++)
+            {
+                sum += values[i];
+            }
+
+            return sum / period;
+        }
     }
 
 }

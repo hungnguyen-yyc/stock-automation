@@ -1,4 +1,5 @@
 ﻿using StockSignalScanner.Models;
+using System.Diagnostics;
 
 namespace StockSignalScanner.Indicators
 {
@@ -120,69 +121,85 @@ namespace StockSignalScanner.Indicators
 
         private static bool IsDragonflyDoji(IList<IPrice> prices)
         {
-            // Dragonfly doji is a candlestick pattern with a small body at the top of the price range
-            // The open and close prices are equal and the wicks on both sides are long
+            // Loop through the prices
             for (int i = 0; i < prices.Count; i++)
             {
-                decimal bodySize = Math.Abs(prices[i].Close - prices[i].Open);
-                decimal wickSize = Math.Max(Math.Abs(prices[i].High - prices[i].Close), Math.Abs(prices[i].Low - prices[i].Close));
-                if (bodySize < 0.1m && prices[i].Close == prices[i].Open && wickSize > bodySize)
+                // Check if the current price is a Dragonfly Doji
+                // by checking if the open, high, and close prices are the same
+                // and the low price is significantly lower
+                if (Math.Abs(prices[i].Open - prices[i].High) <= 0.001m &&
+                    Math.Abs(prices[i].Open - prices[i].Close) <= 0.001m &&
+                    prices[i].Low < prices[i].Open)
                 {
                     return true;
                 }
             }
+
             return false;
         }
 
         private static bool IsGravestoneDoji(IList<IPrice> prices)
         {
-            // Gravestone doji is a candlestick pattern with a small body at the bottom of the price range
-            // The open and close prices are equal and the wicks on both sides are long
+            // Loop through the prices
             for (int i = 0; i < prices.Count; i++)
             {
-                decimal bodySize = Math.Abs(prices[i].Close - prices[i].Open);
-                decimal wickSize = Math.Max(Math.Abs(prices[i].High - prices[i].Open), Math.Abs(prices[i].Low - prices[i].Open));
-                if (bodySize < 0.1m && prices[i].Close == prices[i].Open && wickSize > bodySize)
+                // Check if the current price is a Gravestone Doji
+                // by checking if the open, low, and close prices are the same
+                // and the high price is significantly higher
+                if (Math.Abs(prices[i].Open - prices[i].Low) <= 0.001m &&
+                    Math.Abs(prices[i].Open - prices[i].Close) <= 0.001m &&
+                    prices[i].High > prices[i].Open)
                 {
                     return true;
                 }
             }
+
             return false;
         }
+
+
 
         private static bool IsHammer(IList<IPrice> prices)
         {
-            // Hammer is a candlestick pattern with a small body and a long lower wick
-            // The open and close prices can be either above or below the body
+            // Loop through the prices
             for (int i = 0; i < prices.Count; i++)
             {
-                decimal bodySize = Math.Abs(prices[i].Close - prices[i].Open);
-                decimal wickSize = Math.Abs(prices[i].Low - Math.Min(prices[i].Close, prices[i].Open));
-                if (bodySize < 0.1m && wickSize > bodySize)
+                // Check if the current price is a Hammer
+                // by checking if the real body is small and the lower shadow is long
+                // and the close is near the open
+                if (Math.Abs(prices[i].Close - prices[i].Open) <= 0.001m &&
+                    Math.Abs(prices[i].Low - prices[i].Close) >= 2 * Math.Abs((prices[i].Open - prices[i].Close)) &&
+                    Math.Abs(prices[i].Close - prices[i].Open) <= prices[i].High - prices[i].Close)
                 {
                     return true;
                 }
             }
+
             return false;
         }
 
+
         private static bool IsInvertedHammer(IList<IPrice> prices)
         {
-            // An inverted hammer is a bullish candlestick pattern that consists of a small real body with a long lower shadow and little or no upper shadow
-            // It is formed when the security opens, declines significantly, but then closes the day near the open again
-            // An inverted hammer indicates that the security may be starting to reverse its downtrend
+            // Loop through the prices
             for (int i = 0; i < prices.Count; i++)
             {
-                // Check if the candle is a bullish candlestick with a small real body and a long lower shadow and little or no upper shadow
-                if (prices[i].Close > prices[i].Open &&
-                    prices[i].Close - prices[i].Open < prices[i].High - prices[i].Close &&
-                    prices[i].Close - prices[i].Low > 2 * (prices[i].Close - prices[i].Open))
+                // Check if the current price is an Inverted Hammer
+                // by checking if the open, low, and close prices are the same
+                // and the high price is significantly higher
+                // and the upper shadow is at least twice the length of the real body
+                if (Math.Abs(prices[i].Open -prices[i].Low) <= 0.001m &&
+                    Math.Abs(prices[i].Open - prices[i].Close) <= 0.001m &&
+                    prices[i].High > prices[i].Open &&
+                    (prices[i].High - prices[i].Open) >= 2 * (prices[i].Open - prices[i].Low))
                 {
                     return true;
                 }
             }
+
             return false;
         }
+
 
 
         private static bool IsShootingStar(IList<IPrice> prices)
@@ -300,35 +317,43 @@ namespace StockSignalScanner.Indicators
 
         private static bool IsBullishEngulfing(IList<IPrice> prices)
         {
-            // Bullish engulfing is a candlestick pattern with a small black candle followed by a large white candle
-            // The open price of the white candle is within the body of the black candle
-            // The close price of the white candle is at the high of the day
-            for (int i = 0; i < prices.Count - 1; i++)
+            // A bullish engulfing pattern is a two-candlestick pattern that can signal a potential bullish reversal in a downtrend
+            // It is formed when a small bearish candlestick is followed by a large bullish candlestick that completely engulfs the previous candlestick
+            // The large bullish candlestick should have a higher open and close than the previous candlestick, and the small bearish candlestick should have a lower open and close than the previous bullish candlestick
+
+            for (int i = 1; i < prices.Count; i++)
             {
-                decimal bodySize1 = Math.Abs(prices[i].Close - prices[i].Open);
-                decimal bodySize2 = Math.Abs(prices[i + 1].Close - prices[i + 1].Open);
-                if (prices[i].Close < prices[i].Open && prices[i + 1].Close > prices[i + 1].Open && prices[i + 1].Open < prices[i].High && prices[i + 1].Close > prices[i].Close && bodySize1 < bodySize2)
+                // Check if the current candlestick is large and bullish, and if the previous candlestick is small and bearish
+                if (prices[i].Close > prices[i].Open &&
+                    prices[i].Open < prices[i - 1].Close &&
+                    prices[i].Close > prices[i - 1].Open &&
+                    prices[i - 1].Open > prices[i - 1].Close)
                 {
                     return true;
                 }
             }
+
             return false;
         }
+
 
         private static bool IsBearishEngulfing(IList<IPrice> prices)
         {
             // Bearish engulfing is a candlestick pattern with a small white candle followed by a large black candle
             // The open price of the black candle is within the body of the white candle
             // The close price of the black candle is at the low of the day
-            for (int i = 0; i < prices.Count - 1; i++)
+            for (int i = 1; i < prices.Count; i++)
             {
-                decimal bodySize1 = Math.Abs(prices[i].Close - prices[i].Open);
-                decimal bodySize2 = Math.Abs(prices[i + 1].Close - prices[i + 1].Open);
-                if (prices[i].Close < prices[i].Open && prices[i + 1].Close > prices[i + 1].Open && prices[i + 1].Open < prices[i].High && prices[i + 1].Close < prices[i].Close && bodySize1 < bodySize2)
+                // Check if the current candlestick is large and bullish, and if the previous candlestick is small and bearish
+                if (prices[i].Close < prices[i].Open &&
+                    prices[i].Open > prices[i - 1].Close &&
+                    prices[i].Close < prices[i - 1].Open &&
+                    prices[i - 1].Open < prices[i - 1].Close)
                 {
                     return true;
                 }
             }
+
             return false;
         }
 
@@ -341,7 +366,10 @@ namespace StockSignalScanner.Indicators
             {
                 decimal bodySize = Math.Abs(prices[i].Close - prices[i].Open);
                 decimal midpoint = prices[i].Close - (bodySize / 2);
-                if (prices[i].Close < prices[i].Open && prices[i + 1].Close > prices[i + 1].Open && prices[i + 1].Open < midpoint && prices[i + 1].Close > midpoint)
+                if (prices[i].Close < prices[i].Open 
+                    && prices[i + 1].Close > prices[i + 1].Open 
+                    && prices[i + 1].Open < midpoint 
+                    && prices[i + 1].Close > midpoint)
                 {
                     return true;
                 }
@@ -351,19 +379,23 @@ namespace StockSignalScanner.Indicators
 
         private static bool IsHangingMan(IList<IPrice> prices)
         {
-            // Hanging man is a candlestick pattern with a small black candle and a long wick on the bottom
-            // The open and close prices of the candle are at the high of the day
-            // The low price of the candle is significantly lower than the high price
+            // The Hanging Man pattern is a bearish reversal pattern that is formed when the price opens near the top of the period and closes near the bottom
+            // It is characterized by a small real body, a long lower shadow, and little or no upper shadow
+            // The Hanging Man indicates that the bulls were able to push the price up initially, but the bears were able to push the price down by the end of the period
             for (int i = 0; i < prices.Count; i++)
             {
-                decimal bodySize = Math.Abs(prices[i].Close - prices[i].Open);
-                if (prices[i].Close < prices[i].Open && prices[i].Low < prices[i].Close - (bodySize * 2))
+                // Check if the candle is a bearish candlestick with a small real body, a long lower shadow, and little or no upper shadow
+                if (prices[i].Close < prices[i].Open &&
+                    prices[i].Close - prices[i].Low > 2 * (prices[i].Open - prices[i].Close) &&
+                    (prices[i].High - prices[i].Open < prices[i].Close - prices[i].Open ||
+                     prices[i].High - prices[i].Close < prices[i].Open - prices[i].Close))
                 {
                     return true;
                 }
             }
             return false;
         }
+
 
         private static bool IsDarkCloudCover(IList<IPrice> prices)
         {
@@ -372,8 +404,11 @@ namespace StockSignalScanner.Indicators
             // The close price of the black candle is within the body of the white candle
             for (int i = 0; i < prices.Count - 1; i++)
             {
-                decimal bodySize = Math.Abs(prices[i].Close - prices[i].Open);
-                if (prices[i].Close > prices[i].Open && prices[i + 1].Close < prices[i + 1].Open && prices[i + 1].Open > prices[i].High && prices[i + 1].Close < prices[i].Close + bodySize)
+                decimal bodySize = Math.Abs(prices[i].High - prices[i].Close)/2;
+                if (prices[i].Close > prices[i].Open 
+                    && prices[i + 1].Close < prices[i + 1].Open 
+                    && prices[i + 1].Open > prices[i].Close 
+                    && prices[i + 1].Close < bodySize)
                 {
                     return true;
                 }
@@ -386,18 +421,18 @@ namespace StockSignalScanner.Indicators
             // Spinning top is a candlestick pattern with a small body and long wicks on both ends
             // The open, close, and high prices of the candle are within a small range
             // The low price of the candle is significantly lower or higher than the other prices
+            bool isSpinningTop = false;
             for (int i = 0; i < prices.Count; i++)
             {
-                decimal bodySize = Math.Abs(prices[i].Close - prices[i].Open);
-                decimal range = Math.Abs(prices[i].High - prices[i].Low);
-                if (range > (bodySize * 2) && bodySize < (range / 2))
+                var price = prices[i];
+                isSpinningTop = Math.Abs(price.Open - price.Close) < 0.001m && Math.Abs(price.High - price.Low) > 2 * Math.Abs(price.Open - price.Close);
+                if (isSpinningTop)
                 {
                     return true;
                 }
             }
             return false;
         }
-
         private static bool IsRisingThreeMethods(IList<IPrice> prices)
         {
             // Rising three methods is a candlestick pattern with a long white candle followed by three black candles followed by a long white candle
@@ -408,7 +443,7 @@ namespace StockSignalScanner.Indicators
                 for (int j = 0; j < 5; j++)
                 {
                     if (j == 0 && prices[i + j].Close < prices[i + j].Open ||
-                        j == 1 && prices[i + j].Close > prices[i + j].Open ||
+                    j == 1 && prices[i + j].Close > prices[i + j].Open ||
                         j == 2 && prices[i + j].Close > prices[i + j].Open ||
                         j == 3 && prices[i + j].Close > prices[i + j].Open ||
                         j == 4 && prices[i + j].Close < prices[i + j].Open)
@@ -466,8 +501,8 @@ namespace StockSignalScanner.Indicators
                 // that is completely contained within the vertical range of the first candle and closes lower within the body of the first candle
                 if (prices[i].Close > prices[i].Open &&
                     prices[i + 1].Close < prices[i + 1].Open &&
-                    prices[i + 1].Close > Math.Min(prices[i].Close, prices[i].Open) &&
-                    prices[i + 1].Close < Math.Max(prices[i].Close, prices[i].Open))
+                    prices[i + 1].Close > prices[i].Open &&
+                    prices[i + 1].Open < prices[i].Close)
                 {
                     return true;
                 }
@@ -490,8 +525,8 @@ namespace StockSignalScanner.Indicators
                 // that is completely contained within the vertical range of the first candle and closes higher within the body of the first candle
                 if (prices[i].Close < prices[i].Open &&
                     prices[i + 1].Close > prices[i + 1].Open &&
-                    prices[i + 1].Close > Math.Min(prices[i].Close, prices[i].Open) &&
-                    prices[i + 1].Close < Math.Max(prices[i].Close, prices[i].Open))
+                    prices[i + 1].Close < prices[i].Open &&
+                    prices[i + 1].Open > prices[i].Close)
                 {
                     return true;
                 }

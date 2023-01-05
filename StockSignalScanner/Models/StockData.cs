@@ -179,11 +179,13 @@ namespace StockSignalScanner.Models
                 }
                 if (direction.Equals(CrossDirection.CROSS_BELOW)) 
                 {
-                    return kLine.Skip(index - 1 - n).Take(n).Select(d => d.Item2).All(k => k >= 70) && dLine.Skip(index - 1 - n).Take(n).Select(d => d.Item2).All(d => d >= 70); // suppose to be 80 but change to 70 because overbought/reversal likely to be over 70
+                    var overbought = kLine.Skip(index - 1 - n).Take(n).Select(d => d.Item2).All(k => k >= 70) && dLine.Skip(index - 1 - n).Take(n).Select(d => d.Item2).All(d => d >= 70); // suppose to be 80 but change to 70 because overbought/reversal likely to be over 70
+                    return overbought && StochCrossDirectionLast5Days == CrossDirection.CROSS_BELOW;
                 }
                 if (direction.Equals(CrossDirection.CROSS_ABOVE))
                 {
-                    return kLine.Skip(index - 1 - n).Take(n).Select(d => d.Item2).All(k => k <= 20) && dLine.Skip(index - 1 - n).Take(n).Select(d => d.Item2).All(d => d <= 20);
+                    var oversold = kLine.Skip(index - 1 - n).Take(n).Select(d => d.Item2).All(k => k <= 20) && dLine.Skip(index - 1 - n).Take(n).Select(d => d.Item2).All(d => d <= 20);
+                    return oversold && StochCrossDirectionLast5Days == CrossDirection.CROSS_ABOVE;
                 }
                 return false;
             }
@@ -194,7 +196,8 @@ namespace StockSignalScanner.Models
         {
             (List<decimal> rsiValues, List<DateTime> rsiTimes) = RSIIndicator.GetRSI(_priceOrderByDateAsc, _rsiPeriod);
             (List<decimal> macdValues, List<decimal> macdSignalValues, List<DateTime> macdTimes) = MACDIndicator.GetMACD(_priceOrderByDateAsc, _macdShortPeriod, _macdLongPeriod, _macdSignalPeriod);
-            (List<decimal> kValues, List<decimal> dValues, List<DateTime> stochasticTimes) = StochasticIndicator.GetStochastic(_priceOrderByDateAsc, _stochasticPeriod);
+            (List<decimal> kValues, List<decimal> dValues, List<DateTime> stochasticTimes) = StochasticIndicator.GetStochastic(_priceOrderByDateAsc, _stochasticPeriod, 7, 7);
+
 
             foreach (var days in CROSSES_IN_LAST_DAYS)
             {

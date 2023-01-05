@@ -230,7 +230,7 @@ namespace StockSignalScanner
                 }
 
                 Console.WriteLine($"Analyzing data for {ticker}");
-                return new StockDataAggregator(tickerHistoricalPrices.Symbol, tickerHistoricalPrices.Historical, 5, 8, 21, 5, 14, 4 , 4);
+                return new StockDataAggregator(tickerHistoricalPrices.Symbol, tickerHistoricalPrices.Historical, 5, 8, 21, 5, 14, 7 , 7);
             }
             return null;
         }
