@@ -94,6 +94,16 @@ namespace StockSignalScanner.Models
                                             && RSICrossDirectionLast5Days == CrossDirection.CROSS_BELOW
                                             && StochCrossDirectionLast5Days == CrossDirection.CROSS_BELOW;
 
+        public ZoneState CheckInSupportZoneLastNDays(int period)
+        {
+            return SupportZone.IsInSupportZone(_priceOrderByDateAsc, period);
+        }
+
+        public ZoneState CheckInResistanceZoneLastNDays(int period)
+        {
+            return ResistanceZone.IsInResistanceZone(_priceOrderByDateAsc, period);
+        }
+
         public string GetTickerStatusLast5Days()
         {
             var patterns = CandlestickPatternsLast5Days();
