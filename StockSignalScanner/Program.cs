@@ -18,7 +18,7 @@ namespace StockSignalScanner
             using (var httpClient = new HttpClient())
             {
                 // https://financialmodelingprep.com/api/v3/financial-statement-symbol-lists?apikey=e2b2a6d07ebf89ca33bb96b0b590daab
-                var northAmericaStocks = await GetStocksFromUSCANExchanges(10000000, API_KEY); // update to get correct exchanges
+                var northAmericaStocks = await GetStocksFromUSCANExchanges(5000000, API_KEY);
 
                 var random = new Random();
                 var nowTime = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
@@ -26,7 +26,6 @@ namespace StockSignalScanner
                 var folderPath = @"C:\Users\hnguyen\Documents\stock-scan-logs";
                 var scanFolderPath = Path.Combine(folderPath, nowDate);
                 var allCrosses5 = new List<string>();
-                var allCrosses14 = new List<string>();
                 var inSupportZone90 = new List<string>();
                 var inSupportZone180 = new List<string>();
                 var inSupportZone360 = new List<string>();
@@ -36,6 +35,9 @@ namespace StockSignalScanner
                 var inResistanceZone360 = new List<string>();
                 var inResistanceZone540 = new List<string>();
                 var overboughtOrOversoldFollowedByMACDCrossLast5Days = new List<string>();
+                var trendlineHighs180 = new List<string>();
+                var fibonacciLast180s = new List<string>();
+                var fibonacciLast90s = new List<string>();
                 var mix = new List<string>();
                 try
                 {
@@ -70,8 +72,23 @@ namespace StockSignalScanner
                                 var resistanceZoneState180 = data.CheckInResistanceZoneLastNDays(180);
                                 var resistanceZoneState360 = data.CheckInResistanceZoneLastNDays(360);
                                 var resistanceZoneState540 = data.CheckInResistanceZoneLastNDays(540);
+                                var trendlineHigh180 = data.TrendlineHigh(180);
+                                var fibonacciLast180 = data.GetCurrentFibonacciRetracementLevelLastNDays(180);
+                                var fibonacciLast90 = data.GetCurrentFibonacciRetracementLevelLastNDays(90);
 
+                                if (fibonacciLast180 != null)
+                                {
+                                    fibonacciLast180s.Add($"{data.Symbol}-{fibonacciLast180.ToString()}");
+                                }
+                                if (fibonacciLast90 != null)
+                                {
+                                    fibonacciLast90s.Add($"{data.Symbol}-{fibonacciLast90.ToString()}");
+                                }
 
+                                if (trendlineHigh180.Length > 0)
+                                {
+                                    trendlineHighs180.Add($"{data.Symbol}-{trendlineHigh180}");
+                                }
                                 if (supportZoneState90.IsInZone || supportZoneState90.IsAboutEnterTheZone || supportZoneState90.IsAboutOutOfTheZone)
                                 {
                                     inSupportZone90.Add($"{data.Symbol}-{supportZoneState90.IsInZone}-{supportZoneState90.IsAboutOutOfTheZone}-{supportZoneState90.IsAboutEnterTheZone}-{supportZoneState90.ZoneHigh}-{supportZoneState90.ZoneLow}");
@@ -106,24 +123,17 @@ namespace StockSignalScanner
                                     inResistanceZone540.Add($"{data.Symbol}-{resistanceZoneState540.IsInZone}-{resistanceZoneState540.IsAboutOutOfTheZone}-{resistanceZoneState540.IsAboutEnterTheZone}-{resistanceZoneState540.ZoneHigh}-{resistanceZoneState540.ZoneLow}");
                                 }
 
-
-
-
                                 if (data.HasOverboughtOrOversoldFollowedByMACDCrossLastNDays())
                                 {
-                                    overboughtOrOversoldFollowedByMACDCrossLast5Days.Add(data.GetTickerStatusLast5Days());
+                                    overboughtOrOversoldFollowedByMACDCrossLast5Days.Add(data.GetTickerStatusLastNDays(5));
                                 }
-                                if (data.AllCrossesAbove5 || data.AllCrossesBelow5)
+                                if (data.CheckAllCrossesWithDirectionInLastNDays(5, CrossDirection.CROSS_ABOVE) || data.CheckAllCrossesWithDirectionInLastNDays(5, CrossDirection.CROSS_BELOW))
                                 {
-                                    allCrosses5.Add(data.GetTickerStatusLast5Days());
-                                }
-                                else if (data.AllCrossesAbove14 || data.AllCrossesBelow14)
-                                {
-                                    allCrosses14.Add(data.GetTickerStatusLast14Days());
+                                    allCrosses5.Add(data.GetTickerStatusLastNDays(5));
                                 }
                                 else
                                 {
-                                    mix.Add(data.GetTickerStatusLast5Days());
+                                    mix.Add(data.GetTickerStatusLastNDays(5));
                                 }
                             }
                         }
@@ -140,13 +150,6 @@ namespace StockSignalScanner
                 using (StreamWriter outputFile = new StreamWriter(Path.Combine(scanFolderPath, "all-crosses-last-5-days.txt"), true))
                 {
                     foreach (var item in allCrosses5)
-                    {
-                        outputFile.WriteLine(item);
-                    }
-                }
-                using (StreamWriter outputFile = new StreamWriter(Path.Combine(scanFolderPath, "all-crosses-last-14-days.txt"), true))
-                {
-                    foreach (var item in allCrosses14)
                     {
                         outputFile.WriteLine(item);
                     }
@@ -214,9 +217,16 @@ namespace StockSignalScanner
                         outputFile.WriteLine(item);
                     }
                 }
-                using (StreamWriter outputFile = new StreamWriter(Path.Combine(scanFolderPath, "mix.txt"), true))
+                using (StreamWriter outputFile = new StreamWriter(Path.Combine(scanFolderPath, "fibonacci-180.txt"), true))
                 {
-                    foreach (var item in mix)
+                    foreach (var item in fibonacciLast180s)
+                    {
+                        outputFile.WriteLine(item);
+                    }
+                }
+                using (StreamWriter outputFile = new StreamWriter(Path.Combine(scanFolderPath, "fibonacci-90.txt"), true))
+                {
+                    foreach (var item in fibonacciLast90s)
                     {
                         outputFile.WriteLine(item);
                     }

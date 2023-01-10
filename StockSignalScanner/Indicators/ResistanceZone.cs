@@ -25,7 +25,7 @@ namespace StockSignalScanner.Indicators
             decimal resistanceZoneHigh = highest;
             decimal resistanceZoneLow = highest;
             int start = prices.Count - period < 0 ? 0 : prices.Count - period;
-            for (int i = start; i < prices.Count; i++)
+            for (int i = start; i < prices.Count - 2; i++)// -2 so that we don't count the current price to the picture
             {
                 highest = Math.Max(highest, prices[i].High);
             }
@@ -40,16 +40,7 @@ namespace StockSignalScanner.Indicators
             bool isAboutToLeaveresistanceZone = false;
             if (isInresistanceZone)
             {
-                // Calculate the average of the last "period" number of prices
-                decimal sum = 0;
-                for (int i = start; i < prices.Count; i++)
-                {
-                    sum += prices[i].Close;
-                }
-                decimal average = sum / period;
-
-                // If the average of the last "period" number of prices is higher than the current price, it may be a sign that the price is about to head out of the resistance zone
-                isAboutToLeaveresistanceZone = average < currentPrice;
+                isAboutToLeaveresistanceZone = currentPrice <= resistanceZoneHigh * (1 - margin*3) || currentPrice >= resistanceZoneLow + (1 + margin*3);
             }
 
             return new ZoneState(isInresistanceZone, isAboutToLeaveresistanceZone, isAboutEnterZone, resistanceZoneHigh, resistanceZoneLow);

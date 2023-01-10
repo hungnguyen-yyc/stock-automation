@@ -10,7 +10,6 @@ namespace StockSignalScanner.Models
 {
     public class StockDataAggregator : StockInfo
     {
-        private static readonly int[] CROSSES_IN_LAST_DAYS = new int[] { 14, 5 }; // TODO: update StockData to handle crosses value better
         private readonly IList<IPrice> _priceOrderByDateAsc;
         private readonly int _rsiPeriod;
         private readonly int _macdShortPeriod;
@@ -19,6 +18,14 @@ namespace StockSignalScanner.Models
         private readonly int _stochasticPeriod;
         private readonly int _smoothK;
         private readonly int _smoothD;
+        List<decimal> rsiValues;
+        List<DateTime> rsiTimes;
+        List<decimal> macdValues;
+        List<decimal> macdSignalValues;
+        List<DateTime> macdTimes;
+        List<decimal> kValues;
+        List<decimal> dValues;
+        List<DateTime> stochasticTimes;
 
         public StockDataAggregator(string ticker, IList<HistoricalPrice> prices, int rsiPeriod, int macdShortPeriod, int macdLongPeriod, int macdSignalPeriod, int stochasticPeriod, int smoothK, int smoothD)
         {
@@ -53,46 +60,27 @@ namespace StockSignalScanner.Models
             Aggregate();
         }
 
-        public bool StochasticInOverboughtLast5Days { get; private set; }
-        public bool StochasticInOversoldLast5Days { get; private set;  }
-        public bool StochasticInOverboughtLast14Days { get; private set; }
-        public bool StochasticInOversoldLast14Days { get; private set; }
         public List<StockDataCandle> Candles { get; }
 
-        public CrossDirection RSICrossDirectionLast14Days { get; private set; }
-        public CrossDirection MACDCrossDirectionLast14Days { get; private set; }
-        public CrossDirection StochCrossDirectionLast14Days { get; private set; }
-        public CrossDirection RSICrossDirectionLast5Days { get; private set; }
-        public CrossDirection MACDCrossDirectionLast5Days { get; private set; }
-        public CrossDirection StochCrossDirectionLast5Days { get; private set; }
+        public bool CheckAllCrossesWithDirectionInLastNDays(int days, CrossDirection direction)
+        {
+            return GetMACDCrossDirectionInLastNDays(days) == direction
+                                            && GetRSICross50DirectionInLastNDays(days) == direction
+                                            && GetStochasticCrossDirectionInLastNDays(days) == direction;
+        }
+        public string TrendlineHigh(int lastNDays)
+        {
+            var timeSpan = new TimeSpan(lastNDays, 0, 0, 0);
+            var start = DateTimeOffset.Now.Subtract(timeSpan);
+            var end = DateTimeOffset.Now;
+            // var bars = LinearTrendlineDetector.FindTrendline(_priceOrderByDateAsc.Select(s => (s.Date, s.High)).ToList(), out start, out end);
+            return $"{start.ToString("yyyy-MM-dd")}-{end.ToString("yyyy-MM-dd")}";
+        }
 
-        public bool MACDRSICrossesAbove14 => MACDCrossDirectionLast14Days == CrossDirection.CROSS_ABOVE
-                                            && RSICrossDirectionLast14Days == CrossDirection.CROSS_ABOVE;
-
-        public bool MACDRSICrossesBelow14 => MACDCrossDirectionLast14Days == CrossDirection.CROSS_BELOW
-                                            && RSICrossDirectionLast14Days == CrossDirection.CROSS_BELOW;
-
-        public bool MACDRSICrossesAbove5 => MACDCrossDirectionLast5Days == CrossDirection.CROSS_ABOVE
-                                            && RSICrossDirectionLast5Days == CrossDirection.CROSS_ABOVE;
-
-        public bool MACDRSICrossesBelow5 => MACDCrossDirectionLast5Days == CrossDirection.CROSS_BELOW
-                                            && RSICrossDirectionLast5Days == CrossDirection.CROSS_BELOW;
-
-        public bool AllCrossesAbove14 => MACDCrossDirectionLast14Days == CrossDirection.CROSS_ABOVE
-                                            && RSICrossDirectionLast14Days == CrossDirection.CROSS_ABOVE
-                                            && StochCrossDirectionLast14Days == CrossDirection.CROSS_ABOVE;
-
-        public bool AllCrossesBelow14 => MACDCrossDirectionLast14Days == CrossDirection.CROSS_BELOW
-                                            && RSICrossDirectionLast14Days == CrossDirection.CROSS_BELOW
-                                            && StochCrossDirectionLast14Days == CrossDirection.CROSS_BELOW;
-
-        public bool AllCrossesAbove5 => MACDCrossDirectionLast5Days == CrossDirection.CROSS_ABOVE
-                                            && RSICrossDirectionLast5Days == CrossDirection.CROSS_ABOVE
-                                            && StochCrossDirectionLast5Days == CrossDirection.CROSS_ABOVE;
-
-        public bool AllCrossesBelow5 => MACDCrossDirectionLast5Days == CrossDirection.CROSS_BELOW
-                                            && RSICrossDirectionLast5Days == CrossDirection.CROSS_BELOW
-                                            && StochCrossDirectionLast5Days == CrossDirection.CROSS_BELOW;
+        public CurrentPriceFibonacciRetracementLevel GetCurrentFibonacciRetracementLevelLastNDays(int startIndex)
+        {
+            return Fibonacci.GetCurrentPriceState(_priceOrderByDateAsc, startIndex, _priceOrderByDateAsc.Count() - 1);
+        }
 
         public ZoneState CheckInSupportZoneLastNDays(int period)
         {
@@ -104,34 +92,18 @@ namespace StockSignalScanner.Models
             return ResistanceZone.IsInResistanceZone(_priceOrderByDateAsc, period);
         }
 
-        public string GetTickerStatusLast5Days()
+        public string GetTickerStatusLastNDays(int days)
         {
-            var patterns = CandlestickPatternsLast5Days();
+            var patterns = CandlestickPatternsLastNDays(days);
             var patternString = string.Join(" - ", patterns.Select(s => s.ToString()).ToArray());
-            return $"{Symbol}_MACD_{MACDCrossDirectionLast5Days}_STOCHASTICS_{StochCrossDirectionLast5Days}_PATTERNS_{patternString}";
+            return $"{Symbol}_MACD_{GetMACDCrossDirectionInLastNDays(days)}_RSI_{GetRSICross50DirectionInLastNDays(days)}_STOCHASTICS_{GetStochasticCrossDirectionInLastNDays(days)}_PATTERNS_{patternString}";
         }
 
-        public string GetTickerStatusLast14Days()
-        {
-            var patterns = CandlestickPatternsLast14Days();
-            var patternString = string.Join(" - ", patterns.Select(s => s.ToString()).ToArray());
-            return $"{Symbol}_MACD_{MACDCrossDirectionLast14Days}_STOCHASTICS_{StochCrossDirectionLast14Days}_PATTERNS_{patternString}";
-        }
-
-        private IEnumerable<CandlestickPatternType> CandlestickPatternsLast5Days()
+        private IEnumerable<CandlestickPatternType> CandlestickPatternsLastNDays(int days)
         {
             var prices = _priceOrderByDateAsc
-                .Skip(_priceOrderByDateAsc.Count() - 5)
-                .Take(5)
-                .ToList();
-            return CandlestickPatternDetector.Detect(prices);
-        }
-
-        private IEnumerable<CandlestickPatternType> CandlestickPatternsLast14Days()
-        {
-            var prices = _priceOrderByDateAsc
-                .Skip(_priceOrderByDateAsc.Count() - 14)
-                .Take(14)
+                .Skip(_priceOrderByDateAsc.Count() - days)
+                .Take(days)
                 .ToList();
             return CandlestickPatternDetector.Detect(prices);
         }
@@ -147,9 +119,14 @@ namespace StockSignalScanner.Models
          *  - check for in n days, there is no opposite cross in MACD to prevent fake cross
          *    e.g: if cross above and in 5 days if there's a cross under, that means it can be a fake cross
          */
-        public bool HasOverboughtOrOversoldFollowedByMACDCrossLastNDays(int n = 5)
+        public bool HasOverboughtOrOversoldFollowedByMACDCrossLastNDays(int n = 5, int margin = 5)
         {
-            var roomToSkip = -5 - n; // n is the number we want to check for cross in, but we also want to check for a number before that(5);
+            /**
+             * n is the number we want to check for cross in, 
+             * but we also want to check for a number before that (margin)
+             * just to make sure lines explicit cross eachother
+             */
+            var roomToSkip = - margin - n; 
             (List<decimal> macdValues, List<decimal> signalValues, List<DateTime> macdTimes) = MACDIndicator.GetMACD(_priceOrderByDateAsc, _macdShortPeriod, _macdLongPeriod, _macdSignalPeriod);
             (List<decimal> kValues, List<decimal> dValues, List<DateTime> stochasticTimes) = StochasticIndicator.GetStochastic(_priceOrderByDateAsc, _stochasticPeriod, _smoothK, _smoothD);
             var macdLine = macdTimes
@@ -190,52 +167,58 @@ namespace StockSignalScanner.Models
                 if (direction.Equals(CrossDirection.CROSS_BELOW)) 
                 {
                     var overbought = kLine.Skip(index - 1 - n).Take(n).Select(d => d.Item2).All(k => k >= 70) && dLine.Skip(index - 1 - n).Take(n).Select(d => d.Item2).All(d => d >= 70); // suppose to be 80 but change to 70 because overbought/reversal likely to be over 70
-                    return overbought && StochCrossDirectionLast5Days == CrossDirection.CROSS_BELOW;
+                    return overbought && GetStochasticCrossDirectionInLastNDays(n) == CrossDirection.CROSS_BELOW;
                 }
                 if (direction.Equals(CrossDirection.CROSS_ABOVE))
                 {
                     var oversold = kLine.Skip(index - 1 - n).Take(n).Select(d => d.Item2).All(k => k <= 20) && dLine.Skip(index - 1 - n).Take(n).Select(d => d.Item2).All(d => d <= 20);
-                    return oversold && StochCrossDirectionLast5Days == CrossDirection.CROSS_ABOVE;
+                    return oversold && GetStochasticCrossDirectionInLastNDays(n) == CrossDirection.CROSS_ABOVE;
                 }
                 return false;
             }
             return false;
         }
 
+        public CrossDirection GetMACDCrossDirectionInLastNDays(int days)
+        {
+            List<(DateTime, decimal)> macdLine = macdTimes.Zip(macdValues, (t, v) => (t, v)).Skip(macdTimes.Count - days).ToList();
+            List<(DateTime, decimal)> signalLine = macdTimes.Zip(macdSignalValues, (t, v) => (t, v)).Skip(macdTimes.Count - days).ToList();
+            return CrossDirectionDetector.GetCrossDirection(macdLine, signalLine);
+        }
+
+        public CrossDirection GetStochasticCrossDirectionInLastNDays(int days)
+        {
+            List<(DateTime, decimal)> kLine = stochasticTimes.Zip(kValues, (t, v) => (t, v)).Skip(macdTimes.Count - days).ToList();
+            List<(DateTime, decimal)> dLine = stochasticTimes.Zip(dValues, (t, v) => (t, v)).Skip(macdTimes.Count - days).ToList();
+            return CrossDirectionDetector.GetCrossDirection(kLine, dLine);
+        }
+
+        public bool IsOverboughtByStochasticInLastNDays(int days)
+        {
+            List<(DateTime, decimal)> kLine = stochasticTimes.Zip(kValues, (t, v) => (t, v)).Skip(macdTimes.Count - days).ToList();
+            List<(DateTime, decimal)> dLine = stochasticTimes.Zip(dValues, (t, v) => (t, v)).Skip(macdTimes.Count - days).ToList();
+            return kLine.Select(k => k.Item2).Any(k => k >= 80) && dLine.Select(d => d.Item2).Any(d => d >= 80);
+        }
+
+        public bool IsOversoldByStochasticInLastNDays(int days)
+        {
+            List<(DateTime, decimal)> kLine = stochasticTimes.Zip(kValues, (t, v) => (t, v)).Skip(macdTimes.Count - days).ToList();
+            List<(DateTime, decimal)> dLine = stochasticTimes.Zip(dValues, (t, v) => (t, v)).Skip(macdTimes.Count - days).ToList();
+            return kLine.Select(k => k.Item2).Any(k => k <= 20m) && dLine.Select(d => d.Item2).Any(d => d <= 20);
+        }
+
+        public CrossDirection GetRSICross50DirectionInLastNDays(int days)
+        {
+            List<(DateTime, decimal)> rsiLine = rsiTimes.Zip(rsiValues, (t, v) => (t, v)).Skip(macdTimes.Count - days).ToList();
+            List<(DateTime, decimal)> rsi50Line = rsiTimes.Select(r => (r, 50m)).Take(days).ToList();
+            return CrossDirectionDetector.GetCrossDirection(rsiLine, rsi50Line);
+        }
+
         private void Aggregate()
         {
-            (List<decimal> rsiValues, List<DateTime> rsiTimes) = RSIIndicator.GetRSI(_priceOrderByDateAsc, _rsiPeriod);
-            (List<decimal> macdValues, List<decimal> macdSignalValues, List<DateTime> macdTimes) = MACDIndicator.GetMACD(_priceOrderByDateAsc, _macdShortPeriod, _macdLongPeriod, _macdSignalPeriod);
-            (List<decimal> kValues, List<decimal> dValues, List<DateTime> stochasticTimes) = StochasticIndicator.GetStochastic(_priceOrderByDateAsc, _stochasticPeriod, 7, 7);
-
-
-            foreach (var days in CROSSES_IN_LAST_DAYS)
-            {
-                List<(DateTime, decimal)> macdLine = macdTimes.Zip(macdValues, (t, v) => (t, v)).Skip(macdTimes.Count - days).ToList();
-                List<(DateTime, decimal)> signalLine = macdTimes.Zip(macdSignalValues, (t, v) => (t, v)).Skip(macdTimes.Count - days).ToList();
-                List<(DateTime, decimal)> kLine = stochasticTimes.Zip(kValues, (t, v) => (t, v)).Skip(macdTimes.Count - days).ToList();
-                List<(DateTime, decimal)> dLine = stochasticTimes.Zip(dValues, (t, v) => (t, v)).Skip(macdTimes.Count - days).ToList();
-                List<(DateTime, decimal)> rsiLine = rsiTimes.Zip(rsiValues, (t, v) => (t, v)).Skip(macdTimes.Count - days).ToList();
-                List<(DateTime, decimal)> rsi50Line = rsiTimes.Select(r => (r, 50m)).Take(days).ToList();
-
-                // base on this https://www.youtube.com/watch?v=510G39RXuPE&t=421s
-                if (days == 14)
-                {
-                    MACDCrossDirectionLast14Days = CrossDirectionDetector.GetCrossDirection(macdLine, signalLine);
-                    StochCrossDirectionLast14Days = CrossDirectionDetector.GetCrossDirection(kLine, dLine);
-                    RSICrossDirectionLast14Days = CrossDirectionDetector.GetCrossDirection(rsiLine, rsi50Line);
-                    StochasticInOverboughtLast14Days = kLine.Select(k => k.Item2).Any(k => k >= 80) && dLine.Select(d => d.Item2).Any(d => d >= 80);
-                    StochasticInOversoldLast14Days = kLine.Select(k => k.Item2).Any(k => k <= 20m) && dLine.Select(d => d.Item2).Any(d => d <= 20);
-                }
-                if (days == 5)
-                {
-                    MACDCrossDirectionLast5Days = CrossDirectionDetector.GetCrossDirection(macdLine, signalLine);
-                    StochCrossDirectionLast5Days = CrossDirectionDetector.GetCrossDirection(kLine, dLine);
-                    RSICrossDirectionLast5Days = CrossDirectionDetector.GetCrossDirection(rsiLine, rsi50Line);
-                    StochasticInOverboughtLast5Days = kLine.Select(k => k.Item2).Any(k => k >= 80) && dLine.Select(d => d.Item2).Any(d => d >= 80);
-                    StochasticInOversoldLast5Days = kLine.Select(k => k.Item2).Any(k => k <= 20) && dLine.Select(d => d.Item2).Any(d => d <= 20);
-                }
-            }
+            (rsiValues, rsiTimes) = RSIIndicator.GetRSI(_priceOrderByDateAsc, _rsiPeriod);
+            (macdValues, macdSignalValues, macdTimes) = MACDIndicator.GetMACD(_priceOrderByDateAsc, _macdShortPeriod, _macdLongPeriod, _macdSignalPeriod);
+            (kValues, dValues, stochasticTimes) = StochasticIndicator.GetStochastic(_priceOrderByDateAsc, _stochasticPeriod, _smoothK, _smoothD);
 
             // Loop through the RSI values
             for (int i = 0; i < rsiValues.Count; i++)
