@@ -9,7 +9,7 @@ namespace StockSignalScanner.Indicators
 {
     public static class MovingAverage
     {
-        public static List<decimal> Calculate(List<IPrice> prices, int period)
+        public static List<decimal> CalculateSMA(List<IPrice> prices, int period)
         {
             // Initialize a list to store the moving average values
             var movingAverages = new List<decimal>();
@@ -32,35 +32,18 @@ namespace StockSignalScanner.Indicators
             return movingAverages;
         }
 
-        public static decimal Calculate(IList<decimal> values, int period)
+        public static List<decimal> CalculateEMA(List<decimal> src, int length)
         {
-            if (values == null)
+            decimal alpha = 2.0m / (length + 1);
+            List<decimal> sum = new List<decimal>();
+
+            for (int i = 0; i < src.Count; i++)
             {
-                throw new ArgumentNullException(nameof(values));
+                decimal previousSum = i == 0 ? 0 : sum[i - 1];
+                sum.Add(alpha * src[i] + (1 - alpha) * previousSum);
             }
 
-            if (values.Count == 0)
-            {
-                throw new ArgumentException("The input list must not be empty.", nameof(values));
-            }
-
-            if (period <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(period), "The period must be a positive integer.");
-            }
-
-            if (period > values.Count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(period), "The period must not be longer than the number of values in the input list.");
-            }
-
-            decimal sum = 0;
-            for (int i = values.Count - period; i < values.Count; i++)
-            {
-                sum += values[i];
-            }
-
-            return sum / period;
+            return sum;
         }
     }
 

@@ -16,7 +16,7 @@ namespace StockSignalScanner.Indicators
             var atrValues = AverageTrueRange.Calculate(prices, atrPeriod);
 
             // Calculate the moving average values
-            var movingAverages = MovingAverage.Calculate(prices, period);
+            var movingAverages = MovingAverage.CalculateSMA(prices, period);
 
             // Initialize a list to store the Keltner Channel values
             var keltnerChannels = new List<(decimal LowerChannel, decimal UpperChannel)>();

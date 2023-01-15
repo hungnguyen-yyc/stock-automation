@@ -18,14 +18,13 @@ namespace StockSignalScanner
             using (var httpClient = new HttpClient())
             {
                 // https://financialmodelingprep.com/api/v3/financial-statement-symbol-lists?apikey=e2b2a6d07ebf89ca33bb96b0b590daab
-                var northAmericaStocks = await GetStocksFromUSCANExchanges(5000000, API_KEY);
+                var northAmericaStocks = await GetStocksFromUSCANExchanges(100000000, 1000000, 20, 0, API_KEY);
 
                 var random = new Random();
                 var nowTime = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
                 var nowDate = DateTime.Now.ToString("yyyy-MM-dd");
                 var folderPath = @"C:\Users\hnguyen\Documents\stock-scan-logs";
                 var scanFolderPath = Path.Combine(folderPath, nowDate);
-                var allCrosses5 = new List<string>();
                 var inSupportZone90 = new List<string>();
                 var inSupportZone180 = new List<string>();
                 var inSupportZone360 = new List<string>();
@@ -34,7 +33,6 @@ namespace StockSignalScanner
                 var inResistanceZone180 = new List<string>();
                 var inResistanceZone360 = new List<string>();
                 var inResistanceZone540 = new List<string>();
-                var overboughtOrOversoldFollowedByMACDCrossLast5Days = new List<string>();
                 var trendlineHighs180 = new List<string>();
                 var fibonacciLast180s = new List<string>();
                 var fibonacciLast90s = new List<string>();
@@ -61,7 +59,7 @@ namespace StockSignalScanner
                         try
                         {
                             Console.WriteLine($"Start processing for {stock.Name} - {stock.Symbol}");
-                            var data = await RunScan(stock.Symbol, API_KEY);
+                            var data = await RunAnalysis(stock.Symbol, stock.ExchangeShortName, API_KEY);
                             if (data != null)
                             {
                                 var supportZoneState90 = data.CheckInSupportZoneLastNDays(90);
@@ -125,11 +123,26 @@ namespace StockSignalScanner
 
                                 if (data.HasOverboughtOrOversoldFollowedByMACDCrossLastNDays())
                                 {
-                                    overboughtOrOversoldFollowedByMACDCrossLast5Days.Add(data.GetTickerStatusLastNDays(5));
+                                    var overboughtOrOversoldFollowedByMACDCrossLast5DaysFile = Path.Combine(scanFolderPath, "overbought-or-oversold-with-macd-cross.txt");
+                                    WriteToFile(overboughtOrOversoldFollowedByMACDCrossLast5DaysFile, data.GetTickerStatusLastNDays(5));
                                 }
-                                if (data.CheckAllCrossesWithDirectionInLastNDays(5, CrossDirection.CROSS_ABOVE) || data.CheckAllCrossesWithDirectionInLastNDays(5, CrossDirection.CROSS_BELOW))
+                                if ((data.CheckAllCrossesWithDirectionInLastNDays(5, CrossDirection.CROSS_ABOVE) && data.IsOversoldByStochasticInLastNDays(5))
+                                    || data.CheckAllCrossesWithDirectionInLastNDays(5, CrossDirection.CROSS_BELOW) && data.IsOverboughtByStochasticInLastNDays(5))
                                 {
-                                    allCrosses5.Add(data.GetTickerStatusLastNDays(5));
+                                    if (data.CheckInSupportZoneLastNDays(30).IsInZone 
+                                        || data.CheckInSupportZoneLastNDays(90).IsInZone 
+                                        || data.CheckInSupportZoneLastNDays(180).IsInZone)
+                                    {
+                                        var allCrossesInZoneFile = Path.Combine(scanFolderPath, "in-zone-all-crosses-last-5-days.txt");
+                                        WriteToFile(allCrossesInZoneFile, data.GetTickerStatusLastNDays(5));
+                                    }
+                                    var allCrossesFile = Path.Combine(scanFolderPath, "all-crosses-last-5-days.txt");
+                                    WriteToFile(allCrossesFile, data.GetTickerStatusLastNDays(5));
+                                    if (data.IsOversoldByRSIInLastNDays(5) || data.IsOverboughtByRSIInLastNDays(5))
+                                    {
+                                        var allCrossesInZoneFile = Path.Combine(scanFolderPath, "strict-all-crosses-last-5-days.txt");
+                                        WriteToFile(allCrossesInZoneFile, data.GetTickerStatusLastNDays(5));
+                                    }
                                 }
                                 else
                                 {
@@ -145,20 +158,6 @@ namespace StockSignalScanner
                                 outputFile.WriteLine(ex.StackTrace);
                             }
                         }
-                    }
-                }
-                using (StreamWriter outputFile = new StreamWriter(Path.Combine(scanFolderPath, "all-crosses-last-5-days.txt"), true))
-                {
-                    foreach (var item in allCrosses5)
-                    {
-                        outputFile.WriteLine(item);
-                    }
-                }
-                using (StreamWriter outputFile = new StreamWriter(Path.Combine(scanFolderPath, "overbought-or-oversold-with-macd-cross.txt"), true))
-                {
-                    foreach (var item in overboughtOrOversoldFollowedByMACDCrossLast5Days)
-                    {
-                        outputFile.WriteLine(item);
                     }
                 }
                 using (StreamWriter outputFile = new StreamWriter(Path.Combine(scanFolderPath, "support-zone-180.txt"), true))
@@ -232,6 +231,22 @@ namespace StockSignalScanner
                     }
                 }
             }
+        }
+
+        private static void WriteToFile(string filePath, string content)
+        {
+            if (!File.Exists(filePath))
+            {
+                File.AppendAllLines(filePath, new[] { "Ticker,Exchange,MACD,RSI,STOCHASTICS,PATTERNS,PRICES(Last 5 days),Fibonacci(90)" });
+            }
+            File.AppendAllLines(filePath, new[] { content });
+            var dir = Path.GetDirectoryName(filePath);
+            var questrade = Path.Combine(dir, "questrade-watchlist-combined.csv");
+            if (!File.Exists(questrade))
+            {
+                File.AppendAllLines(questrade, new[] { "\"Symbol\"" });
+            }
+            File.AppendAllLines(questrade, new[] { content.Split(",")[0] });
         }
 
         #region will print rsi macd stochastic data for each stocks
@@ -332,7 +347,7 @@ namespace StockSignalScanner
             }
         }
 
-        private static async Task<StockDataAggregator> RunScan(string ticker, string apiKey)
+        private static async Task<StockDataAggregator> RunAnalysis(string ticker, string exchange, string apiKey)
         {
             Console.WriteLine($"Getting data for {ticker}");
             string API_ENDPOINT = $"https://financialmodelingprep.com/api/v3/historical-price-full/{ticker}?apikey={apiKey}";
@@ -351,12 +366,12 @@ namespace StockSignalScanner
                 }
 
                 Console.WriteLine($"Analyzing data for {ticker}");
-                return new StockDataAggregator(tickerHistoricalPrices.Symbol, tickerHistoricalPrices.Historical, 5, 8, 21, 5, 14, 7 , 7);
+                return new StockDataAggregator(tickerHistoricalPrices.Symbol, exchange, tickerHistoricalPrices.Historical, 8, 5, 8, 21, 5, 8, 5, 3);
             }
             return null;
         }
 
-        public static async Task<IEnumerable<StockMeta>> GetStocksFromUSCANExchanges(long volumn, string apiKey)
+        public static async Task<IEnumerable<StockMeta>> GetStocksFromUSCANExchanges(long volumeMax, long volumeMin, long priceMax, long priceMin, string apiKey)
         {
             List<string> exchanges = new List<string>() { "NYSE", "NasdaqNM", "AMEX", "TSX", "TSXV", "MX" };
             string baseUrl = "https://financialmodelingprep.com/api/v3";
@@ -364,7 +379,7 @@ namespace StockSignalScanner
             using (var httpClient = new HttpClient())
             {
                 // Set the criteria for the search
-                string url = $"{baseUrl}/stock-screener?volumeMoreThan={volumn}&apikey={apiKey}";
+                string url = $"{baseUrl}/stock-screener?volumeMoreThan={volumeMin}&volumeLowerThan={volumeMax}&priceLowerThan={priceMax}&priceMoreThan={priceMin}&isActivelyTrading=true&apikey={apiKey}";
 
                 // Send the request and get the response
                 var response = await httpClient.GetAsync(url);

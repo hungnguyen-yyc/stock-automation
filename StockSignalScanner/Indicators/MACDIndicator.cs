@@ -4,8 +4,6 @@ namespace StockSignalScanner.Indicators
 {
     internal static class MACDIndicator
     {
-
-
         public static (List<decimal> macdValues, List<decimal> signalValues, List<DateTime> macdTimes) GetMACD(IList<IPrice> prices, int shortPeriod, int longPeriod, int signalPeriod)
         {
             // Initialize lists to store the MACD, signal, and time values
@@ -18,8 +16,8 @@ namespace StockSignalScanner.Indicators
             List<DateTime> times = prices.Select(p => p.Date.DateTime).ToList();
 
             // Calculate the MACD value
-            List<decimal> shortEMA = CalculateEMA(closePrices.ToList(), shortPeriod);
-            List<decimal> longEMA = CalculateEMA(closePrices.ToList(), longPeriod);
+            List<decimal> shortEMA = MovingAverage.CalculateEMA(closePrices.ToList(), shortPeriod);
+            List<decimal> longEMA = MovingAverage.CalculateEMA(closePrices.ToList(), longPeriod);
 
             // Calculate the MACD and signal values
             for (int i = 0; i < closePrices.Count; i++)
@@ -30,25 +28,10 @@ namespace StockSignalScanner.Indicators
                 macdTimes.Add(times[i]);
             }
 
-            signalValues.AddRange(CalculateEMA(macdValues, signalPeriod));
+            signalValues.AddRange(MovingAverage.CalculateEMA(macdValues, signalPeriod));
 
             // Return the MACD, signal, and time values
             return (macdValues, signalValues, macdTimes);
-        }
-
-
-        private static List<decimal> CalculateEMA(List<decimal> src, int length)
-        {
-            decimal alpha = 2.0m / (length + 1);
-            List<decimal> sum = new List<decimal>();
-
-            for (int i = 0; i < src.Count; i++)
-            {
-                decimal previousSum = i == 0 ? 0 : sum[i - 1];
-                sum.Add(alpha * src[i] + (1 - alpha) * previousSum);
-            }
-
-            return sum;
         }
     }
 }
