@@ -73,7 +73,15 @@ namespace StockSignalScanner
                                 var trendlineHigh180 = data.TrendlineHigh(180);
                                 var fibonacciLast180 = data.GetCurrentFibonacciRetracementLevelLastNDays(180);
                                 var fibonacciLast90 = data.GetCurrentFibonacciRetracementLevelLastNDays(90);
-                                NewMethod(fibonacciLast180s, fibonacciLast90s, data, fibonacciLast180, fibonacciLast90);
+
+                                if (fibonacciLast180 != null)
+                                {
+                                    fibonacciLast180s.Add($"{data.Symbol}-{fibonacciLast180.ToString()}");
+                                }
+                                if (fibonacciLast90 != null)
+                                {
+                                    fibonacciLast90s.Add($"{data.Symbol}-{fibonacciLast90.ToString()}");
+                                }
 
                                 if (trendlineHigh180.Length > 0)
                                 {
@@ -138,10 +146,11 @@ namespace StockSignalScanner
                                     && data.CheckEMACrossInLastNDays(7, 34, 55) == CrossDirection.CROSS_BELOW
                                     && data.CheckEMACrossInLastNDays(7, 34, 89) == CrossDirection.CROSS_BELOW
                                     && data.CheckEMACrossInLastNDays(7, 55, 89) == CrossDirection.CROSS_BELOW;
-                                var emaCrossAbove55 = data.CheckEMACrossInLastNDays(7, 21, 55) == CrossDirection.CROSS_BELOW
+                                var emaCrossAbove55 = data.CheckEMACrossInLastNDays(7, 21, 89) == CrossDirection.CROSS_BELOW
+                                    && data.CheckEMACrossInLastNDays(7, 21, 55) == CrossDirection.CROSS_BELOW
                                     && data.CheckEMACrossInLastNDays(7, 21, 34) == CrossDirection.CROSS_BELOW
                                     && data.CheckEMACrossInLastNDays(7, 34, 55) == CrossDirection.CROSS_BELOW;
-                                var emaCrossBelow55 = data.CheckEMACrossInLastNDays(7, 21, 55) == CrossDirection.CROSS_BELOW
+                                var emaCrossBelow55 =  data.CheckEMACrossInLastNDays(7, 21, 55) == CrossDirection.CROSS_BELOW
                                     && data.CheckEMACrossInLastNDays(7, 21, 34) == CrossDirection.CROSS_BELOW
                                     && data.CheckEMACrossInLastNDays(7, 34, 55) == CrossDirection.CROSS_BELOW;
 
@@ -205,8 +214,8 @@ namespace StockSignalScanner
                                 if ((data.CheckAllCrossesWithDirectionInLastNDays(5, CrossDirection.CROSS_ABOVE) && data.IsOversoldByStochasticInLastNDays(5))
                                     || data.CheckAllCrossesWithDirectionInLastNDays(5, CrossDirection.CROSS_BELOW) && data.IsOverboughtByStochasticInLastNDays(5))
                                 {
-                                    if (data.CheckInSupportZoneLastNDays(30).IsInZone
-                                        || data.CheckInSupportZoneLastNDays(90).IsInZone
+                                    if (data.CheckInSupportZoneLastNDays(30).IsInZone 
+                                        || data.CheckInSupportZoneLastNDays(90).IsInZone 
                                         || data.CheckInSupportZoneLastNDays(180).IsInZone)
                                     {
                                         var allCrossesInZoneFile = Path.Combine(scanFolderPath, "in-zone-all-crosses-last-5-days.txt");
@@ -315,18 +324,6 @@ namespace StockSignalScanner
                         outputFile.WriteLine(item);
                     }
                 }
-            }
-        }
-
-        private static void NewMethod(List<string> fibonacciLast180s, List<string> fibonacciLast90s, StockDataAggregator data, CurrentPriceFibonacciRetracementLevel fibonacciLast180, CurrentPriceFibonacciRetracementLevel fibonacciLast90)
-        {
-            if (fibonacciLast180 != null)
-            {
-                fibonacciLast180s.Add($"{data.Symbol}-{fibonacciLast180.ToString()}");
-            }
-            if (fibonacciLast90 != null)
-            {
-                fibonacciLast90s.Add($"{data.Symbol}-{fibonacciLast90.ToString()}");
             }
         }
 
