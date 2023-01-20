@@ -33,6 +33,7 @@ namespace StockSignalScanner.Models
         Dictionary<int, CrossDirection> _macdCrossLastNdDaysMap;
         Dictionary<int, CrossDirection> _stochasticCrossLastNdDaysMap;
         Dictionary<int, CrossDirection> _rsiCrossLastNdDaysMap;
+        List<decimal> _adx;
 
         public StockDataAggregator(string ticker, string exchange, IList<HistoricalPrice> prices, int rsiPeriod, int rsiMA, int macdShortPeriod, int macdLongPeriod, int macdSignalPeriod, int stochasticPeriod, int smoothK, int smoothD)
         {
@@ -81,6 +82,17 @@ namespace StockSignalScanner.Models
                                             && GetRSICrossRSIMADirectionInLastNDays(days) == direction
                                             && GetStochasticCrossDirectionInLastNDays(days) == direction;
         }
+
+        public CrossDirection CheckEMACrossInLastNDays(int days, int periodA, int periodB)
+        {
+            List<decimal> periodALine = MovingAverage.CalculateEMA(_priceOrderByDateAsc.Select(i => i.Close).ToList(), periodA);
+            List<decimal> periodBLine = MovingAverage.CalculateEMA(_priceOrderByDateAsc.Select(i => i.Close).ToList(), periodB);
+            List<decimal> periodALineLastNDays = periodALine.Skip(periodALine.Count() - days).ToList();
+            List<decimal> periodBLineLastNDays = periodBLine.Skip(periodBLine.Count() - days).ToList();
+            var direction = CrossDirectionDetector.GetCrossDirection(periodALineLastNDays, periodBLineLastNDays);
+            return direction;
+        }
+
         public string TrendlineHigh(int lastNDays)
         {
             var timeSpan = new TimeSpan(lastNDays, 0, 0, 0);
@@ -121,13 +133,14 @@ namespace StockSignalScanner.Models
             }
             var patterns = CandlestickPatternsLastNDays(days);
             var patternString = string.Join(" - ", patterns.Select(s => s.ToString()).ToArray());
+            var fibo = GetCurrentFibonacciRetracementLevelLastNDays(30);
             return $"{Symbol},{Exchange}" +
                 $",{_macdCrossLastNdDaysMap[days]}" +
                 $",{_rsiCrossLastNdDaysMap[days]}" +
                 $",{_stochasticCrossLastNdDaysMap[days]}" +
                 $",{patternString}" +
                 $",{string.Join("-", _priceOrderByDateAsc.TakeLast(days).Select(p => p.Close.ToString()))}" +
-                $",{GetCurrentFibonacciRetracementLevelLastNDays(30)}";
+                $",{fibo?.RetracementLevel}-l: {fibo?.Retracement.Low}-h: {fibo?.Retracement.High}";
         }
 
         private IEnumerable<CandlestickPatternType> CandlestickPatternsLastNDays(int days)
@@ -223,6 +236,19 @@ namespace StockSignalScanner.Models
             return direction;
         }
 
+        public IEnumerable<decimal> GetMACDHistogramInLastNDays(int days)
+        {
+            List<decimal> macdLine = _macdValues.Skip(_macdTimes.Count - days).ToList();
+            List<decimal> signalLine = _macdSignalValues.Skip(_macdTimes.Count - days).ToList();
+            return macdLine.Zip(signalLine, (t,v) => (t,v)).Select(i => i.t - i.v);
+        }
+
+        public IEnumerable<decimal> GetADXInLastNDays(int days)
+        {
+            List<decimal> adx = _adx.Skip(_adx.Count - days).ToList();
+            return adx;
+        }
+
         public (decimal, decimal) GetLowestMACDHistogramInLastNDays(int days)
         {
             var macdLine = _macdValues.Skip(_macdValues.Count - days).Min();
@@ -314,6 +340,7 @@ namespace StockSignalScanner.Models
             _rsiMAValues = MovingAverage.CalculateEMA(_rsiValues, _rsiMA);
             (_macdValues, _macdSignalValues, _macdTimes) = MACDIndicator.GetMACD(_priceOrderByDateAsc, _macdShortPeriod, _macdLongPeriod, _macdSignalPeriod);
             (_kValues, _dValues, _stochasticTimes) = StochasticIndicator.GetStochastic(_priceOrderByDateAsc, _stochasticPeriod, _smoothK, _smoothD);
+            _adx = ADX.CalculateADX(_priceOrderByDateAsc, _rsiPeriod, _rsiPeriod);
 
             // Loop through the RSI values
             for (int i = 0; i < _rsiValues.Count; i++)
