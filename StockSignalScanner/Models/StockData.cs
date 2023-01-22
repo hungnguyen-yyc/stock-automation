@@ -75,6 +75,7 @@ namespace StockSignalScanner.Models
 
         private List<StockDataCandle> Candles { get; }
         public string Exchange { get; }
+        public int NumberOfTradingDays => _priceOrderByDateAsc.Count;
 
         public bool CheckAllCrossesWithDirectionInLastNDays(int days, CrossDirection direction)
         {
@@ -91,6 +92,34 @@ namespace StockSignalScanner.Models
             List<decimal> periodBLineLastNDays = periodBLine.Skip(periodBLine.Count() - days).ToList();
             var direction = CrossDirectionDetector.GetCrossDirection(periodALineLastNDays, periodBLineLastNDays);
             return direction;
+        }
+
+        public List<(DateTime, CrossDirection)> CheckAllEMACrossInLastNDays(int days, int periodA, int periodB)
+        {
+            var pricesInPeriod = _priceOrderByDateAsc.Skip(_priceOrderByDateAsc.Count() - days).ToList();
+            List<decimal> periodALine = MovingAverage.CalculateEMA(_priceOrderByDateAsc.Select(i => i.Close).ToList(), periodA).Skip(_priceOrderByDateAsc.Count() - days).ToList();
+            List<decimal> periodBLine = MovingAverage.CalculateEMA(_priceOrderByDateAsc.Select(i => i.Close).ToList(), periodB).Skip(_priceOrderByDateAsc.Count() - days).ToList();
+            List<(DateTime, decimal)> periodALineLastNDays = pricesInPeriod.Select(i => i.Date.Date).Zip(periodALine, (t,v) => (t,v)).ToList();
+            List<(DateTime, decimal)> periodBLineLastNDays = pricesInPeriod.Select(i => i.Date.Date).Zip(periodBLine, (t, v) => (t, v)).ToList();
+            var direction = CrossDirectionDetector.GetAllCrossDirections(periodALineLastNDays, periodBLineLastNDays);
+            return direction;
+        }
+
+        public List<decimal> GetPricesInPeriod(DateTime startDate, int period)
+        {
+            var list = new List<decimal>();
+            var price = _priceOrderByDateAsc.FirstOrDefault(i => i.Date.Date == startDate);
+            var i = 1;
+            while (price == null)
+            {
+                price = _priceOrderByDateAsc.FirstOrDefault(p => p.Date.Date == startDate.AddDays(i * (-1)));
+                i++;
+                if (i > 14)
+                {
+                    return list;
+                }
+            }
+            return _priceOrderByDateAsc.Where(p => p.Date.Date >= startDate && p.Date.Date < startDate.AddDays(period)).Select(p => p.Close).ToList();
         }
 
         public string TrendlineHigh(int lastNDays)
@@ -247,6 +276,12 @@ namespace StockSignalScanner.Models
         {
             List<decimal> adx = _adx.Skip(_adx.Count - days).ToList();
             return adx;
+        }
+
+        public decimal GetADXAtDate(DateTime date)
+        {
+            var dateIndex = _priceOrderByDateAsc.Select(i => i.Date).ToList().IndexOf(date);
+            return _adx[dateIndex];
         }
 
         public (decimal, decimal) GetLowestMACDHistogramInLastNDays(int days)

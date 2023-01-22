@@ -4,6 +4,7 @@
     {
         CROSS_ABOVE,
         CROSS_BELOW,
-        NO_CROSS
+        NO_CROSS,
+        MIXED_CROSSES
     }
 }

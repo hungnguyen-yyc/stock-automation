@@ -3,6 +3,8 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using StockSignalScanner.Indicators;
 using StockSignalScanner.Models;
+using StockSignalScanner.Strategies;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text;
 
@@ -11,48 +13,60 @@ namespace StockSignalScanner
     public partial class Program
     {
         static string API_KEY = "bc00404c44fcc9fe338ac768f222f6ab";
-        private static readonly ILog log = LogManager.GetLogger(typeof(Program));
 
         public static async Task Main(string[] args)
         {
+            var runStrategy = args.Any(a => a.ToLower().Contains("runstrategy") || a.ToLower().Contains("run-strategy"));
+            var runScan = args.Any(a => a.ToLower().Contains("runscan") || a.ToLower().Contains("run-scan"));
             using (var httpClient = new HttpClient())
             {
                 // https://financialmodelingprep.com/api/v3/financial-statement-symbol-lists?apikey=e2b2a6d07ebf89ca33bb96b0b590daab
                 var northAmericaStocks = await GetStocksFromUSCANExchanges(999999999, 1000000, 1000, 0, API_KEY);
 
-                var random = new Random();
-
-                var batches = northAmericaStocks.OrderBy(s => s.Symbol).Chunk(100).ToArray();
-                for (int si = 0; si < batches.Count(); si++)
+                if (runStrategy)
                 {
-                    var stocks = batches[si];
-                    foreach (var stock in stocks)
-                    {
-                        await AnalyzeAndWriteStockData(stock);
-                    }
+                    await RunStrategyAnalysis(northAmericaStocks);
+                }
+                if (runScan)
+                {
+                    await StartScan(northAmericaStocks);
                 }
             }
         }
 
-        private static async Task AnalyzeAndWriteStockData(StockMeta stock)
+        private static async Task RunStrategyAnalysis(IEnumerable<StockMeta> allStocks)
         {
-
-            var nowTime = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
-            var nowDate = DateTime.Now.ToString("yyyy-MM-dd");
-            var folderPath = @"C:\Users\hnguyen\Documents\stock-scan-logs";
-            var scanFolderPath = Path.Combine(folderPath, nowDate);
-            try
+            var batches = allStocks.OrderBy(s => s.Symbol).Chunk(250).ToArray();
+            for (int si = 0; si < batches.Count(); si++)
             {
-                if (Directory.Exists(scanFolderPath))
+                var stocks = batches[si];
+                foreach (var stock in stocks)
                 {
-                    Directory.Delete(scanFolderPath, true);
+                    var data = await RunAnalysis(stock.Symbol, stock.ExchangeShortName, API_KEY);
+                    if (data != null)
+                    {
+                        EMACrossingStrategy.RunEMACross213455Strategy(data, 3, 7);
+                        EMACrossingStrategy.RunEMACross213455WithAdxStrategy(data, 3, 7);
+                        EMACrossingStrategy.RunEMACross21345589Strategy(data, 3, 7);
+                        EMACrossingStrategy.RunEMACross21345589WithAdxStrategy(data, 3, 7);
+                    }
                 }
-                CreateScanDirectories(folderPath, scanFolderPath);
+                // Thread.Sleep(60000);
             }
-            catch (Exception)
-            {
+        }
 
+        private static async Task StartScan(IEnumerable<StockMeta> allStocks)
+        {
+            string nowTime, scanFolderPath;
+            CreateOutputFolder(out nowTime, out scanFolderPath);
+            foreach (var stock in allStocks.OrderBy(a => a.Symbol))
+            {
+                await AnalyzeAndWriteStockData(stock, scanFolderPath, nowTime);
             }
+        }
+
+        private static async Task AnalyzeAndWriteStockData(StockMeta stock, string scanFolderPath, string nowTime)
+        {
             try
             {
                 Console.WriteLine($"Start processing for {stock.Name} - {stock.Symbol}");
@@ -128,37 +142,26 @@ namespace StockSignalScanner
                         var overboughtOrOversoldFollowedByMACDCrossLast5DaysFile = Path.Combine(scanFolderPath, "overbought-or-oversold-with-macd-cross.txt");
                         WriteToFile(overboughtOrOversoldFollowedByMACDCrossLast5DaysFile, data.GetTickerStatusLastNDays(5));
                     }
-                    var emaCrossBelow = data.CheckEMACrossInLastNDays(5, 8, 55) == CrossDirection.CROSS_BELOW
-                        && data.CheckEMACrossInLastNDays(5, 13, 55) == CrossDirection.CROSS_BELOW
-                        && data.CheckEMACrossInLastNDays(5, 21, 55) == CrossDirection.CROSS_BELOW;
-                    var emaCrossAbove = data.CheckEMACrossInLastNDays(5, 8, 13) == CrossDirection.CROSS_ABOVE
-                        && data.CheckEMACrossInLastNDays(5, 8, 21) == CrossDirection.CROSS_ABOVE
+                    var emaCrossBelow55 = data.CheckEMACrossInLastNDays(5, 13, 55) == CrossDirection.CROSS_BELOW
+                        && data.CheckEMACrossInLastNDays(5, 21, 55) == CrossDirection.CROSS_BELOW
+                        && data.CheckEMACrossInLastNDays(5, 34, 55) == CrossDirection.CROSS_BELOW;
+                    var emaCrossAbove55 = data.CheckEMACrossInLastNDays(5, 13, 55) == CrossDirection.CROSS_ABOVE
                         && data.CheckEMACrossInLastNDays(5, 21, 55) == CrossDirection.CROSS_ABOVE
-                        && data.CheckEMACrossInLastNDays(5, 13, 55) == CrossDirection.CROSS_ABOVE;
+                        && data.CheckEMACrossInLastNDays(5, 34, 55) == CrossDirection.CROSS_ABOVE;
 
-                    var emaCrossAbove89 = data.CheckEMACrossInLastNDays(7, 21, 89) == CrossDirection.CROSS_ABOVE
-                        && data.CheckEMACrossInLastNDays(7, 21, 55) == CrossDirection.CROSS_ABOVE
-                        && data.CheckEMACrossInLastNDays(7, 21, 34) == CrossDirection.CROSS_ABOVE
-                        && data.CheckEMACrossInLastNDays(7, 34, 55) == CrossDirection.CROSS_ABOVE
-                        && data.CheckEMACrossInLastNDays(7, 34, 89) == CrossDirection.CROSS_ABOVE
-                        && data.CheckEMACrossInLastNDays(7, 55, 89) == CrossDirection.CROSS_ABOVE;
-                    var emaCrossBelow89 = data.CheckEMACrossInLastNDays(7, 21, 89) == CrossDirection.CROSS_BELOW
-                        && data.CheckEMACrossInLastNDays(7, 21, 55) == CrossDirection.CROSS_BELOW
-                        && data.CheckEMACrossInLastNDays(7, 21, 34) == CrossDirection.CROSS_BELOW
-                        && data.CheckEMACrossInLastNDays(7, 34, 55) == CrossDirection.CROSS_BELOW
-                        && data.CheckEMACrossInLastNDays(7, 34, 89) == CrossDirection.CROSS_BELOW
-                        && data.CheckEMACrossInLastNDays(7, 55, 89) == CrossDirection.CROSS_BELOW;
-                    var emaCrossAbove55 = data.CheckEMACrossInLastNDays(7, 21, 89) == CrossDirection.CROSS_BELOW
-                        && data.CheckEMACrossInLastNDays(7, 21, 55) == CrossDirection.CROSS_BELOW
-                        && data.CheckEMACrossInLastNDays(7, 21, 34) == CrossDirection.CROSS_BELOW
-                        && data.CheckEMACrossInLastNDays(7, 34, 55) == CrossDirection.CROSS_BELOW;
-                    var emaCrossBelow55 = data.CheckEMACrossInLastNDays(7, 21, 55) == CrossDirection.CROSS_BELOW
-                        && data.CheckEMACrossInLastNDays(7, 21, 34) == CrossDirection.CROSS_BELOW
-                        && data.CheckEMACrossInLastNDays(7, 34, 55) == CrossDirection.CROSS_BELOW;
+                    var emaCrossAbove89 = data.CheckEMACrossInLastNDays(5, 21, 89) == CrossDirection.CROSS_ABOVE
+                        && data.CheckEMACrossInLastNDays(5, 34, 89) == CrossDirection.CROSS_ABOVE
+                        && data.CheckEMACrossInLastNDays(5, 55, 89) == CrossDirection.CROSS_ABOVE;
+                    var emaCrossBelow89 = data.CheckEMACrossInLastNDays(5, 21, 89) == CrossDirection.CROSS_BELOW
+                        && data.CheckEMACrossInLastNDays(5, 34, 89) == CrossDirection.CROSS_BELOW
+                        && data.CheckEMACrossInLastNDays(5, 55, 89) == CrossDirection.CROSS_BELOW;
 
-                    var macdCrossAbove = data.GetMACDCrossDirectionInLastNDays(8) == CrossDirection.CROSS_ABOVE;
-                    var notOverbought = !data.IsOverboughtByStochasticInLastNDays(7)
+                    var macdCrossAbove = data.GetMACDCrossDirectionInLastNDays(7) == CrossDirection.CROSS_ABOVE;
+                    var macdCrossBelow = data.GetMACDCrossDirectionInLastNDays(7) == CrossDirection.CROSS_BELOW;
+                    var notOverbought = !data.IsOverboughtByStochasticInLastNDays(5)
                         && !data.IsOverboughtByRSIInLastNDays(10);
+                    var notOversold = !data.IsOversoldByStochasticInLastNDays(5)
+                        && !data.IsOversoldByRSIInLastNDays(10);
                     var last3DayHistogramIncrease = true;
                     var histogramInLast3Days = data.GetMACDHistogramInLastNDays(3).ToList();
                     for (int i = 1; i < histogramInLast3Days.Count(); i++)
@@ -172,22 +175,6 @@ namespace StockSignalScanner
                     }
 
                     var adxInLast5Days = data.GetADXInLastNDays(5).All(x => x > 25);
-
-                    if (emaCrossBelow)
-                    {
-                        var pathToWrite = Path.Combine(scanFolderPath, "ema-crosses-below.txt");
-                        WriteToFile(pathToWrite, data.GetTickerStatusLastNDays(10));
-                    }
-                    if (emaCrossAbove && notOverbought && macdCrossAbove && last3DayHistogramIncrease)
-                    {
-                        var pathToWrite = Path.Combine(scanFolderPath, "ema-crosses-above-notoverbought-macd-histogram.txt");
-                        WriteToFile(pathToWrite, data.GetTickerStatusLastNDays(10));
-                    }
-                    if (emaCrossAbove && notOverbought && macdCrossAbove)
-                    {
-                        var pathToWrite = Path.Combine(scanFolderPath, "ema-crosses-above-notoverbought-macd.txt");
-                        WriteToFile(pathToWrite, data.GetTickerStatusLastNDays(10));
-                    }
                     if (emaCrossAbove89 || emaCrossAbove89)
                     {
                         var pathToWrite = Path.Combine(scanFolderPath, "ema-crosses-89.txt");
@@ -208,11 +195,30 @@ namespace StockSignalScanner
                             WriteToFile(emacross1, data.GetTickerStatusLastNDays(5));
                         }
                     }
-                    if (emaCrossAbove && notOverbought)
+                    if (emaCrossAbove55 && notOverbought)
                     {
-                        var pathToWrite = Path.Combine(scanFolderPath, "ema-crosses-above-notoverbought.txt");
+                        var pathToWrite = Path.Combine(scanFolderPath, "ema-crosses-above-55-notoverbought.txt");
                         WriteToFile(pathToWrite, data.GetTickerStatusLastNDays(10));
+
+                        if (adxInLast5Days && macdCrossAbove)
+                        {
+                            var emacross1 = Path.Combine(scanFolderPath, "ema-crosses-55-notoverbought-macd-cross-above-adx-25.txt");
+                            WriteToFile(emacross1, data.GetTickerStatusLastNDays(5));
+                        }
                     }
+                    if (emaCrossBelow55 && notOversold)
+                    {
+                        var pathToWrite = Path.Combine(scanFolderPath, "ema-crosses-below-55-notoversold.txt");
+                        WriteToFile(pathToWrite, data.GetTickerStatusLastNDays(10));
+
+                        if (adxInLast5Days && macdCrossAbove)
+                        {
+                            var emacross1 = Path.Combine(scanFolderPath, "ema-crosses-55-notoversold-macd-cross-below-adx-25.txt");
+                            WriteToFile(emacross1, data.GetTickerStatusLastNDays(5));
+                        }
+                    }
+
+
                     if ((data.CheckAllCrossesWithDirectionInLastNDays(5, CrossDirection.CROSS_ABOVE) && data.IsOversoldByStochasticInLastNDays(5))
                         || data.CheckAllCrossesWithDirectionInLastNDays(5, CrossDirection.CROSS_BELOW) && data.IsOverboughtByStochasticInLastNDays(5))
                     {
@@ -252,11 +258,31 @@ namespace StockSignalScanner
             }
         }
 
-        private static void WriteToFile(string filePath, string content)
+        private static void CreateOutputFolder(out string nowTime, out string scanFolderPath)
+        {
+            nowTime = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
+            var nowDate = DateTime.Now.ToString("yyyy-MM-dd");
+            var folderPath = @"C:\Users\hnguyen\Documents\stock-scan-logs";
+            scanFolderPath = Path.Combine(folderPath, nowDate);
+            try
+            {
+                if (Directory.Exists(scanFolderPath))
+                {
+                    Directory.Delete(scanFolderPath, true);
+                }
+                CreateScanDirectories(folderPath, scanFolderPath);
+            }
+            catch (Exception)
+            {
+
+            }
+        }
+
+        private static void WriteToFile(string filePath, string content, string header = "Ticker,Exchange,MACD,RSI,STOCHASTICS,PATTERNS,PRICES(Last 5 days),Fibonacci(30)")
         {
             if (!File.Exists(filePath))
             {
-                File.AppendAllLines(filePath, new[] { "Ticker,Exchange,MACD,RSI,STOCHASTICS,PATTERNS,PRICES(Last 5 days),Fibonacci(30)" });
+                File.AppendAllLines(filePath, new[] { header });
             }
             File.AppendAllLines(filePath, new[] { content });
         }
@@ -361,24 +387,32 @@ namespace StockSignalScanner
 
         private static async Task<StockDataAggregator> RunAnalysis(string ticker, string exchange, string apiKey)
         {
-            Console.WriteLine($"Getting data for {ticker}");
-            string API_ENDPOINT = $"https://financialmodelingprep.com/api/v3/historical-price-full/{ticker}?apikey={apiKey}";
-
-            HttpClient client = new HttpClient();
-            HttpResponseMessage response = await client.GetAsync(API_ENDPOINT);
-
-            if (response.IsSuccessStatusCode)
+            try
             {
-                string content = await response.Content.ReadAsStringAsync();
-                var tickerHistoricalPrices = JsonConvert.DeserializeObject<TickerHistoricalPrice>(content);
+                Console.WriteLine($"Getting data for {ticker}");
+                string API_ENDPOINT = $"https://financialmodelingprep.com/api/v3/historical-price-full/{ticker}?apikey={apiKey}";
 
-                if (tickerHistoricalPrices == null || tickerHistoricalPrices.Historical == null)
+                HttpClient client = new HttpClient();
+                HttpResponseMessage response = await client.GetAsync(API_ENDPOINT);
+
+                if (response.IsSuccessStatusCode)
                 {
-                    return null;
-                }
+                    string content = await response.Content.ReadAsStringAsync();
+                    var tickerHistoricalPrices = JsonConvert.DeserializeObject<TickerHistoricalPrice>(content);
 
-                Console.WriteLine($"Analyzing data for {ticker}");
-                return new StockDataAggregator(tickerHistoricalPrices.Symbol, exchange, tickerHistoricalPrices.Historical, 14, 7, 12, 26, 9, 14, 7, 3);
+                    if (tickerHistoricalPrices == null || tickerHistoricalPrices.Historical == null)
+                    {
+                        return null;
+                    }
+
+                    Console.WriteLine($"Analyzing data for {ticker}");
+                    return new StockDataAggregator(tickerHistoricalPrices.Symbol, exchange, tickerHistoricalPrices.Historical, 14, 7, 12, 26, 9, 14, 7, 3);
+                }
+            }
+            catch (Exception)
+            {
+
+                throw;
             }
             return null;
         }

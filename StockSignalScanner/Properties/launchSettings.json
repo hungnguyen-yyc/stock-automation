@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "StockSignalScanner": {
+      "commandName": "Project",
+      "commandLineArgs": "run-scan"
+    }
+  }
+}
