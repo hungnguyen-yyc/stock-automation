@@ -11,6 +11,222 @@ namespace StockSignalScanner.Strategies
 {
     internal class EMACrossingStrategy
     {
+        public static void RunEMACross50200WithAdxStrategy(StockDataAggregator data, int crossInDays, int pricesAfterNDays)
+        {
+            string pathStockStrategy, pathFileNameStock, pathStock;
+            CreateStrategyDirectory($"ema-cross-50-200-adx-gt-25", data, crossInDays, pricesAfterNDays, out pathStockStrategy, out pathFileNameStock, out pathStock);
+
+            var ema50Cross200 = data.CheckAllEMACrossInLastNDays(data.NumberOfTradingDays, 50, 200);
+            var totalCrosses = 0;
+            var success = 0;
+
+            for (int i = 0; i < ema50Cross200.Count; i++)
+            {
+                (DateTime, CrossDirection) ema = ema50Cross200[i];
+                var adx = data.GetADXAtDate(ema.Item1);
+                if (adx > 25)
+                {
+                    totalCrosses += 1;
+                    if (ema.Item2 == CrossDirection.CROSS_ABOVE)
+                    {
+                        var prices = data.GetPricesInPeriod(ema.Item1, pricesAfterNDays);
+                        var hasAnyExpectedPrices = prices.Skip(1).Any(i => i > prices[0]);
+                        var pricesString = string.Join(",", prices);
+                        WriteToFile(pathStock, $"{CrossDirection.CROSS_ABOVE},{ema.Item1.ToString("yyyy-MM-dd")},{pricesString},{adx}");
+                        if (hasAnyExpectedPrices)
+                        {
+                            success += 1;
+                        }
+                    }
+                    else if (ema.Item2 == CrossDirection.CROSS_BELOW)
+                    {
+                        var prices = data.GetPricesInPeriod(ema.Item1, pricesAfterNDays);
+                        var hasAnyExpectedPrices = prices.Skip(1).Any(i => i < prices[0]);
+                        var pricesString = string.Join(",", prices);
+                        WriteToFile(pathStock, $"{CrossDirection.CROSS_BELOW},{ema.Item1.ToString("yyyy-MM-dd")},{pricesString},{adx}");
+                        if (hasAnyExpectedPrices)
+                        {
+                            success += 1;
+                        }
+                    }
+                    else
+                    {
+                        var prices = data.GetPricesInPeriod(ema.Item1, pricesAfterNDays);
+                        var pricesString = string.Join(",", prices);
+                        WriteToFile(pathStock, $"{CrossDirection.MIXED_CROSSES},{ema.Item1.ToString("yyyy-MM-dd")},{pricesString},{adx}");
+                    }
+                }
+            }
+
+            UpdateFilenameWithResult(pathStockStrategy, pathFileNameStock, pathStock, totalCrosses, success);
+        }
+
+        public static void RunEMACross50200Strategy(StockDataAggregator data, int crossInDays, int pricesAfterNDays)
+        {
+            string pathStockStrategy, pathFileNameStock, pathStock;
+            CreateStrategyDirectory($"ema-cross-50-200", data, crossInDays, pricesAfterNDays, out pathStockStrategy, out pathFileNameStock, out pathStock);
+
+            var ema50Cross200 = data.CheckAllEMACrossInLastNDays(data.NumberOfTradingDays, 50, 200);
+            var totalCrosses = 0;
+            var success = 0;
+
+            for (int i = 0; i < ema50Cross200.Count; i++)
+            {
+                (DateTime, CrossDirection) ema = ema50Cross200[i];
+                totalCrosses += 1;
+                if (ema.Item2 == CrossDirection.CROSS_ABOVE)
+                {
+                    var prices = data.GetPricesInPeriod(ema.Item1, pricesAfterNDays);
+                    var hasAnyExpectedPrices = prices.Skip(1).Any(i => i > prices[0]);
+                    var pricesString = string.Join(",", prices);
+                    WriteToFile(pathStock, $"{CrossDirection.CROSS_ABOVE},{ema.Item1.ToString("yyyy-MM-dd")},{pricesString}");
+                    if (hasAnyExpectedPrices)
+                    {
+                        success += 1;
+                    }
+                }
+                else if (ema.Item2 == CrossDirection.CROSS_BELOW)
+                {
+                    var prices = data.GetPricesInPeriod(ema.Item1, pricesAfterNDays);
+                    var hasAnyExpectedPrices = prices.Skip(1).Any(i => i < prices[0]);
+                    var pricesString = string.Join(",", prices);
+                    WriteToFile(pathStock, $"{CrossDirection.CROSS_BELOW},{ema.Item1.ToString("yyyy-MM-dd")},{pricesString}");
+                    if (hasAnyExpectedPrices)
+                    {
+                        success += 1;
+                    }
+                }
+                else
+                {
+                    var prices = data.GetPricesInPeriod(ema.Item1, pricesAfterNDays);
+                    var pricesString = string.Join(",", prices);
+                    WriteToFile(pathStock, $"{CrossDirection.MIXED_CROSSES},{ema.Item1.ToString("yyyy-MM-dd")},{pricesString}");
+                }
+            }
+
+            UpdateFilenameWithResult(pathStockStrategy, pathFileNameStock, pathStock, totalCrosses, success);
+        }
+
+        public static void RunEMACross133455WithAdxStrategy(StockDataAggregator data, int crossInDays, int pricesAfterNDays)
+        {
+            string pathStockStrategy, pathFileNameStock, pathStock;
+            CreateStrategyDirectory($"ema-cross-21-34-55-89-adx-gt-25", data, crossInDays, pricesAfterNDays, out pathStockStrategy, out pathFileNameStock, out pathStock);
+
+            var ema13Cross34 = data.CheckAllEMACrossInLastNDays(data.NumberOfTradingDays, 13, 34);
+            var ema13Cross55 = data.CheckAllEMACrossInLastNDays(data.NumberOfTradingDays, 13, 55);
+            var totalCrosses = 0;
+            var success = 0;
+
+            for (int i = 0; i < ema13Cross34.Count; i++)
+            {
+                (DateTime, CrossDirection) ema21 = ema13Cross34[i];
+                for (int j = 0; j < ema13Cross55.Count; j++)
+                {
+                    (DateTime, CrossDirection) ema34 = ema13Cross55[j];
+                    var dates = new List<DateTime>() { ema21.Item1, ema34.Item1 };
+                    dates = dates.OrderBy(x => x).ToList();
+                    var adx0 = data.GetADXAtDate(dates[0].Date);
+                    var adx1 = data.GetADXAtDate(dates[1].Date);
+                    var adx2 = data.GetADXAtDate(dates[2].Date);
+                    var adx = Math.Max(adx2, Math.Max(adx1, adx0));
+                    if (dates[2].Date.Subtract(dates[0]).TotalDays <= crossInDays && adx > 25)
+                    {
+                        totalCrosses += 1;
+                        if (ema21.Item2 == CrossDirection.CROSS_ABOVE
+                            && ema34.Item2 == CrossDirection.CROSS_ABOVE)
+                        {
+                            var prices = data.GetPricesInPeriod(dates[2], pricesAfterNDays);
+                            var hasAnyExpectedPrices = prices.Skip(1).Any(i => i > prices[0]);
+                            var pricesString = string.Join(",", prices);
+                            WriteToFile(pathStock, $"{CrossDirection.CROSS_ABOVE},{dates[1].ToString("yyyy-MM-dd")},{pricesString},{adx}");
+                            if (hasAnyExpectedPrices)
+                            {
+                                success += 1;
+                            }
+                        }
+                        else if (ema21.Item2 == CrossDirection.CROSS_BELOW
+                            && ema34.Item2 == CrossDirection.CROSS_BELOW)
+                        {
+                            var prices = data.GetPricesInPeriod(dates[2], pricesAfterNDays);
+                            var hasAnyExpectedPrices = prices.Skip(1).Any(i => i < prices[0]);
+                            var pricesString = string.Join(",", prices);
+                            WriteToFile(pathStock, $"{CrossDirection.CROSS_BELOW},{dates[1].ToString("yyyy-MM-dd")},{pricesString},{adx}");
+                            if (hasAnyExpectedPrices)
+                            {
+                                success += 1;
+                            }
+                        }
+                        else
+                        {
+                            var prices = data.GetPricesInPeriod(dates[2], pricesAfterNDays);
+                            var pricesString = string.Join(",", prices);
+                            WriteToFile(pathStock, $"{CrossDirection.MIXED_CROSSES},{dates[2].ToString("yyyy-MM-dd")},{pricesString},{adx}");
+                        }
+                    }
+                }
+            }
+
+            UpdateFilenameWithResult(pathStockStrategy, pathFileNameStock, pathStock, totalCrosses, success);
+        }
+
+        public static void RunEMACross133455Strategy(StockDataAggregator data, int crossInDays, int pricesAfterNDays)
+        {
+            string pathStockStrategy, pathFileNameStock, pathStock;
+            CreateStrategyDirectory($"ema-cross-21-34-55-89-adx-gt-25", data, crossInDays, pricesAfterNDays, out pathStockStrategy, out pathFileNameStock, out pathStock);
+
+            var ema13Cross34 = data.CheckAllEMACrossInLastNDays(data.NumberOfTradingDays, 13, 34);
+            var ema13Cross55 = data.CheckAllEMACrossInLastNDays(data.NumberOfTradingDays, 13, 55);
+            var totalCrosses = 0;
+            var success = 0;
+
+            for (int i = 0; i < ema13Cross34.Count; i++)
+            {
+                (DateTime, CrossDirection) ema21 = ema13Cross34[i];
+                for (int j = 0; j < ema13Cross55.Count; j++)
+                {
+                    (DateTime, CrossDirection) ema34 = ema13Cross55[j];
+                    var dates = new List<DateTime>() { ema21.Item1, ema34.Item1 };
+                    dates = dates.OrderBy(x => x).ToList();
+                    if (dates[2].Date.Subtract(dates[0]).TotalDays <= crossInDays)
+                    {
+                        totalCrosses += 1;
+                        if (ema21.Item2 == CrossDirection.CROSS_ABOVE
+                            && ema34.Item2 == CrossDirection.CROSS_ABOVE)
+                        {
+                            var prices = data.GetPricesInPeriod(dates[2], pricesAfterNDays);
+                            var hasAnyExpectedPrices = prices.Skip(1).Any(i => i > prices[0]);
+                            var pricesString = string.Join(",", prices);
+                            WriteToFile(pathStock, $"{CrossDirection.CROSS_ABOVE},{dates[1].ToString("yyyy-MM-dd")},{pricesString}");
+                            if (hasAnyExpectedPrices)
+                            {
+                                success += 1;
+                            }
+                        }
+                        else if (ema21.Item2 == CrossDirection.CROSS_BELOW
+                            && ema34.Item2 == CrossDirection.CROSS_BELOW)
+                        {
+                            var prices = data.GetPricesInPeriod(dates[2], pricesAfterNDays);
+                            var hasAnyExpectedPrices = prices.Skip(1).Any(i => i < prices[0]);
+                            var pricesString = string.Join(",", prices);
+                            WriteToFile(pathStock, $"{CrossDirection.CROSS_BELOW},{dates[1].ToString("yyyy-MM-dd")},{pricesString}");
+                            if (hasAnyExpectedPrices)
+                            {
+                                success += 1;
+                            }
+                        }
+                        else
+                        {
+                            var prices = data.GetPricesInPeriod(dates[2], pricesAfterNDays);
+                            var pricesString = string.Join(",", prices);
+                            WriteToFile(pathStock, $"{CrossDirection.MIXED_CROSSES},{dates[2].ToString("yyyy-MM-dd")},{pricesString}");
+                        }
+                    }
+                }
+            }
+
+            UpdateFilenameWithResult(pathStockStrategy, pathFileNameStock, pathStock, totalCrosses, success);
+        }
+
         public static void RunEMACross21345589WithAdxStrategy(StockDataAggregator data, int crossInDays, int pricesAfterNDays)
         {
             string pathStockStrategy, pathFileNameStock, pathStock;
