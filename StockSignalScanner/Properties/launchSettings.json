@@ -2,7 +2,7 @@
   "profiles": {
     "StockSignalScanner": {
       "commandName": "Project",
-      "commandLineArgs": "run-strategy"
+      "commandLineArgs": "run-scan"
     }
   }
 }

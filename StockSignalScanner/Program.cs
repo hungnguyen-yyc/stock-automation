@@ -25,7 +25,7 @@ namespace StockSignalScanner
 
                 if (runStrategy)
                 {
-                    await RunStrategyAnalysis(northAmericaStocks.Where(i => i.Symbol == "RCL"));
+                    await RunStrategyAnalysis(northAmericaStocks);
                 }
                 if (runScan)
                 {
@@ -45,8 +45,8 @@ namespace StockSignalScanner
                     var data = await RunAnalysis(stock.Symbol, stock.ExchangeShortName, API_KEY);
                     if (data != null)
                     {
-                        EMACrossingStrategy.RunEMACross133455Strategy(data, 3, 7);
-                        EMACrossingStrategy.RunEMACross133455WithAdxStrategy(data, 3, 7);
+                        EMACrossingStrategy.RunEMACross1334Strategy(data, 3, 7);
+                        EMACrossingStrategy.RunEMACross1334WithAdxStrategy(data, 3, 7);
                         EMACrossingStrategy.RunEMACross21345589Strategy(data, 3, 7);
                         EMACrossingStrategy.RunEMACross21345589WithAdxStrategy(data, 3, 7);
                         EMACrossingStrategy.RunEMACross50200Strategy(data, 3, 7);
@@ -93,13 +93,6 @@ namespace StockSignalScanner
                         && data.CheckEMACrossInLastNDays(5, 21, 55) == CrossDirection.CROSS_ABOVE
                         && data.CheckEMACrossInLastNDays(5, 34, 55) == CrossDirection.CROSS_ABOVE;
 
-                    var emaCrossAbove89 = data.CheckEMACrossInLastNDays(5, 21, 89) == CrossDirection.CROSS_ABOVE
-                        && data.CheckEMACrossInLastNDays(5, 34, 89) == CrossDirection.CROSS_ABOVE
-                        && data.CheckEMACrossInLastNDays(5, 55, 89) == CrossDirection.CROSS_ABOVE;
-                    var emaCrossBelow89 = data.CheckEMACrossInLastNDays(5, 21, 89) == CrossDirection.CROSS_BELOW
-                        && data.CheckEMACrossInLastNDays(5, 34, 89) == CrossDirection.CROSS_BELOW
-                        && data.CheckEMACrossInLastNDays(5, 55, 89) == CrossDirection.CROSS_BELOW;
-
                     var macdCrossAbove = data.GetMACDCrossDirectionInLastNDays(7) == CrossDirection.CROSS_ABOVE;
                     var macdCrossBelow = data.GetMACDCrossDirectionInLastNDays(7) == CrossDirection.CROSS_BELOW;
                     var notOverbought = !data.IsOverboughtByStochasticInLastNDays(5)
@@ -126,16 +119,6 @@ namespace StockSignalScanner
                         if (adxInLast5Days)
                         {
                             var emacross1 = Path.Combine(scanFolderPath, "ema-crosses-20-200-adx-25.txt");
-                            WriteToFile(emacross1, data.GetTickerStatusLastNDays(5));
-                        }
-                    }
-                    if (emaCrossAbove89 || emaCrossBelow89)
-                    {
-                        var pathToWrite = Path.Combine(scanFolderPath, "ema-crosses-89.txt");
-                        WriteToFile(pathToWrite, data.GetTickerStatusLastNDays(5));
-                        if (adxInLast5Days)
-                        {
-                            var emacross1 = Path.Combine(scanFolderPath, "ema-crosses-89-adx-25.txt");
                             WriteToFile(emacross1, data.GetTickerStatusLastNDays(5));
                         }
                     }
