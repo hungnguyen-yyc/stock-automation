@@ -88,10 +88,34 @@ namespace StockSignalScanner.Models
         {
             List<decimal> periodALine = MovingAverage.CalculateEMA(_priceOrderByDateAsc.Select(i => i.Close).ToList(), periodA);
             List<decimal> periodBLine = MovingAverage.CalculateEMA(_priceOrderByDateAsc.Select(i => i.Close).ToList(), periodB);
-            List<decimal> periodALineLastNDays = periodALine.Skip(periodALine.Count() - days).ToList();
-            List<decimal> periodBLineLastNDays = periodBLine.Skip(periodBLine.Count() - days).ToList();
+            List<decimal> periodALineLastNDays = periodALine.Skip(periodALine.Count - days).ToList();
+            List<decimal> periodBLineLastNDays = periodBLine.Skip(periodBLine.Count - days).ToList();
             var direction = CrossDirectionDetector.GetCrossDirection(periodALineLastNDays, periodBLineLastNDays);
             return direction;
+        }
+
+        public bool CheckPriceTouchEMAInLastNDays(int days, int emaPeriod)
+        {
+            try
+            {
+                List<decimal> periodALine = MovingAverage.CalculateEMAV5(_priceOrderByDateAsc.Select(i => i.Close).ToList(), emaPeriod);
+                List<decimal> periodALineLastNDays = periodALine.Skip(periodALine.Count - days).ToList();
+                var prices = _priceOrderByDateAsc.Skip(_priceOrderByDateAsc.Count - days).ToList();
+                for (int i = 0; i < prices.Count; i++)
+                {
+                    IPrice price = prices[i];
+                    var ema = periodALineLastNDays[i];
+                    if (ema >= price.Low && ema <= price.High)
+                    {
+                        return true;
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+            return false;
         }
 
         public List<(DateTime, CrossDirection)> CheckAllEMACrossInLastNDays(int days, int periodA, int periodB)
@@ -331,6 +355,21 @@ namespace StockSignalScanner.Models
             List<(DateTime, decimal)> rsiMALine = _rsiTimes.Zip(_rsiMAValues, (t, v) => (t, v)).Skip(_rsiValues.Count - days).ToList();
             return rsiLine.Select(k => k.Item2).Any(k => k >= 70) && rsiMALine.Select(d => d.Item2).Any(d => d >= 70);
         }
+
+        public bool IsBullishByRSIInLastNDays(int days)
+        {
+            List<(DateTime, decimal)> rsiLine = _rsiTimes.Zip(_rsiValues, (t, v) => (t, v)).Skip(_rsiValues.Count - days).ToList();
+            List<(DateTime, decimal)> rsiMALine = _rsiTimes.Zip(_rsiMAValues, (t, v) => (t, v)).Skip(_rsiValues.Count - days).ToList();
+            return rsiLine.Select(k => k.Item2).All(k => k > 50 && k < 70) && rsiMALine.Select(d => d.Item2).All(k => k > 50 && k < 70);
+        }
+
+        public bool IsBearishByRSIInLastNDays(int days)
+        {
+            List<(DateTime, decimal)> rsiLine = _rsiTimes.Zip(_rsiValues, (t, v) => (t, v)).Skip(_rsiValues.Count - days).ToList();
+            List<(DateTime, decimal)> rsiMALine = _rsiTimes.Zip(_rsiMAValues, (t, v) => (t, v)).Skip(_rsiValues.Count - days).ToList();
+            return rsiLine.Select(k => k.Item2).All(k => k > 30 && k < 50) && rsiMALine.Select(d => d.Item2).All(k => k > 30 && k < 50);
+        }
+
         public bool IsOversoldByRSIInLastNDays(int days)
         {
             List<(DateTime, decimal)> rsiLine = _rsiTimes.Zip(_rsiValues, (t, v) => (t, v)).Skip(_rsiValues.Count - days).ToList();

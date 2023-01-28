@@ -75,30 +75,24 @@ namespace StockSignalScanner
                 var data = await RunAnalysis(stock.Symbol, stock.ExchangeShortName, API_KEY);
                 if (data != null)
                 {
-                    if (data.HasOverboughtOrOversoldFollowedByMACDCrossLastNDays())
-                    {
-                        var overboughtOrOversoldFollowedByMACDCrossLast5DaysFile = Path.Combine(scanFolderPath, "overbought-or-oversold-with-macd-cross.txt");
-                        WriteToFile(overboughtOrOversoldFollowedByMACDCrossLast5DaysFile, data.GetTickerStatusLastNDays(5));
-                    }
-
-                    var emaCrossBelow50200 = data.CheckEMACrossInLastNDays(3, 50, 200) == CrossDirection.CROSS_BELOW
-                        && data.CheckEMACrossInLastNDays(3, 20, 200) == CrossDirection.CROSS_BELOW;
+                    var emaCrossBelow50200 = data.CheckEMACrossInLastNDays(5, 50, 200) == CrossDirection.CROSS_BELOW
+                        && data.CheckEMACrossInLastNDays(5, 20, 200) == CrossDirection.CROSS_BELOW;
                     var emaCrossAbove50200 = data.CheckEMACrossInLastNDays(3, 50, 200) == CrossDirection.CROSS_ABOVE
-                        && data.CheckEMACrossInLastNDays(3, 50, 200) == CrossDirection.CROSS_ABOVE;
+                        && data.CheckEMACrossInLastNDays(5, 50, 200) == CrossDirection.CROSS_ABOVE;
 
-                    var emaCrossBelow55 = data.CheckEMACrossInLastNDays(5, 13, 55) == CrossDirection.CROSS_BELOW
-                        && data.CheckEMACrossInLastNDays(5, 21, 55) == CrossDirection.CROSS_BELOW
-                        && data.CheckEMACrossInLastNDays(5, 34, 55) == CrossDirection.CROSS_BELOW;
-                    var emaCrossAbove55 = data.CheckEMACrossInLastNDays(5, 13, 55) == CrossDirection.CROSS_ABOVE
-                        && data.CheckEMACrossInLastNDays(5, 21, 55) == CrossDirection.CROSS_ABOVE
-                        && data.CheckEMACrossInLastNDays(5, 34, 55) == CrossDirection.CROSS_ABOVE;
+                    var emaCrossBelow1348 = data.CheckEMACrossInLastNDays(5, 13, 48) == CrossDirection.CROSS_BELOW;
+                    var emaCrossAbove1348 = data.CheckEMACrossInLastNDays(5, 13, 48) == CrossDirection.CROSS_ABOVE;
 
-                    var macdCrossAbove = data.GetMACDCrossDirectionInLastNDays(7) == CrossDirection.CROSS_ABOVE;
-                    var macdCrossBelow = data.GetMACDCrossDirectionInLastNDays(7) == CrossDirection.CROSS_BELOW;
+                    var macdCrossAbove = data.GetMACDCrossDirectionInLastNDays(5) == CrossDirection.CROSS_ABOVE;
+                    var macdCrossBelow = data.GetMACDCrossDirectionInLastNDays(5) == CrossDirection.CROSS_BELOW;
                     var notOverbought = !data.IsOverboughtByStochasticInLastNDays(5)
                         && !data.IsOverboughtByRSIInLastNDays(10);
                     var notOversold = !data.IsOversoldByStochasticInLastNDays(5)
                         && !data.IsOversoldByRSIInLastNDays(10);
+
+                    var rsiBullish = data.IsBullishByRSIInLastNDays(5);
+                    var rsiBearish = data.IsBullishByRSIInLastNDays(5);
+
                     var last3DayHistogramIncrease = true;
                     var histogramInLast3Days = data.GetMACDHistogramInLastNDays(3).ToList();
                     for (int i = 1; i < histogramInLast3Days.Count(); i++)
@@ -111,76 +105,77 @@ namespace StockSignalScanner
                         }
                     }
 
-                    var adxInLast5Days = data.GetADXInLastNDays(4).All(x => x > 25);
+                    var adxInLast5Days = data.GetADXInLastNDays(3).All(x => x > 25);
                     if (emaCrossAbove50200 || emaCrossBelow50200)
                     {
-                        var pathToWrite = Path.Combine(scanFolderPath, "ema-crosses-20-200.txt");
+                        var pathToWrite = Path.Combine(scanFolderPath, "ema-crosses-50-200.txt");
                         WriteToFile(pathToWrite, data.GetTickerStatusLastNDays(5)); 
                         if (adxInLast5Days)
                         {
-                            var emacross1 = Path.Combine(scanFolderPath, "ema-crosses-20-200-adx-25.txt");
+                            var emacross1 = Path.Combine(scanFolderPath, "ema-crosses-50-200-adx-25.txt");
+                            WriteToFile(emacross1, data.GetTickerStatusLastNDays(5));
+                        }
+                        if (rsiBullish && emaCrossAbove50200)
+                        {
+                            var emacross1 = Path.Combine(scanFolderPath, "ema-crosses-50-200-rsi-bullish.txt");
+                            WriteToFile(emacross1, data.GetTickerStatusLastNDays(5));
+                        }
+                        if (rsiBearish && emaCrossBelow50200)
+                        {
+                            var emacross1 = Path.Combine(scanFolderPath, "ema-crosses-50-200-rsi-bearish.txt");
+                            WriteToFile(emacross1, data.GetTickerStatusLastNDays(5));
+                        }
+                        if (data.CheckPriceTouchEMAInLastNDays(3, 20))
+                        {
+                            var emacross1 = Path.Combine(scanFolderPath, "ema-crosses-50-200-touch-20.txt");
                             WriteToFile(emacross1, data.GetTickerStatusLastNDays(5));
                         }
                     }
-                    if (emaCrossAbove55 || emaCrossBelow55)
+                    if (emaCrossAbove1348 || emaCrossBelow1348)
                     {
-                        var pathToWrite = Path.Combine(scanFolderPath, "ema-crosses-55.txt");
+                        var pathToWrite = Path.Combine(scanFolderPath, "ema-crosses-13-48.txt");
                         WriteToFile(pathToWrite, data.GetTickerStatusLastNDays(5));
                         if (adxInLast5Days)
                         {
-                            var emacross1 = Path.Combine(scanFolderPath, "ema-crosses-55-adx-25.txt");
+                            var emacross1 = Path.Combine(scanFolderPath, "ema-crosses-13-48-adx-25.txt");
+                            WriteToFile(emacross1, data.GetTickerStatusLastNDays(5));
+                        }
+                        if (rsiBullish && emaCrossAbove1348)
+                        {
+                            var emacross1 = Path.Combine(scanFolderPath, "ema-crosses-13-48-rsi-bullish.txt");
+                            WriteToFile(emacross1, data.GetTickerStatusLastNDays(5));
+                        }
+                        if (rsiBearish && emaCrossBelow1348)
+                        {
+                            var emacross1 = Path.Combine(scanFolderPath, "ema-crosses-13-48-rsi-bearish.txt");
+                            WriteToFile(emacross1, data.GetTickerStatusLastNDays(5));
+                        }
+                        if (data.CheckPriceTouchEMAInLastNDays(3, 20))
+                        {
+                            var emacross1 = Path.Combine(scanFolderPath, "ema-crosses-13-48-touch-20.txt");
                             WriteToFile(emacross1, data.GetTickerStatusLastNDays(5));
                         }
                     }
-                    if (emaCrossAbove55 && notOverbought)
+                    if (emaCrossAbove1348 && notOverbought)
                     {
-                        var pathToWrite = Path.Combine(scanFolderPath, "ema-crosses-above-55-notoverbought.txt");
+                        var pathToWrite = Path.Combine(scanFolderPath, "ema-crosses-above-13-48-notoverbought.txt");
                         WriteToFile(pathToWrite, data.GetTickerStatusLastNDays(10));
 
                         if (adxInLast5Days && macdCrossAbove)
                         {
-                            var emacross1 = Path.Combine(scanFolderPath, "ema-crosses-55-notoverbought-macd-cross-above-adx-25.txt");
+                            var emacross1 = Path.Combine(scanFolderPath, "ema-crosses-13-48-notoverbought-macd-cross-above-adx-25.txt");
                             WriteToFile(emacross1, data.GetTickerStatusLastNDays(5));
                         }
                     }
-                    if (emaCrossBelow55 && notOversold)
+                    if (emaCrossBelow1348 && notOversold)
                     {
-                        var pathToWrite = Path.Combine(scanFolderPath, "ema-crosses-below-55-notoversold.txt");
+                        var pathToWrite = Path.Combine(scanFolderPath, "ema-crosses-below-13-48-notoversold.txt");
                         WriteToFile(pathToWrite, data.GetTickerStatusLastNDays(10));
 
                         if (adxInLast5Days && macdCrossAbove)
                         {
-                            var emacross1 = Path.Combine(scanFolderPath, "ema-crosses-55-notoversold-macd-cross-below-adx-25.txt");
+                            var emacross1 = Path.Combine(scanFolderPath, "ema-crosses-13-48-notoversold-macd-cross-below-adx-25.txt");
                             WriteToFile(emacross1, data.GetTickerStatusLastNDays(5));
-                        }
-                    }
-
-
-                    if ((data.CheckAllCrossesWithDirectionInLastNDays(5, CrossDirection.CROSS_ABOVE) && data.IsOversoldByStochasticInLastNDays(5))
-                        || data.CheckAllCrossesWithDirectionInLastNDays(5, CrossDirection.CROSS_BELOW) && data.IsOverboughtByStochasticInLastNDays(5))
-                    {
-                        if (data.CheckInSupportZoneLastNDays(30).IsInZone
-                            || data.CheckInSupportZoneLastNDays(90).IsInZone
-                            || data.CheckInSupportZoneLastNDays(180).IsInZone)
-                        {
-                            var allCrossesInZoneFile = Path.Combine(scanFolderPath, "in-zone-all-crosses-last-5-days.txt");
-                            WriteToFile(allCrossesInZoneFile, data.GetTickerStatusLastNDays(5));
-                        }
-                        var allCrossesFile = Path.Combine(scanFolderPath, "all-crosses-last-5-days.txt");
-                        WriteToFile(allCrossesFile, data.GetTickerStatusLastNDays(5));
-                        if (data.IsOversoldByRSIInLastNDays(5) || data.IsOverboughtByRSIInLastNDays(5))
-                        {
-                            var allCrossesInZoneFile = Path.Combine(scanFolderPath, "strict-all-crosses-last-5-days.txt");
-                            var content = data.GetTickerStatusLastNDays(5);
-                            WriteToFile(allCrossesInZoneFile, content);
-
-                            var dir = Path.GetDirectoryName(allCrossesInZoneFile);
-                            var questrade = Path.Combine(dir, "questrade-watchlist-strict-all-crosses-combined.csv");
-                            if (!File.Exists(questrade))
-                            {
-                                File.AppendAllLines(questrade, new[] { "\"Symbol\"" });
-                            }
-                            File.AppendAllLines(questrade, new[] { content.Split(",")[0] });
                         }
                     }
                 }
@@ -347,10 +342,16 @@ namespace StockSignalScanner
                     return new StockDataAggregator(tickerHistoricalPrices.Symbol, exchange, tickerHistoricalPrices.Historical, 14, 7, 12, 26, 9, 14, 7, 3);
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-
-                throw;
+                var nowDate = DateTime.Now.ToString("yyyy-MM-dd");
+                var folderPath = @"C:\Users\hnguyen\Documents\stock-scan-logs";
+                var scanFolderPath = Path.Combine(folderPath, nowDate);
+                using (StreamWriter outputFile = new StreamWriter(Path.Combine(scanFolderPath, $"error-{ticker}.txt"), true))
+                {
+                    outputFile.WriteLine(ex.Message);
+                    outputFile.WriteLine(ex.StackTrace);
+                }
             }
             return null;
         }

@@ -45,6 +45,20 @@ namespace StockSignalScanner.Indicators
 
             return sum;
         }
+
+        public static List<decimal> CalculateEMAV5(List<decimal> src, int length)
+        {
+            decimal alpha = 2.0m / (length + 1);
+            List<decimal> sum = new List<decimal>();
+
+            for (int i = 0; i < src.Count; i++)
+            {
+                decimal previousSum = i == 0 ? src[i] : sum[i - 1];
+                sum.Add(alpha * src[i] + (1 - alpha) * previousSum);
+            }
+
+            return sum;
+        }
     }
 
 }
