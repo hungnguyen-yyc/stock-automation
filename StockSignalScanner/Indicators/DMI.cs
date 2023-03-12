@@ -50,7 +50,7 @@ namespace StockSignalScanner.Indicators
             return sum;
         }
 
-        public static List<decimal> CalculateADX(IList<IPrice> prices, int len, int lensig)
+        public static DMI CalculateADX(IList<IPrice> prices, int len, int lensig)
         {
             // Calculate +DM, -DM
             List<decimal> plusDM = new List<decimal>(new decimal[prices.Count]);
@@ -102,7 +102,49 @@ namespace StockSignalScanner.Indicators
 
                 }
             }
-            return RMA(adx, lensig);
+            return new DMI(diPlus, diMinus, RMA(adx, lensig));
         }
+    }
+
+    public class DMI
+    {
+        public DMI(List<decimal> diPlus, List<decimal> diMinus, List<decimal> adx)
+        {
+            DiPlus = diPlus;
+            DiMinus = diMinus;
+            Adx = adx;
+        }
+
+        public bool HasDIPlusAboveMinusInLastNDays(int days)
+        {
+            var trimDiPlus = DiPlus.Skip(DiPlus.Count() - days).ToArray();
+            var trimDMinus = DiMinus.Skip(DiMinus.Count() - days).ToArray();
+            for (int i = 0; i < trimDiPlus.Length; i++)
+            {
+                if (trimDiPlus[i] <= trimDMinus[i])
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public bool HasDIPlusBelowMinusInLastNDays(int days)
+        {
+            var trimDiPlus = DiPlus.Skip(DiPlus.Count() - days).ToArray();
+            var trimDMinus = DiMinus.Skip(DiMinus.Count() - days).ToArray();
+            for (int i = 0; i < trimDiPlus.Length; i++)
+            {
+                if (trimDiPlus[i] >= trimDMinus[i])
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public List<decimal> DiPlus { get; }
+        public List<decimal> DiMinus { get; }
+        public List<decimal> Adx { get; }
     }
 }

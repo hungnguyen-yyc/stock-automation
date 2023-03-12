@@ -5,7 +5,7 @@
         public decimal AdjClose { get; set; }
         public long UnadjustedVolume { get; set; }
         public decimal Change { get; set; }
-        public decimal ChangePercent { get; set; }
+        public decimal? ChangePercent { get; set; }
         public decimal Vwap { get; set; }
         public string Label { get; set; }
         public decimal ChangeOverTime { get; set; }
