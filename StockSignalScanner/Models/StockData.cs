@@ -1,4 +1,7 @@
 ﻿using Newtonsoft.Json.Linq;
+using OoplesFinance.StockIndicators;
+using OoplesFinance.StockIndicators.Interfaces;
+using OoplesFinance.StockIndicators.Models;
 using StockSignalScanner.Indicators;
 using System;
 using System.ComponentModel.DataAnnotations;
@@ -13,6 +16,7 @@ namespace StockSignalScanner.Models
     public class StockDataAggregator : SymbolInfo
     {
         private readonly IList<IPrice> _priceOrderByDateAsc;
+        private readonly IList<TickerData> _tickerData;
         private readonly int _rsiPeriod;
         private readonly int _rsiMA;
         private readonly int _macdShortPeriod;
@@ -21,6 +25,7 @@ namespace StockSignalScanner.Models
         private readonly int _stochasticPeriod;
         private readonly int _smoothK;
         private readonly int _smoothD;
+        private readonly int _adxPeriod;
         List<decimal> _rsiValues;
         List<decimal> _rsiMAValues;
         List<DateTime> _rsiTimes;
@@ -35,7 +40,7 @@ namespace StockSignalScanner.Models
         Dictionary<int, CrossDirection> _rsiCrossLastNdDaysMap;
         DMI _dmi;
 
-        public StockDataAggregator(string ticker, string exchange, IList<HistoricalPrice> prices, int rsiPeriod, int rsiMA, int macdShortPeriod, int macdLongPeriod, int macdSignalPeriod, int stochasticPeriod, int smoothK, int smoothD)
+        public StockDataAggregator(string ticker, string exchange, IList<HistoricalPrice> prices, int rsiPeriod, int rsiMA, int macdShortPeriod, int macdLongPeriod, int macdSignalPeriod, int stochasticPeriod, int smoothK, int smoothD, int adxPeriod)
         {
             Symbol = ticker;
             Exchange = exchange;
@@ -50,6 +55,7 @@ namespace StockSignalScanner.Models
             _macdSignalPeriod = macdSignalPeriod;
             _stochasticPeriod = stochasticPeriod;
             _smoothD = smoothD;
+            _adxPeriod = adxPeriod;
             _smoothK = smoothK;
             _priceOrderByDateAsc = prices
                 .OrderBy(p => p.Date)
@@ -70,6 +76,14 @@ namespace StockSignalScanner.Models
                     Vwap = p.Vwap,
                 })
                 .ToList();
+            _tickerData = _priceOrderByDateAsc.Select(s => new TickerData()
+            {
+                Volume = s.Volume,
+                Open = Decimal.ToDouble(s.Open),
+                Close = Decimal.ToDouble(s.Close),
+                High = Decimal.ToDouble(s.High),
+                Low = Decimal.ToDouble(s.Low),
+            }).ToList();
             Aggregate();
         }
 
@@ -154,6 +168,13 @@ namespace StockSignalScanner.Models
             var stc = SchaffTrendCycle.CalculateSTC(_priceOrderByDateAsc, maShort, maLong, cycle, factor).Skip(_priceOrderByDateAsc.Count() - days).ToList();
             var levels = stc.Select(s => level).ToList();
             return CrossDirectionDetector.GetCrossDirection(stc, levels);
+        }
+
+        public List<decimal> GetMFIInLastNDays(int period)
+        {
+            var stockData = new StockData(_tickerData, OoplesFinance.StockIndicators.Enums.InputName.Close);
+            var calculated = stockData.CalculateMoneyFlowIndex(OoplesFinance.StockIndicators.Enums.InputName.TypicalPrice, 14);
+            return MoneyFlowIndex.CalculateMFI(_priceOrderByDateAsc, period);
         }
 
         public List<(DateTime, CrossDirection)> CheckAllEMACrossInLastNDays(int days, int periodA, int periodB)
@@ -465,7 +486,7 @@ namespace StockSignalScanner.Models
             _rsiMAValues = MovingAverage.CalculateEMA(_rsiValues, _rsiMA);
             (_macdValues, _macdSignalValues, _macdTimes) = MACDIndicator.GetMACD(_priceOrderByDateAsc, _macdShortPeriod, _macdLongPeriod, _macdSignalPeriod);
             (_kValues, _dValues, _stochasticTimes) = StochasticIndicator.GetStochastic(_priceOrderByDateAsc, _stochasticPeriod, _smoothK, _smoothD);
-            _dmi = ADX.CalculateADX(_priceOrderByDateAsc, _rsiPeriod, _rsiPeriod);
+            _dmi = ADX.CalculateADX(_priceOrderByDateAsc, _adxPeriod, _adxPeriod);
 
             // Loop through the RSI values
             for (int i = 0; i < _rsiValues.Count; i++)

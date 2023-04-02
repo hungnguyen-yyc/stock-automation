@@ -18,15 +18,22 @@ namespace StockSignalScanner
         {
             var runStrategyStock = args.Any(a => a.ToLower().Contains("runstrategystock") || a.ToLower().Contains("run-strategy-stock"));
             var runScanStock = args.Any(a => a.ToLower().Contains("runscanstock") || a.ToLower().Contains("run-scan-stock"));
+            var runScanStock15m = args.Any(a => a.ToLower().Contains("runscanstock15m") || a.ToLower().Contains("run-scan-stock-15m"));
             var runStrategyCrypto = args.Any(a => a.ToLower().Contains("runstrategycrypto") || a.ToLower().Contains("run-strategy-crypto"));
             var runScanCrypto = args.Any(a => a.ToLower().Contains("runscancrypto") || a.ToLower().Contains("run-scan-crypto"));
             // var failed = new List<string>() { "ATEST-A", "BTAL", "HIBS", "IIGD", "TOPS", "USFR", "WEBS" };
+            var hot = new List<string>() { "AAPL", "GOOGL", "TSLA", "NVDA", "META", "AMZN", "COIN", "GME", "AMC" };
             using (var httpClient = new HttpClient())
             {
+                if (runScanStock15m)
+                {
+                    await StockScannerInterday.Run(hot.ToArray(), API_KEY);
+                    return;
+                }
                 if (runStrategyStock || runScanStock)
                 {
                     // https://financialmodelingprep.com/api/v3/financial-statement-symbol-lists?apikey=e2b2a6d07ebf89ca33bb96b0b590daab
-                    var northAmericaStocks = await StockScanner.GetStocksFromUSCANExchanges(999999999, 1000000, 1000, 0, API_KEY);
+                    var northAmericaStocks = await StockScanner.GetStocksFromUSCANExchanges(999999999, 3000000, 1000, 10, API_KEY);
 
                     if (runStrategyStock)
                     {
@@ -34,8 +41,9 @@ namespace StockSignalScanner
                     }
                     if (runScanStock)
                     {
-                        await StockScanner.StartScan(northAmericaStocks, API_KEY);
+                        await StockScanner.StartScan(northAmericaStocks.Where(s => hot.Contains(s.Symbol)), API_KEY);
                     }
+                    return;
                 }
                 if (runStrategyCrypto || runScanCrypto)
                 {
@@ -50,6 +58,7 @@ namespace StockSignalScanner
                     {
                         await StartScan(availableCrytos, API_KEY);
                     }
+                    return;
                 }
             }
         }
@@ -306,7 +315,7 @@ namespace StockSignalScanner
                     }
 
                     Console.WriteLine($"Analyzing data for {ticker}");
-                    return new StockDataAggregator(tickerHistoricalPrices.Symbol, exchange, tickerHistoricalPrices.Historical, 14, 7, 12, 26, 9, 14, 7, 3);
+                    return new StockDataAggregator(tickerHistoricalPrices.Symbol, exchange, tickerHistoricalPrices.Historical, 14, 7, 12, 26, 9, 14, 7, 3, 14);
                 }
             }
             catch (Exception ex)
