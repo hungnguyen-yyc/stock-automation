@@ -50,7 +50,8 @@ namespace StockSignalScanner
             var hasDIPlusBelowDmiMinusLast3Days = data.Dmi.HasDIPlusBelowMinusInLastNDays(1);
             var emaCross58 = data.CheckEMACrossInLastNDays(5, 5, 8, 2);
             var emaCross813 = data.CheckEMACrossInLastNDays(5, 8, 13, 2);
-            var mfi = data.GetMFIInLastNDays(14);
+            var mfi = data.GetMFICrossLevelInLastNDays(14, 50, 5);
+            var aroon = data.GetAroonOscillatorCrossLevelInLastNDays(14, 50, 5);
 
             if(emaCross58 == CrossDirection.CROSS_ABOVE && emaCross813 == CrossDirection.CROSS_ABOVE)
             {

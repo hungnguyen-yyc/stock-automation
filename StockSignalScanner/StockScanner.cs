@@ -3,6 +3,7 @@ using Newtonsoft.Json.Linq;
 using StockSignalScanner.Models;
 using StockSignalScanner.Strategies;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
 
 namespace StockSignalScanner
 {
@@ -41,7 +42,7 @@ namespace StockSignalScanner
                 var data = await StockScanner.RunAnalysis(stock.Symbol, stock.ExchangeShortName, apiKey);
                 if (data != null)
                 {
-                    RunStcAnalysis(data, scanFolderPath);
+                    RunAroonLeadStrategy(data, scanFolderPath);
                 }
             }
             catch (Exception ex)
@@ -54,16 +55,65 @@ namespace StockSignalScanner
             }
         }
 
+        private static void RunAroonLeadStrategy(StockDataAggregator data, string scanFolderPath)
+        {
+            var prices = data.PriceOrderByDateAsc;
+            var strategy = new AroonLeadStrategy(prices, new IndicatorParameterPackage
+            {
+                Rsi = 14,
+                Mfi = 14,
+                StcCycleLength = 10,
+                StcFactor = 0.5,
+                StcLong = 50,
+                StcShort = 23,
+                MovingAverage = 14,
+                AroonOscillator = 14,
+            }, 5);
+            var rating = strategy.GetRating(); 
+            var details = strategy.GetDetails();
+            var description = $"- {data.Symbol}: {rating}";
+            description += "\n";
+            description += details;
+            description += "\n";
+            description += "---------------------------------------------------------";
+            description += "\n";
+
+            if (rating == 100)
+            {
+                var pathToWrite = Path.Combine(scanFolderPath, "ratings100.txt");
+                WriteToFile(pathToWrite, description);
+
+                return;
+            }
+
+            if (rating >= 90)
+            {
+                var pathToWrite = Path.Combine(scanFolderPath, "ratings90.txt");
+                WriteToFile(pathToWrite, description);
+
+                return;
+            }
+
+            if (rating >= 80)
+            {
+                var pathToWrite = Path.Combine(scanFolderPath, "ratings80.txt");
+                WriteToFile(pathToWrite, description);
+
+                return;
+            }
+        }
+
         private static void RunStcAnalysis(StockDataAggregator data, string scanFolderPath)
         {
             var strongADX = data.GetADXInLastNDays(1).All(x => x > 25);
             var stcCross25 = data.CheckSTCCrossInLastNDays(25, 3, 23, 50, 10, 0.5m);
             var stcCross75 = data.CheckSTCCrossInLastNDays(75, 3, 23, 50, 10, 0.5m);
-            var hasDIPlusAboveDmiMinusLast3Days = data.Dmi.HasDIPlusAboveMinusInLastNDays(1);
-            var hasDIPlusBelowDmiMinusLast3Days = data.Dmi.HasDIPlusBelowMinusInLastNDays(1);
             var emaCross58 = data.CheckEMACrossInLastNDays(5, 5, 8, 2);
             var emaCross813 = data.CheckEMACrossInLastNDays(5, 8, 13, 2);
-            var mfi = data.GetMFIInLastNDays(5);
+            var mfi = data.GetMFICrossLevelInLastNDays(14, 50, 5);
+            var aroon = data.GetAroonOscillatorCrossLevelInLastNDays(14, 50, 5);
+            var smi = data.GeStochasticMomentumIndexCrossLevelInLastNDays(14, 50, 5);
+            var vwma = data.GetVolumeWeightedMovingAverageInLastNDays(20);
 
             if(emaCross58 == CrossDirection.CROSS_ABOVE && emaCross813 == CrossDirection.CROSS_ABOVE)
             {
@@ -84,11 +134,6 @@ namespace StockSignalScanner
                 {
                     pathToWrite = Path.Combine(scanFolderPath, "buy-stc-adx-last-5.txt");
                     StockScanner.WriteToFile(pathToWrite, data.GetTickerStatusLastNDays(3));
-                    if (hasDIPlusAboveDmiMinusLast3Days)
-                    {
-                        pathToWrite = Path.Combine(scanFolderPath, "buy-stc-adx-di-last-5.txt");
-                        StockScanner.WriteToFile(pathToWrite, data.GetTickerStatusLastNDays(3));
-                    }
                 }
             }
 
@@ -100,11 +145,6 @@ namespace StockSignalScanner
                 {
                     pathToWrite = Path.Combine(scanFolderPath, "sell-stc-adx-last-5.txt");
                     StockScanner.WriteToFile(pathToWrite, data.GetTickerStatusLastNDays(3));
-                    if (hasDIPlusBelowDmiMinusLast3Days)
-                    {
-                        pathToWrite = Path.Combine(scanFolderPath, "sell-stc-adx-di-last-5.txt");
-                        StockScanner.WriteToFile(pathToWrite, data.GetTickerStatusLastNDays(3));
-                    }
                 }
             }
         }
@@ -372,7 +412,7 @@ namespace StockSignalScanner
             try
             {
                 Console.WriteLine($"Getting data for {ticker}");
-                var ago7years = DateTime.Now.AddYears(-10).ToString("yyyy-MM-dd");
+                var ago7years = DateTime.Now.AddYears(-5).ToString("yyyy-MM-dd");
                 string API_ENDPOINT = $"https://financialmodelingprep.com/api/v3/historical-price-full/{ticker}?from={ago7years}&apikey={apiKey}";
 
                 HttpClient client = new HttpClient();
@@ -383,7 +423,7 @@ namespace StockSignalScanner
                     string content = await response.Content.ReadAsStringAsync();
                     var tickerHistoricalPrices = JsonConvert.DeserializeObject<TickerHistoricalPrice>(content, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
 
-                    if (tickerHistoricalPrices == null || tickerHistoricalPrices.Historical == null || tickerHistoricalPrices.Historical.Count < 500)
+                    if (tickerHistoricalPrices == null || tickerHistoricalPrices.Historical == null || tickerHistoricalPrices.Historical.Count < 750)
                     {
                         return null;
                     }
@@ -404,29 +444,6 @@ namespace StockSignalScanner
                 }
             }
             return null;
-        }
-
-        public static async Task RunStrategyAnalysis(IEnumerable<StockMeta> allStocks, string apiKey)
-        {
-            var batches = allStocks.OrderBy(s => s.Symbol).Chunk(250).ToArray();
-            for (int si = 0; si < batches.Count(); si++)
-            {
-                var stocks = batches[si];
-                foreach (var stock in stocks)
-                {
-                    var data = await StockScanner.RunAnalysis(stock.Symbol, stock.ExchangeShortName, apiKey);
-                    if (data != null)
-                    {
-                        EMACrossingStrategy.RunEMACross1334Strategy(data, 3, 7);
-                        EMACrossingStrategy.RunEMACross1334WithAdxStrategy(data, 3, 7);
-                        EMACrossingStrategy.RunEMACross21345589Strategy(data, 3, 7);
-                        EMACrossingStrategy.RunEMACross21345589WithAdxStrategy(data, 3, 7);
-                        EMACrossingStrategy.RunEMACross50200Strategy(data, 3, 7);
-                        EMACrossingStrategy.RunEMACross50200WithAdxStrategy(data, 3, 7);
-                    }
-                }
-                // Thread.Sleep(60000);
-            }
         }
 
         public static async Task StartScan(IEnumerable<StockMeta> allStocks, string apiKey)

@@ -40,14 +40,14 @@ namespace StockSignalScanner.Indicators
             {
                 res.Add(CandlestickPatternType.EveningStar);
             }
-            if (IsThreeBlackCrows(prices))
-            {
-                res.Add(CandlestickPatternType.ThreeBlackCrows);
-            }
-            if (IsThreeWhiteSoldiers(prices))
-            {
-                res.Add(CandlestickPatternType.ThreeWhiteSoldiers);
-            }
+            //if (IsThreeBlackCrows(prices))
+            //{
+            //    res.Add(CandlestickPatternType.ThreeBlackCrows);
+            //}
+            //if (IsThreeWhiteSoldiers(prices))
+            //{
+            //    res.Add(CandlestickPatternType.ThreeWhiteSoldiers);
+            //}
             if (IsBullishEngulfing(prices))
             {
                 res.Add(CandlestickPatternType.BullishEngulfing);
@@ -72,14 +72,14 @@ namespace StockSignalScanner.Indicators
             {
                 res.Add(CandlestickPatternType.SpinningTop);
             }
-            if (IsRisingThreeMethods(prices))
-            {
-                res.Add(CandlestickPatternType.RisingThreeMethods);
-            }
-            if (IsFallingThreeMethods(prices))
-            {
-                res.Add(CandlestickPatternType.FallingThreeMethods);
-            }
+            //if (IsRisingThreeMethods(prices))
+            //{
+            //    res.Add(CandlestickPatternType.RisingThreeMethods);
+            //}
+            //if (IsFallingThreeMethods(prices))
+            //{
+            //    res.Add(CandlestickPatternType.FallingThreeMethods);
+            //}
             if (IsBearishHarami(prices))
             {
                 res.Add(CandlestickPatternType.BearishHarami);

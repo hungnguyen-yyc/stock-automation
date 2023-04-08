@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StockSignalScanner", "Stock
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestProject", "TestProject\TestProject.csproj", "{0A3531D6-9511-4F08-A90C-34E0E126280A}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Indicators", "..\Stock.Indicators\src\Indicators.csproj", "{D2454E17-22C9-4192-A3B0-F688110333F4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{0A3531D6-9511-4F08-A90C-34E0E126280A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0A3531D6-9511-4F08-A90C-34E0E126280A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0A3531D6-9511-4F08-A90C-34E0E126280A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D2454E17-22C9-4192-A3B0-F688110333F4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D2454E17-22C9-4192-A3B0-F688110333F4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D2454E17-22C9-4192-A3B0-F688110333F4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D2454E17-22C9-4192-A3B0-F688110333F4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

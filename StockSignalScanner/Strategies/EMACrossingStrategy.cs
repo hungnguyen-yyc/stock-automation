@@ -49,12 +49,6 @@ namespace StockSignalScanner.Strategies
                             success += 1;
                         }
                     }
-                    else
-                    {
-                        var prices = data.GetPricesInPeriod(ema.Item1, pricesAfterNDays);
-                        var pricesString = string.Join(",", prices);
-                        WriteToFile(pathStock, $"{CrossDirection.MIXED_CROSSES},{ema.Item1.ToString("yyyy-MM-dd")},{pricesString},{adx}");
-                    }
                 }
             }
 
@@ -95,12 +89,6 @@ namespace StockSignalScanner.Strategies
                     {
                         success += 1;
                     }
-                }
-                else
-                {
-                    var prices = data.GetPricesInPeriod(ema.Item1, pricesAfterNDays);
-                    var pricesString = string.Join(",", prices);
-                    WriteToFile(pathStock, $"{CrossDirection.MIXED_CROSSES},{ema.Item1.ToString("yyyy-MM-dd")},{pricesString}");
                 }
             }
 
@@ -145,12 +133,6 @@ namespace StockSignalScanner.Strategies
                             success += 1;
                         }
                     }
-                    else
-                    {
-                        var prices = data.GetPricesInPeriod(ema13.Item1, pricesAfterNDays);
-                        var pricesString = string.Join(",", prices);
-                        WriteToFile(pathStock, $"{CrossDirection.MIXED_CROSSES},{ema13.Item1.ToString("yyyy-MM-dd")},{pricesString},{adx}");
-                    }
                 }
             }
 
@@ -191,12 +173,6 @@ namespace StockSignalScanner.Strategies
                     {
                         success += 1;
                     }
-                }
-                else
-                {
-                    var prices = data.GetPricesInPeriod(ema13.Item1, pricesAfterNDays);
-                    var pricesString = string.Join(",", prices);
-                    WriteToFile(pathStock, $"{CrossDirection.MIXED_CROSSES},{ema13.Item1.ToString("yyyy-MM-dd")},{pricesString}");
                 }
             }
 
@@ -256,12 +232,6 @@ namespace StockSignalScanner.Strategies
                                 {
                                     success += 1;
                                 }
-                            } 
-                            else
-                            {
-                                var prices = data.GetPricesInPeriod(dates[2], pricesAfterNDays);
-                                var pricesString = string.Join(",", prices);
-                                WriteToFile(pathStock, $"{CrossDirection.MIXED_CROSSES},{dates[2].ToString("yyyy-MM-dd")},{pricesString},{adx}");
                             }
                         }
                     }
@@ -322,12 +292,6 @@ namespace StockSignalScanner.Strategies
                                     success += 1;
                                 }
                             }
-                            else
-                            {
-                                var prices = data.GetPricesInPeriod(dates[2], pricesAfterNDays);
-                                var pricesString = string.Join(",", prices);
-                                WriteToFile(pathStock, $"{CrossDirection.MIXED_CROSSES},{dates[2].ToString("yyyy-MM-dd")},{pricesString}");
-                            }
                         }
                     }
                 }
@@ -384,12 +348,6 @@ namespace StockSignalScanner.Strategies
                                 success += 1;
                             }
                         }
-                        else
-                        {
-                            var prices = data.GetPricesInPeriod(dates[1], pricesAfterNDays);
-                            var pricesString = string.Join(",", prices);
-                            WriteToFile(pathStock, $"{CrossDirection.MIXED_CROSSES},{dates[1].ToString("yyyy-MM-dd")},{pricesString},{adx}");
-                        }
                     }
                 }
             }
@@ -442,12 +400,7 @@ namespace StockSignalScanner.Strategies
                                 success += 1;
                             }
                         }
-                        else
-                        {
-                            var prices = data.GetPricesInPeriod(dates[1], pricesAfterNDays);
-                            var pricesString = string.Join(",", prices);
-                            WriteToFile(pathStock, $"{CrossDirection.MIXED_CROSSES},{dates[1].ToString("yyyy-MM-dd")},{pricesString}");
-                        }
+
                     }
                 }
             }

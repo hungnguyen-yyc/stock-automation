@@ -9,14 +9,12 @@ namespace StockSignalScanner.Models
 {
     internal class Scan
     {
-        public long Id { get; set; }
         public string DateCreated { get; set; }
         public IList<Indicator> Indicators { get; set; }
     }
 
     internal class Indicator
     {
-        public long Id { get; set; }
         public string Name { get; set; }
         IList<IndicatorParameter> Parameters { get; set; }
 
@@ -24,7 +22,6 @@ namespace StockSignalScanner.Models
 
     internal class IndicatorParameter
     {
-        public long Id { get; set; }
         public string Name { get; set; }
         public string Value { get; set; }
     }

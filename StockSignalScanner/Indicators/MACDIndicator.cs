@@ -13,7 +13,7 @@ namespace StockSignalScanner.Indicators
 
             // Extract the close prices and times from the Price objects
             List<decimal> closePrices = prices.Select(p => p.Close).ToList();
-            List<DateTime> times = prices.Select(p => p.Date.DateTime).ToList();
+            List<DateTime> times = prices.Select(p => p.Date).ToList();
 
             // Calculate the MACD value
             List<decimal> shortEMA = MovingAverage.CalculateEMA(closePrices.ToList(), shortPeriod);

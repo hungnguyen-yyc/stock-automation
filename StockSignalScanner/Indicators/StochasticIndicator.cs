@@ -16,7 +16,7 @@ namespace StockSignalScanner.Indicators
             List<decimal> closePrices = prices.Select(p => p.Close).ToList();
             List<decimal> highPrices = prices.Select(p => p.High).ToList();
             List<decimal> lowPrices = prices.Select(p => p.Low).ToList();
-            List<DateTime> times = prices.Select(p => p.Date.DateTime).ToList();
+            List<DateTime> times = prices.Select(p => p.Date).ToList();
 
             // Calculate the K and D values
             for (int i = 0; i < closePrices.Count; i++)

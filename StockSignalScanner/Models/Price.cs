@@ -1,4 +1,6 @@
-﻿namespace StockSignalScanner.Models
+﻿using Skender.Stock.Indicators;
+
+namespace StockSignalScanner.Models
 {
     public class HistoricalPrice : Price, IPrice
     {
@@ -13,21 +15,29 @@
 
     public class Price : IPrice
     {
-        public DateTimeOffset Date { get; set; }
+        public DateTime Date { get; set; }
         public decimal Open { get; set; }
         public decimal High { get; set; }
         public decimal Low { get; set; }
         public decimal Close { get; set; }
-        public long Volume { get; set; }
+        public decimal Volume { get; set; }
+
+        public Quote ToQuote()
+        {
+            return new Quote()
+            {
+                Volume = Volume,
+                Close = Close,
+                Open = Open,
+                High = High,
+                Low = Low,
+                Date = Date,
+            };
+        }
     }
 
-    public interface IPrice
+    public interface IPrice : IQuote
     {
-        public DateTimeOffset Date { get; set; }
-        public decimal Open { get; set; }
-        public decimal High { get; set; }
-        public decimal Low { get; set; }
-        public decimal Close { get; set; }
-        public long Volume { get; set; }
+        Quote ToQuote();
     }
 }

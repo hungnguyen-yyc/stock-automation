@@ -139,6 +139,13 @@ namespace StockSignalScanner.Indicators
             return crossDirection;
         }
 
+        public static CrossDirection GetCrossDirection(List<double> line1, List<double> line2)
+        {
+            var d1 = line1.Select(x => (decimal)x).ToList();
+            var d2 = line2.Select(x => (decimal)x).ToList();
+            return GetCrossDirection(d1, d2);
+        }
+
         public static Dictionary<DateTime, CrossDirection> GetCrossDirectionWithTime(List<(DateTime, decimal)> line1, List<(DateTime, decimal)> line2)
         {
             // Check that the lists have at least two elements each

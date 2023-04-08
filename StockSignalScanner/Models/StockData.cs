@@ -1,7 +1,5 @@
 ﻿using Newtonsoft.Json.Linq;
-using OoplesFinance.StockIndicators;
-using OoplesFinance.StockIndicators.Interfaces;
-using OoplesFinance.StockIndicators.Models;
+using Skender.Stock.Indicators;
 using StockSignalScanner.Indicators;
 using System;
 using System.ComponentModel.DataAnnotations;
@@ -16,7 +14,7 @@ namespace StockSignalScanner.Models
     public class StockDataAggregator : SymbolInfo
     {
         private readonly IList<IPrice> _priceOrderByDateAsc;
-        private readonly IList<TickerData> _tickerData;
+        private readonly IEnumerable<Quote> _quotes;
         private readonly int _rsiPeriod;
         private readonly int _rsiMA;
         private readonly int _macdShortPeriod;
@@ -76,22 +74,19 @@ namespace StockSignalScanner.Models
                     Vwap = p.Vwap,
                 })
                 .ToList();
-            _tickerData = _priceOrderByDateAsc.Select(s => new TickerData()
-            {
-                Volume = s.Volume,
-                Open = Decimal.ToDouble(s.Open),
-                Close = Decimal.ToDouble(s.Close),
-                High = Decimal.ToDouble(s.High),
-                Low = Decimal.ToDouble(s.Low),
-            }).ToList();
-            Aggregate();
+
+            _quotes = _priceOrderByDateAsc.Select(p => p.ToQuote());
         }
 
         private List<StockDataCandle> Candles { get; }
         public string Exchange { get; }
-        public int NumberOfTradingDays => _priceOrderByDateAsc.Count;
+        public int NumberOfTradingDays => PriceOrderByDateAsc.Count;
 
         public DMI Dmi { get => _dmi; }
+
+        public IEnumerable<Quote> Quotes => _quotes;
+
+        public IReadOnlyList<IPrice> PriceOrderByDateAsc => _priceOrderByDateAsc as IReadOnlyList<IPrice>;
 
         public bool CheckAllCrossesWithDirectionInLastNDays(int days, CrossDirection direction)
         {
@@ -102,8 +97,8 @@ namespace StockSignalScanner.Models
 
         public CrossDirection CheckEMACrossInLastNDays(int days, int periodFast, int periodSlow, int differentBetweenFastAndSlowInPercentage = 0)
         {
-            List<decimal> periodALine = MovingAverage.CalculateEMA(_priceOrderByDateAsc.Select(i => i.Close).ToList(), periodFast);
-            List<decimal> periodBLine = MovingAverage.CalculateEMA(_priceOrderByDateAsc.Select(i => i.Close).ToList(), periodSlow);
+            List<decimal> periodALine = MovingAverage.CalculateEMA(PriceOrderByDateAsc.Select(i => i.Close).ToList(), periodFast);
+            List<decimal> periodBLine = MovingAverage.CalculateEMA(PriceOrderByDateAsc.Select(i => i.Close).ToList(), periodSlow);
             List<decimal> periodALineLastNDays = periodALine.Skip(periodALine.Count - days).ToList();
             List<decimal> periodBLineLastNDays = periodBLine.Skip(periodBLine.Count - days).ToList();
             var direction = CrossDirectionDetector.GetCrossDirection(periodALineLastNDays, periodBLineLastNDays);
@@ -131,9 +126,9 @@ namespace StockSignalScanner.Models
         {
             try
             {
-                List<decimal> periodALine = MovingAverage.CalculateEMAV5(_priceOrderByDateAsc.Select(i => i.Close).ToList(), emaPeriod);
+                List<decimal> periodALine = MovingAverage.CalculateEMAV5(PriceOrderByDateAsc.Select(i => i.Close).ToList(), emaPeriod);
                 List<decimal> periodALineLastNDays = periodALine.Skip(periodALine.Count - days).ToList();
-                var prices = _priceOrderByDateAsc.Skip(_priceOrderByDateAsc.Count - days).ToList();
+                var prices = PriceOrderByDateAsc.Skip(PriceOrderByDateAsc.Count - days).ToList();
                 for (int i = 0; i < prices.Count; i++)
                 {
                     IPrice price = prices[i];
@@ -154,34 +149,52 @@ namespace StockSignalScanner.Models
         public Trend GetTrendInLastNDays(int days)
         {
             var detector = new NewHighLowDetector();
-            return detector.GetTrendReversal(_priceOrderByDateAsc.Skip(_priceOrderByDateAsc.Count - days).ToList());
-        }
-
-        public decimal[] CalculateSTC(int maShort, int maLong, int cycle, decimal factor = 0.5m)
-        {
-            var stc = SchaffTrendCycle.CalculateSTC(_priceOrderByDateAsc, maShort, maLong, cycle, factor);
-            return stc;
+            return detector.GetTrendReversal(PriceOrderByDateAsc.Skip(PriceOrderByDateAsc.Count - days).ToList());
         }
 
         public CrossDirection CheckSTCCrossInLastNDays(decimal level, int days, int maShort, int maLong, int cycle, decimal factor = 0.5m)
         {
-            var stc = SchaffTrendCycle.CalculateSTC(_priceOrderByDateAsc, maShort, maLong, cycle, factor).Skip(_priceOrderByDateAsc.Count() - days).ToList();
+            var stc = SchaffTrendCycle.CalculateSTC(PriceOrderByDateAsc.ToList(), maShort, maLong, cycle, factor).Skip(PriceOrderByDateAsc.Count() - days).ToList();
             var levels = stc.Select(s => level).ToList();
             return CrossDirectionDetector.GetCrossDirection(stc, levels);
         }
 
-        public List<decimal> GetMFIInLastNDays(int period)
+        public CrossDirection GetMFICrossLevelInLastNDays(int period, int level, int days)
         {
-            var stockData = new StockData(_tickerData, OoplesFinance.StockIndicators.Enums.InputName.Close);
-            var calculated = stockData.CalculateMoneyFlowIndex(OoplesFinance.StockIndicators.Enums.InputName.TypicalPrice, 14);
-            return MoneyFlowIndex.CalculateMFI(_priceOrderByDateAsc, period);
+            var calculated = Quotes.GetMfi(period);
+            var indicatorData = calculated.Select(m => m.Mfi ?? 0).Skip(calculated.Count() - days).ToList();
+            var levels = indicatorData.Select(m => (double)level).ToList();
+            return CrossDirectionDetector.GetCrossDirection(indicatorData, levels);
+        }
+
+        public CrossDirection GetAroonOscillatorCrossLevelInLastNDays(int period, int level, int days)
+        {
+            var calculated = Quotes.GetAroon(14);
+            var indicatorData = calculated.Select(m => m.Oscillator ?? 0).Skip(calculated.Count() - days).ToList();
+            var levels = indicatorData.Select(m => (double)level).ToList();
+            return CrossDirectionDetector.GetCrossDirection(indicatorData, levels);
+        }
+
+        public CrossDirection GeStochasticMomentumIndexCrossLevelInLastNDays(int period, int level, int days)
+        {
+            var calculated = Quotes.GetSmi(10, 3, 3);
+            var indicatorData = calculated.Select(m => m.Smi ?? 0).Skip(calculated.Count() - days).ToList();
+            var levels = indicatorData.Select(m => (double)level).ToList();
+            return CrossDirectionDetector.GetCrossDirection(indicatorData, levels);
+        }
+
+        public List<double> GetVolumeWeightedMovingAverageInLastNDays(int period)
+        {
+            var calculated = Quotes.GetVwma(period);
+            var indicatorData = calculated.Select(m => m.Vwma ?? 0).ToList();
+            return indicatorData;
         }
 
         public List<(DateTime, CrossDirection)> CheckAllEMACrossInLastNDays(int days, int periodA, int periodB)
         {
-            var pricesInPeriod = _priceOrderByDateAsc.Skip(_priceOrderByDateAsc.Count() - days).ToList();
-            List<decimal> periodALine = MovingAverage.CalculateEMA(_priceOrderByDateAsc.Select(i => i.Close).ToList(), periodA).Skip(_priceOrderByDateAsc.Count() - days).ToList();
-            List<decimal> periodBLine = MovingAverage.CalculateEMA(_priceOrderByDateAsc.Select(i => i.Close).ToList(), periodB).Skip(_priceOrderByDateAsc.Count() - days).ToList();
+            var pricesInPeriod = PriceOrderByDateAsc.Skip(PriceOrderByDateAsc.Count() - days).ToList();
+            List<decimal> periodALine = MovingAverage.CalculateEMA(PriceOrderByDateAsc.Select(i => i.Close).ToList(), periodA).Skip(PriceOrderByDateAsc.Count() - days).ToList();
+            List<decimal> periodBLine = MovingAverage.CalculateEMA(PriceOrderByDateAsc.Select(i => i.Close).ToList(), periodB).Skip(PriceOrderByDateAsc.Count() - days).ToList();
             List<(DateTime, decimal)> periodALineLastNDays = pricesInPeriod.Select(i => i.Date.Date).Zip(periodALine, (t,v) => (t,v)).ToList();
             List<(DateTime, decimal)> periodBLineLastNDays = pricesInPeriod.Select(i => i.Date.Date).Zip(periodBLine, (t, v) => (t, v)).ToList();
             var direction = CrossDirectionDetector.GetAllCrossDirections(periodALineLastNDays, periodBLineLastNDays);
@@ -191,18 +204,18 @@ namespace StockSignalScanner.Models
         public List<decimal> GetPricesInPeriod(DateTime startDate, int period)
         {
             var list = new List<decimal>();
-            var price = _priceOrderByDateAsc.FirstOrDefault(i => i.Date.Date == startDate);
+            var price = PriceOrderByDateAsc.FirstOrDefault(i => i.Date.Date == startDate);
             var i = 1;
             while (price == null)
             {
-                price = _priceOrderByDateAsc.FirstOrDefault(p => p.Date.Date == startDate.AddDays(i * (-1)));
+                price = PriceOrderByDateAsc.FirstOrDefault(p => p.Date.Date == startDate.AddDays(i * (-1)));
                 i++;
                 if (i > 14)
                 {
                     return list;
                 }
             }
-            return _priceOrderByDateAsc.Where(p => p.Date.Date >= startDate && p.Date.Date < startDate.AddDays(period)).Select(p => p.Close).ToList();
+            return PriceOrderByDateAsc.Where(p => p.Date.Date >= startDate && p.Date.Date < startDate.AddDays(period)).Select(p => p.Close).ToList();
         }
 
         public string TrendlineHigh(int lastNDays)
@@ -216,17 +229,17 @@ namespace StockSignalScanner.Models
 
         public CurrentPriceFibonacciRetracementLevel GetCurrentFibonacciRetracementLevelLastNDays(int startIndex)
         {
-            return Fibonacci.GetCurrentPriceState(_priceOrderByDateAsc, startIndex, _priceOrderByDateAsc.Count() - 1);
+            return Fibonacci.GetCurrentPriceState(PriceOrderByDateAsc.ToList(), startIndex, PriceOrderByDateAsc.Count() - 1);
         }
 
         public ZoneState CheckInSupportZoneLastNDays(int period)
         {
-            return SupportZone.IsInSupportZone(_priceOrderByDateAsc, period);
+            return SupportZone.IsInSupportZone(PriceOrderByDateAsc.ToList(), period);
         }
 
         public ZoneState CheckInResistanceZoneLastNDays(int period)
         {
-            return ResistanceZone.IsInResistanceZone(_priceOrderByDateAsc, period);
+            return ResistanceZone.IsInResistanceZone(PriceOrderByDateAsc.ToList(), period);
         }
 
         public string GetTickerStatusLastNDays(int days)
@@ -251,14 +264,14 @@ namespace StockSignalScanner.Models
                 $",{_rsiCrossLastNdDaysMap[days]}" +
                 $",{_stochasticCrossLastNdDaysMap[days]}" +
                 $",{patternString}" +
-                $",{string.Join("-", _priceOrderByDateAsc.TakeLast(days).Select(p => p.Close.ToString()))}" +
+                $",{string.Join("-", PriceOrderByDateAsc.TakeLast(days).Select(p => p.Close.ToString()))}" +
                 $",{fibo?.RetracementLevel}-l: {fibo?.Retracement.Low}-h: {fibo?.Retracement.High}";
         }
 
         private IEnumerable<CandlestickPatternType> CandlestickPatternsLastNDays(int days)
         {
-            var prices = _priceOrderByDateAsc
-                .Skip(_priceOrderByDateAsc.Count() - days)
+            var prices = PriceOrderByDateAsc
+                .Skip(PriceOrderByDateAsc.Count() - days)
                 .Take(days)
                 .ToList();
             return CandlestickPatternDetector.Detect(prices);
@@ -283,8 +296,8 @@ namespace StockSignalScanner.Models
              * just to make sure lines explicit cross eachother
              */
             var roomToSkip = - margin - n; 
-            (List<decimal> macdValues, List<decimal> signalValues, List<DateTime> macdTimes) = MACDIndicator.GetMACD(_priceOrderByDateAsc, _macdShortPeriod, _macdLongPeriod, _macdSignalPeriod);
-            (List<decimal> kValues, List<decimal> dValues, List<DateTime> stochasticTimes) = StochasticIndicator.GetStochastic(_priceOrderByDateAsc, _stochasticPeriod, _smoothK, _smoothD);
+            (List<decimal> macdValues, List<decimal> signalValues, List<DateTime> macdTimes) = MACDIndicator.GetMACD(PriceOrderByDateAsc.ToList(), _macdShortPeriod, _macdLongPeriod, _macdSignalPeriod);
+            (List<decimal> kValues, List<decimal> dValues, List<DateTime> stochasticTimes) = StochasticIndicator.GetStochastic(PriceOrderByDateAsc.ToList(), _stochasticPeriod, _smoothK, _smoothD);
             var macdLine = macdTimes
                 .Zip(macdValues, (t, v) => (t, v))
                 .Skip(macdValues.Count + roomToSkip)
@@ -376,7 +389,7 @@ namespace StockSignalScanner.Models
 
         public decimal GetADXAtDate(DateTime date)
         {
-            var dateIndex = _priceOrderByDateAsc.Select(i => i.Date).ToList().IndexOf(date);
+            var dateIndex = PriceOrderByDateAsc.Select(i => i.Date).ToList().IndexOf(date);
             return Dmi.Adx[dateIndex];
         }
 
@@ -478,40 +491,6 @@ namespace StockSignalScanner.Models
             var rsiCrossDate = CrossDirectionDetector.GetDateOfCross(rsiLine, rsiMALine);
 
             return new [] { stochCrossDate, macdCrossDate, rsiCrossDate }.Max();
-        }
-
-        private void Aggregate()
-        {
-            (_rsiValues, _rsiTimes) = RSIIndicator.GetRSI(_priceOrderByDateAsc, _rsiPeriod);
-            _rsiMAValues = MovingAverage.CalculateEMA(_rsiValues, _rsiMA);
-            (_macdValues, _macdSignalValues, _macdTimes) = MACDIndicator.GetMACD(_priceOrderByDateAsc, _macdShortPeriod, _macdLongPeriod, _macdSignalPeriod);
-            (_kValues, _dValues, _stochasticTimes) = StochasticIndicator.GetStochastic(_priceOrderByDateAsc, _stochasticPeriod, _smoothK, _smoothD);
-            _dmi = ADX.CalculateADX(_priceOrderByDateAsc, _adxPeriod, _adxPeriod);
-
-            // Loop through the RSI values
-            for (int i = 0; i < _rsiValues.Count; i++)
-            {
-                // Get the RSI, MACD, and stochastic values for the current time period
-                IPrice price = _priceOrderByDateAsc[i];
-                decimal rsiValue = _rsiValues[i];
-                decimal macdValue = _macdValues[i];
-                decimal macdSignalValue = _macdSignalValues[i];
-                decimal stochasticKValue = _kValues[i];
-                decimal stochasticDValue = _dValues[i];
-
-                Candles.Add(new StockDataCandle
-                {
-                    Date = price.Date.DateTime,
-                    MACD = macdValue,
-                    Signal = macdSignalValue,
-                    RSI = rsiValue,
-                    StochasticK = stochasticKValue,
-                    StochasticD = stochasticDValue,
-                    Symbol = Symbol,
-                    PriceClose = price.Close,
-                    Volume = price.Volume,
-                });
-            }
         }
     }
 

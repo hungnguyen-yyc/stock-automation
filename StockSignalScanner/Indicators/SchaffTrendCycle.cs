@@ -1,9 +1,4 @@
 ﻿using StockSignalScanner.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace StockSignalScanner.Indicators
 {
@@ -75,40 +70,6 @@ namespace StockSignalScanner.Indicators
             return st2;
         }
 
-        public static decimal[] Divide(decimal[] numerator, decimal[] denominator)
-        {
-            decimal[] result = new decimal[numerator.Length];
-            for (int i = 0; i < numerator.Length; i++)
-            {
-                if (denominator[i] == 0)
-                {
-                    result[i] = 0;
-                }
-                else
-                {
-                    result[i] = numerator[i] / denominator[i];
-                }
-            }
-            return result;
-        }
-
-
-        // Function to sum an array over a given period
-        public static decimal[] Sum(decimal[] input, int length)
-        {
-            decimal[] output = new decimal[input.Length];
-            for (int i = length - 1; i < input.Length; i++)
-            {
-                decimal sum = 0;
-                for (int j = 0; j < length; j++)
-                {
-                    sum += input[i - j];
-                }
-                output[i] = sum;
-            }
-            return output;
-        }
-
         // Subtracts array2 from array1 element by element and returns the result as a new array
         public static decimal[] Subtract(decimal[] array1, decimal[] array2)
         {
@@ -125,31 +86,6 @@ namespace StockSignalScanner.Indicators
 
             return result;
         }
-
-        // Multiplies each element in the array by a constant value and returns the result as a new array
-        public static decimal[] Multiply(decimal constant, decimal[] array)
-        {
-            decimal[] result = new decimal[array.Length];
-            for (int i = 0; i < array.Length; i++)
-            {
-                result[i] = constant * array[i];
-            }
-
-            return result;
-        }
-
-        // Divides each element in the array by a constant value and returns the result as a new array
-        public static decimal[] Divide(decimal[] array, decimal constant)
-        {
-            decimal[] result = new decimal[array.Length];
-            for (int i = 0; i < array.Length; i++)
-            {
-                result[i] = array[i] / constant;
-            }
-
-            return result;
-        }
-
 
     }
 }
