@@ -1,14 +1,7 @@
-﻿using log4net.Core;
-using Skender.Stock.Indicators;
+﻿using Skender.Stock.Indicators;
 using StockSignalScanner.Indicators;
 using StockSignalScanner.Models;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using Xunit.Abstractions;
 
 namespace StockSignalScanner.Strategies
 {
@@ -47,11 +40,15 @@ namespace StockSignalScanner.Strategies
                 var rsiRating = GetRsiRating(aroonCrossDirection);
                 var mfiRating = GetMfiRating(aroonCrossDirection);
                 var stcRating = GetStcRating(aroonCrossDirection);
+
                 var vwmaRating = GetVwmaRating(aroonCrossDirection);
-                AddVolumeInfo();
+                AddSimpleMovingAverage200Info();
+
+                var volumeRating = GetVolumeRating(aroonCrossDirection);
+
                 AddCandleStickPatternInfo();
 
-                var rating = rsiRating + mfiRating + stcRating + vwmaRating;
+                var rating = rsiRating + mfiRating + stcRating + vwmaRating + volumeRating;
 
                 return rating;
             }
@@ -62,6 +59,29 @@ namespace StockSignalScanner.Strategies
         public string GetDetails()
         {
             return _description.ToString();
+        }
+
+        private void AddSimpleMovingAverage200Info()
+        {
+            var prices = _priceOrderByDateAsc
+                .Skip(_priceOrderByDateAsc.Count() - _signalInLastNDays)
+                .ToArray();
+            var result = _priceOrderByDateAsc
+                .GetSma(200)
+                .Select(s => s.Sma ?? 0)
+                .Skip(_priceOrderByDateAsc.Count() - _signalInLastNDays)
+                .ToArray();
+            _description.AppendLine($"\t - SMA:");
+            _description.AppendLine($"\t\t - 200   : {string.Join(" - ", result.Select(s => s.Round(2)))}");
+
+            for (int i = 0; i < result.Length; i++)
+            {
+                if ((double)prices[i].Low <= result[i] && (double)prices[i].High >= result[i])
+                {
+                    _description.AppendLine($"\t\t - Price touched SMA in last 5 days");
+                    break;
+                }
+            }
         }
 
         private void AddCandleStickPatternInfo()
@@ -85,8 +105,9 @@ namespace StockSignalScanner.Strategies
             }
         }
 
-        private void AddVolumeInfo()
+        private double GetVolumeRating(CrossDirection aroonDirection)
         {
+            var rating = 20.00;
             var candles = _priceOrderByDateAsc
                 .Skip(_priceOrderByDateAsc.Count() - _signalInLastNDays);
             var volumeMA = _priceOrderByDateAsc.Use(CandlePart.Volume)
@@ -96,16 +117,85 @@ namespace StockSignalScanner.Strategies
                 .ToArray();
             var volumeDaily = candles
                 .Select(p => (double)p.Volume);
+            var pvo = _priceOrderByDateAsc
+                .GetPvo(_parameters.PvoFast, _parameters.PvoSlow, _parameters.PvoSignal)
+                .Select(s => s.Pvo ?? 0.00)
+                .Skip(_priceOrderByDateAsc.Count() - _signalInLastNDays);
 
 
             var result = volumeDaily.Select((x, i) => x - volumeMA[i]);
             var volumeTrend = TrendChecker.CheckTrend(volumeDaily.ToList());
+            var priceTrend = TrendChecker.CheckTrend(candles.Select(s => (double)s.Close).ToList());
 
             _description.AppendLine($"\t - Volume:");
             _description.AppendLine($"\t\t - Daily : {string.Join((" - "), volumeDaily.Select(s => s.Round(2).ToString("0.00")))}");
             _description.AppendLine($"\t\t - M.A   : {string.Join((" - "), volumeMA.Select(s => s.Round(2)))}");
             _description.AppendLine($"\t\t - Sub   : {string.Join((" - "), result.Select(s => s.Round(2).ToString("0.00;(#0.00)")))}");
+            _description.AppendLine($"\t\t - Pvo   : {string.Join((" - "), pvo.Select(s => s.Round(2).ToString("0.00;(#0.00)")))}");
             _description.AppendLine($"\t\t - Trend : {volumeTrend}");
+
+            if (pvo.Last() <= 0)
+            {
+                rating -= 5;
+            }
+
+            /***
+             * https://www.rediff.com/money/special/trading-volume-what-it-reveals-about-the-market/20090703.htm
+             */
+            if (aroonDirection == CrossDirection.CROSS_ABOVE)
+            {
+                if (priceTrend == TrendChecker.Trend.Decreasing || priceTrend == TrendChecker.Trend.FluctuatingThenDecreasing) 
+                {
+                    rating -= 5;
+                    // bullish
+                    if (volumeTrend == TrendChecker.Trend.Decreasing || volumeTrend == TrendChecker.Trend.FluctuatingThenDecreasing) 
+                    {
+                        rating += 5;
+                    }
+                    // bearish
+                    if (volumeTrend == TrendChecker.Trend.Increasing || volumeTrend == TrendChecker.Trend.FluctuatingThenIncreasing)
+                    {
+                        rating -= 5;
+                    }
+                }
+                if (priceTrend == TrendChecker.Trend.Increasing || priceTrend == TrendChecker.Trend.Increasing)
+                {
+                    if (volumeTrend == TrendChecker.Trend.Decreasing || volumeTrend == TrendChecker.Trend.FluctuatingThenDecreasing)
+                    {
+                        rating -= 5;
+                    }
+                }
+            }
+
+            if (aroonDirection == CrossDirection.CROSS_BELOW)
+            {
+                if (priceTrend == TrendChecker.Trend.Increasing || priceTrend == TrendChecker.Trend.FluctuatingThenIncreasing)
+                {
+                    rating -= 5;
+                    // bearish
+                    if (volumeTrend == TrendChecker.Trend.Decreasing || volumeTrend == TrendChecker.Trend.FluctuatingThenDecreasing)
+                    {
+                        rating += 5;
+                    }
+                    // bullish
+                    if (volumeTrend == TrendChecker.Trend.Increasing || volumeTrend == TrendChecker.Trend.FluctuatingThenIncreasing)
+                    {
+                        rating -= 5;
+                    }
+                }
+                // bullish
+                if (priceTrend == TrendChecker.Trend.Decreasing || priceTrend == TrendChecker.Trend.Decreasing)
+                {
+                    if (volumeTrend == TrendChecker.Trend.Decreasing || volumeTrend == TrendChecker.Trend.FluctuatingThenDecreasing)
+                    {
+                        rating -= 5;
+                    }
+                }
+            }
+
+            _description.AppendLine($"\t\t - Rating: {rating}");
+
+            return rating;
         }
 
         private CrossDirection GetAroonOscillatorCrossingDirection()
@@ -121,12 +211,21 @@ namespace StockSignalScanner.Strategies
 
             if (crossDirection == CrossDirection.CROSS_ABOVE)
             {
-                _description.AppendLine("\t - Aroon: cross above");
+                _description.Append("\t - Aroon: cross above");
             }
             if (crossDirection == CrossDirection.CROSS_BELOW)
             {
-                _description.AppendLine("\t - Aroon: cross below");
+                _description.Append("\t - Aroon: cross below");
             }
+            if (result.Any(r => r >= 80))
+            {
+                _description.Append($" | above 80 in last {_signalInLastNDays} days");
+            }
+            if (result.Any(r => r <= -80))
+            {
+                _description.Append($" | below -80 in last {_signalInLastNDays} days");
+            }
+            _description.AppendLine();
 
             return crossDirection;
         }
@@ -153,7 +252,7 @@ namespace StockSignalScanner.Strategies
 
             if (aroonDirection == CrossDirection.CROSS_ABOVE)
             {
-                rating = 25;
+                rating = 20;
                 if (latest.Close < secondLatest.Close)
                 {
                     rating -= 5;
@@ -178,7 +277,7 @@ namespace StockSignalScanner.Strategies
 
             if (aroonDirection == CrossDirection.CROSS_BELOW)
             {
-                rating = 25;
+                rating = 20;
 
                 if (latest.Close > secondLatest.Close)
                 {
@@ -230,13 +329,13 @@ namespace StockSignalScanner.Strategies
                  */
                 if (crossDirection == CrossDirection.CROSS_ABOVE)
                 {
-                    rating = 25;
+                    rating = 20;
                 }
                 else
                 {
                     if (result.All(i => i >= 75))
                     {
-                        rating = 25;
+                        rating = 20;
                     }
                     else if (result.All(i => i > 25))
                     {
@@ -252,13 +351,13 @@ namespace StockSignalScanner.Strategies
                 var crossDirection = CrossDirectionDetector.GetCrossDirection(result, level);
                 if (crossDirection == CrossDirection.CROSS_BELOW)
                 {
-                    rating = 25;
+                    rating = 20;
                 }
                 else
                 {
                     if (result.All(i => i <= 25))
                     {
-                        rating = 25;
+                        rating = 20;
                     }
                     else if (result.All(i => i <= 75))
                     {
@@ -284,32 +383,36 @@ namespace StockSignalScanner.Strategies
                 .Select(r => 50.00)
                 .ToList();
             var crossDirection = CrossDirectionDetector.GetCrossDirection(result, level);
-            var rating = 0.0;
+            var rating = 20.00;
 
             if (aroonDirection == CrossDirection.CROSS_ABOVE)
             {
                 if (result[result.Count - 1] <= 50)
                 {
-                    rating = 0.0;
+                    rating -= rating;
                 }
                 else
                 {
                     if (crossDirection == CrossDirection.CROSS_ABOVE)
                     {
-                        rating = 25;
+                        rating = 20;
                     }
                     else if (crossDirection == CrossDirection.NO_CROSS)
                     {
                         var trend = TrendChecker.CheckTrend(result);
-                        // This is because we're already bullish
-                        if (trend == TrendChecker.Trend.Increasing || trend == TrendChecker.Trend.FluctuatingThenIncreasing)
+                        if (trend == TrendChecker.Trend.Decreasing || trend == TrendChecker.Trend.FluctuatingThenDecreasing)
                         {
-                            rating = 15;
+                            rating -= 10;
                         }
-                        else if (trend == TrendChecker.Trend.Decreasing || trend == TrendChecker.Trend.FluctuatingThenDecreasing)
-                        {
-                            rating = 5;
-                        }
+                    }
+                }
+
+                for (int i = result.Count - 1; i > 0; i--)
+                {
+                    if (result[i] >= 80)
+                    {
+                        rating -= 10;
+                        break;
                     }
                 }
             }
@@ -317,26 +420,33 @@ namespace StockSignalScanner.Strategies
             {
                 if (result[result.Count - 1] >= 50)
                 {
-                    rating = 0.0;
+                    rating -= rating;
                 }
                 else
                 {
                     if (crossDirection == CrossDirection.CROSS_BELOW)
                     {
-                        rating = 25;
+                        rating = 20;
                     }
                     else if (crossDirection == CrossDirection.NO_CROSS)
                     {
                         var trend = TrendChecker.CheckTrend(result);
                         // This is because we're already bearish
-                        if (trend == TrendChecker.Trend.Decreasing || trend == TrendChecker.Trend.FluctuatingThenDecreasing)
+                        if (trend == TrendChecker.Trend.Increasing || trend == TrendChecker.Trend.FluctuatingThenIncreasing)
                         {
-                            rating = 15;
+                            rating -= 5;
                         }
-                        else if (trend == TrendChecker.Trend.Increasing || trend == TrendChecker.Trend.FluctuatingThenIncreasing)
-                        {
-                            rating = 5;
-                        }
+
+                    }
+                }
+
+
+                for (int i = result.Count - 1; i > 0; i--)
+                {
+                    if (result[i] <= 20)
+                    {
+                        rating -= 5;
+                        break;
                     }
                 }
             }
@@ -381,20 +491,24 @@ namespace StockSignalScanner.Strategies
                 {
                     if (crossDirection == CrossDirection.CROSS_ABOVE)
                     {
-                        rating = 25;
+                        rating = 20;
                     } 
                     else if (crossDirection == CrossDirection.NO_CROSS)
                     {
                         var trend = TrendChecker.CheckTrend(result);
-                        // This is because we're already bullish
-                        if (trend == TrendChecker.Trend.Increasing || trend == TrendChecker.Trend.FluctuatingThenIncreasing) 
+                        if (trend == TrendChecker.Trend.Decreasing || trend == TrendChecker.Trend.FluctuatingThenDecreasing)
                         {
-                            rating = 15; 
+                            rating -= 10;
                         }
-                        else if (trend == TrendChecker.Trend.Decreasing || trend == TrendChecker.Trend.FluctuatingThenDecreasing)
-                        {
-                            rating = 5;
-                        }
+                    }
+                }
+
+                for (int i = result.Count - 1; i > 0; i--)
+                {
+                    if (result[i] >= 70)
+                    {
+                        rating -= 5;
+                        break;
                     }
                 }
             }
@@ -408,20 +522,25 @@ namespace StockSignalScanner.Strategies
                 {
                     if (crossDirection == CrossDirection.CROSS_BELOW)
                     {
-                        rating = 25;
+                        rating = 20;
                     }
                     else if (crossDirection == CrossDirection.NO_CROSS)
                     {
                         var trend = TrendChecker.CheckTrend(result);
                         // This is because we're already bearish
-                        if (trend == TrendChecker.Trend.Decreasing || trend == TrendChecker.Trend.FluctuatingThenDecreasing)
+                        if (trend == TrendChecker.Trend.Increasing || trend == TrendChecker.Trend.FluctuatingThenIncreasing)
                         {
-                            rating = 15;
+                            rating -= 10;
                         }
-                        else if (trend == TrendChecker.Trend.Increasing || trend == TrendChecker.Trend.FluctuatingThenIncreasing)
-                        {
-                            rating = 5;
-                        }
+                    }
+                }
+
+                for (int i = result.Count - 1; i > 0; i--)
+                {
+                    if (result[i] <= 30)
+                    {
+                        rating -= 5;
+                        break;
                     }
                 }
             }

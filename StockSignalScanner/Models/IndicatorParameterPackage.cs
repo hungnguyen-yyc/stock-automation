@@ -12,5 +12,8 @@ namespace StockSignalScanner.Models
         public int AroonOscillator { get; set; } = 14;
         public int Mfi { get; set; } = 14;
         public int MovingAverage { get; set; } = 20;
+        public int PvoFast { get; set; } = 12;
+        public int PvoSlow { get; set; } = 26;
+        public int PvoSignal { get; set; } = 9;
     }
 }
