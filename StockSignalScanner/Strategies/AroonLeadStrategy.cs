@@ -66,6 +66,7 @@ namespace StockSignalScanner.Strategies
             var prices = _priceOrderByDateAsc
                 .Skip(_priceOrderByDateAsc.Count() - _signalInLastNDays)
                 .ToArray();
+            var latest = prices.Last();
             var result = _priceOrderByDateAsc
                 .GetSma(200)
                 .Select(s => s.Sma ?? 0)
@@ -81,6 +82,15 @@ namespace StockSignalScanner.Strategies
                     _description.AppendLine($"\t\t - Price touched SMA in last 5 days");
                     break;
                 }
+            }
+
+            if ((double)latest.Close < result[result.Length - 1])
+            {
+                _description.AppendLine($"\t\t - Latest price under EMA 200");
+            }
+            if ((double)latest.Close > result[result.Length - 1])
+            {
+                _description.AppendLine($"\t\t - Latest price above EMA 200");
             }
         }
 
@@ -102,6 +112,14 @@ namespace StockSignalScanner.Strategies
             if (candlePatterns.Any())
             {
                 _description.AppendLine($"\t\t - Possible patterns : {string.Join(" - ", candlePatterns)}");
+            }
+            if (latest.High <= latest.Close)
+            {
+                _description.AppendLine($"\t\t - No top shadow, High: {latest.High} - Close: {latest.Close}");
+            }
+            if (latest.Low >= latest.Close)
+            {
+                _description.AppendLine($"\t\t - No bottom shadow, Low: {latest.Low} - Close: {latest.Close}");
             }
         }
 
@@ -301,9 +319,9 @@ namespace StockSignalScanner.Strategies
                 }
             }
 
-            _description.AppendLine($"\t - VWMA:");
-            _description.AppendLine($"\t\t - Price : {latest.Low} - {latest.Close} - {latest.High}");
-            _description.AppendLine($"\t\t - VWMA  : {lowVwma[latestIndex].Round(2)} - {closeVwma[latestIndex].Round(2)} - {highVwma[latestIndex].Round(2)}");
+            _description.AppendLine($"\t - VWMA on last candle:");
+            _description.AppendLine($"\t\t - Price : (L){latest.Low} - (C){latest.Close} - (H){latest.High}");
+            _description.AppendLine($"\t\t - VWMA  : (L){lowVwma[latestIndex].Round(2)} - (C){closeVwma[latestIndex].Round(2)} - (H){highVwma[latestIndex].Round(2)}");
             _description.AppendLine($"\t\t - Rating: {rating}");
 
             return rating;

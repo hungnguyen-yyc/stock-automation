@@ -30,7 +30,7 @@ namespace StockSignalScanner
                 if (runScanStock)
                 {
                     // https://financialmodelingprep.com/api/v3/financial-statement-symbol-lists?apikey=e2b2a6d07ebf89ca33bb96b0b590daab
-                    var northAmericaStocks = await StockScanner.GetStocksFromUSCANExchanges(999999999, 3000000, 1000, 1, API_KEY);
+                    var northAmericaStocks = await StockScanner.GetStocksFromUSCANExchanges(999999999, 2000000, 1000, 1, API_KEY);
 
                     if (runScanStock)
                     {

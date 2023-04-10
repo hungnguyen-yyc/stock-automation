@@ -68,9 +68,9 @@ namespace StockSignalScanner
                 StcShort = 23,
                 MovingAverage = 14,
                 AroonOscillator = 14,
-                PvoFast = 12,
-                PvoSlow = 26,
-                PvoSignal = 9,
+                PvoFast = 5,
+                PvoSlow = 20,
+                PvoSignal = 3,
             }, 5);
             var rating = strategy.GetRating(); 
             var details = strategy.GetDetails();
