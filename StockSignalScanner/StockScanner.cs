@@ -2,13 +2,13 @@
 using Newtonsoft.Json.Linq;
 using StockSignalScanner.Models;
 using StockSignalScanner.Strategies;
-using System.Runtime.CompilerServices;
-using System.Security.Cryptography;
 
 namespace StockSignalScanner
 {
     internal static class StockScanner
     {
+
+        private static readonly List<string> _favorites = new List<string>() { "TSLA", "AAPL", "AMZN", "GOOGL", "META", "NFLX", "AMC", "GME", "CAT", "MSFT" };
 
         public static async Task<IEnumerable<StockMeta>> GetStocksFromUSCANExchanges(long volumeMax, long volumeMin, long priceMax, long priceMin, string apiKey)
         {
@@ -42,7 +42,12 @@ namespace StockSignalScanner
                 var data = await StockScanner.RunAnalysis(stock.Symbol, stock.ExchangeShortName, apiKey);
                 if (data != null)
                 {
-                    RunAroonLeadStrategy(data, scanFolderPath);
+                    // RunAroonLeadStrategy(data, scanFolderPath);
+                    // RunMacdLeadStrategy(data, scanFolderPath);
+                    // RunEmaCrossLeadStrategy(data, scanFolderPath);
+                    // RunEmaCrossLeadFastSettingStrategy(data, scanFolderPath);
+                    // RunEmaBandLeadStrategy(data, scanFolderPath);
+                    RunKeltnerLeadStrategy(data, scanFolderPath);
                 }
             }
             catch (Exception ex)
@@ -81,9 +86,15 @@ namespace StockSignalScanner
             description += "---------------------------------------------------------";
             description += "\n";
 
+            var path = Path.Combine(scanFolderPath, "Aroon-lead");
+            if (!Directory.Exists(path))
+            {
+                Directory.CreateDirectory(path);
+            }
+
             if (rating == 100)
             {
-                var pathToWrite = Path.Combine(scanFolderPath, "ratings100.txt");
+                var pathToWrite = Path.Combine(path, "ratings100.txt");
                 WriteToFile(pathToWrite, description);
 
                 return;
@@ -91,7 +102,7 @@ namespace StockSignalScanner
 
             if (rating >= 90)
             {
-                var pathToWrite = Path.Combine(scanFolderPath, "ratings90.txt");
+                var pathToWrite = Path.Combine(path, "ratings90.txt");
                 WriteToFile(pathToWrite, description);
 
                 return;
@@ -99,7 +110,301 @@ namespace StockSignalScanner
 
             if (rating >= 80)
             {
-                var pathToWrite = Path.Combine(scanFolderPath, "ratings80.txt");
+                var pathToWrite = Path.Combine(path, "ratings80.txt");
+                WriteToFile(pathToWrite, description);
+
+                return;
+            }
+        }
+
+        private static void RunMacdLeadStrategy(StockDataAggregator data, string scanFolderPath)
+        {
+            var prices = data.PriceOrderByDateAsc;
+            var strategy = new MacdLeadStrategy(prices, new IndicatorParameterPackage
+            {
+                Rsi = 14,
+                Mfi = 14,
+                StcCycleLength = 10,
+                StcFactor = 0.5,
+                StcLong = 50,
+                StcShort = 23,
+                MovingAverage = 14,
+                AroonOscillator = 14,
+                PvoFast = 5,
+                PvoSlow = 20,
+                PvoSignal = 3,
+                MacdFast = 8,
+                MacdSlow = 20,
+                MacdSignal = 5,
+            }, 5);
+            var rating = strategy.GetRating();
+            var details = strategy.GetDetails();
+            var description = $"- {data.Symbol}: {rating}";
+            description += "\n";
+            description += details;
+            description += "\n";
+            description += "---------------------------------------------------------";
+            description += "\n";
+
+            var path = Path.Combine(scanFolderPath, "Macd-lead");
+            if (!Directory.Exists(path))
+            {
+                Directory.CreateDirectory(path);
+            }
+
+            if (rating == 100)
+            {
+                var pathToWrite = Path.Combine(path, "ratings100.txt");
+                WriteToFile(pathToWrite, description);
+
+                return;
+            }
+
+            if (rating >= 90)
+            {
+                var pathToWrite = Path.Combine(path, "ratings90.txt");
+                WriteToFile(pathToWrite, description);
+
+                return;
+            }
+
+            if (rating >= 80)
+            {
+                var pathToWrite = Path.Combine(path, "ratings80.txt");
+                WriteToFile(pathToWrite, description);
+
+                return;
+            }
+        }
+
+        private static void RunEmaCrossLeadStrategy(StockDataAggregator data, string scanFolderPath)
+        {
+            var prices = data.PriceOrderByDateAsc;
+            var strategy = new EmasCrossLeadsStrategy(prices, new IndicatorParameterPackage
+            {
+                Rsi = 14,
+                Mfi = 14,
+                StcCycleLength = 10,
+                StcFactor = 0.5,
+                StcLong = 50,
+                StcShort = 23,
+                MovingAverage = 14,
+                AroonOscillator = 14,
+                PvoFast = 5,
+                PvoSlow = 20,
+                PvoSignal = 3,
+                MacdFast = 8,
+                MacdSlow = 20,
+                MacdSignal = 5,
+                EmaLong = 20,
+                EmaShort = 5,
+            }, 5);
+            var rating = strategy.GetRating();
+            var details = strategy.GetDetails();
+            var description = $"- {data.Symbol}: {rating}";
+            description += "\n";
+            description += details;
+            description += "\n";
+            description += "---------------------------------------------------------";
+            description += "\n";
+
+            var path = Path.Combine(scanFolderPath, "Emas-lead");
+            if (!Directory.Exists(path))
+            {
+                Directory.CreateDirectory(path);
+            }
+
+            if (rating == 100)
+            {
+                var pathToWrite = Path.Combine(path, "ratings100.txt");
+                WriteToFile(pathToWrite, description);
+
+                return;
+            }
+
+            if (rating >= 90)
+            {
+                var pathToWrite = Path.Combine(path, "ratings90.txt");
+                WriteToFile(pathToWrite, description);
+
+                return;
+            }
+
+            if (rating >= 80)
+            {
+                var pathToWrite = Path.Combine(path, "ratings80.txt");
+                WriteToFile(pathToWrite, description);
+
+                return;
+            }
+        }
+
+        private static void RunEmaCrossLeadFastSettingStrategy(StockDataAggregator data, string scanFolderPath)
+        {
+            var prices = data.PriceOrderByDateAsc;
+            var strategy = new EmasCrossLeadsStrategy(prices, new IndicatorParameterPackage
+            {
+                Rsi = 5,
+                Mfi = 5,
+                StcCycleLength = 10,
+                StcFactor = 0.5,
+                StcLong = 50,
+                StcShort = 23,
+                MovingAverage = 14,
+                AroonOscillator = 5,
+                PvoFast = 8,
+                PvoSlow = 20,
+                PvoSignal = 5,
+                MacdFast = 8,
+                MacdSlow = 20,
+                MacdSignal = 5,
+                EmaLong = 12,
+                EmaShort = 5,
+            }, 5);
+            var rating = strategy.GetRating();
+            var details = strategy.GetDetails();
+            var description = $"- {data.Symbol}: {rating}";
+            description += "\n";
+            description += details;
+            description += "\n";
+            description += "---------------------------------------------------------";
+            description += "\n";
+
+            var path = Path.Combine(scanFolderPath, "Emas-lead-fast");
+            if (!Directory.Exists(path))
+            {
+                Directory.CreateDirectory(path);
+            }
+
+            if (rating == 100)
+            {
+                var pathToWrite = Path.Combine(path, "ratings100.txt");
+                WriteToFile(pathToWrite, description);
+
+                return;
+            }
+
+            if (rating >= 90)
+            {
+                var pathToWrite = Path.Combine(path, "ratings90.txt");
+                WriteToFile(pathToWrite, description);
+
+                return;
+            }
+
+            if (rating >= 80)
+            {
+                var pathToWrite = Path.Combine(path, "ratings80.txt");
+                WriteToFile(pathToWrite, description);
+
+                return;
+            }
+        }
+
+        private static void RunEmaBandLeadStrategy(StockDataAggregator data, string scanFolderPath)
+        {
+            var prices = data.PriceOrderByDateAsc;
+            var strategy = new EmaBandLeadStrategy(prices, new IndicatorParameterPackage
+            {
+                Rsi = 25,
+                Mfi = 25,
+                StcCycleLength = 10,
+                StcFactor = 0.5,
+                StcLong = 50,
+                StcShort = 23,
+                MovingAverage = 14,
+                AroonOscillator = 5,
+                PvoFast = 8,
+                PvoSlow = 20,
+                PvoSignal = 5,
+                MacdFast = 8,
+                MacdSlow = 20,
+                MacdSignal = 5,
+                EmaLong = 12,
+                EmaShort = 5,
+            }, 3);
+            var rating = strategy.GetRating();
+            var details = strategy.GetDetails();
+            var description = $"- {data.Symbol}: {rating}";
+            description += "\n";
+            description += details;
+            description += "\n";
+            description += "---------------------------------------------------------";
+            description += "\n";
+
+            var path = Path.Combine(scanFolderPath, "Emas-band-lead");
+            if (!Directory.Exists(path))
+            {
+                Directory.CreateDirectory(path);
+            }
+
+            if (rating == 100)
+            {
+                var pathToWrite = Path.Combine(path, "ratings100.txt");
+                WriteToFile(pathToWrite, description);
+
+                return;
+            }
+
+            if (rating >= 90)
+            {
+                var pathToWrite = Path.Combine(path, "ratings90.txt");
+                WriteToFile(pathToWrite, description);
+
+                return;
+            }
+
+            if (rating >= 80)
+            {
+                var pathToWrite = Path.Combine(path, "ratings80.txt");
+                WriteToFile(pathToWrite, description);
+
+                return;
+            }
+        }
+
+        private static void RunKeltnerLeadStrategy(StockDataAggregator data, string scanFolderPath)
+        {
+            var prices = data.PriceOrderByDateAsc;
+            var strategy = new KeltnerChannelLeadStrategy(prices, new IndicatorParameterPackage
+            {
+                Mfi = 25,
+                KeltnerEmaPeriod = 25,
+                KeltnerMultiplier = 2,
+                Atr = 25,
+                Adx = 10
+            }, 5) ;
+            var rating = strategy.GetRating();
+            var details = strategy.GetDetails();
+            var description = $"- {data.Symbol}: {rating} | ";
+            description += details;
+            description += "\n";
+
+            var path = Path.Combine(scanFolderPath, "Keltner-channel-lead");
+            if (!Directory.Exists(path))
+            {
+                Directory.CreateDirectory(path);
+            }
+
+            if (rating == 100)
+            {
+                var pathToWrite = Path.Combine(path, "ratings100.txt");
+                WriteToFile(pathToWrite, description);
+
+                return;
+            }
+
+            if (rating >= 90)
+            {
+                var pathToWrite = Path.Combine(path, "ratings90.txt");
+                WriteToFile(pathToWrite, description);
+
+                return;
+            }
+
+            if (rating >= 80)
+            {
+                var pathToWrite = Path.Combine(path, "ratings80.txt");
                 WriteToFile(pathToWrite, description);
 
                 return;
@@ -410,7 +715,7 @@ namespace StockSignalScanner
             }
         }
 
-        private static async Task<StockDataAggregator> RunAnalysis(string ticker, string exchange, string apiKey)
+        private static async Task<StockDataAggregator> RunAnalysis(string ticker, string exchange, string apiKey, int retry = 5)
         {
             try
             {
@@ -444,6 +749,10 @@ namespace StockSignalScanner
                 {
                     outputFile.WriteLine(ex.Message);
                     outputFile.WriteLine(ex.StackTrace);
+                }
+                if (retry > 0)
+                {
+                    await RunAnalysis(ticker, exchange, apiKey, retry - 1);
                 }
             }
             return null;

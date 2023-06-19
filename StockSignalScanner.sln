@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestProject", "TestProject\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Indicators", "..\Stock.Indicators\src\Indicators.csproj", "{D2454E17-22C9-4192-A3B0-F688110333F4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StockScanningResultMonitor", "StockScanningResultMonitor\StockScanningResultMonitor.csproj", "{442959A5-A23D-42A1-867E-D088DBD916CD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{D2454E17-22C9-4192-A3B0-F688110333F4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D2454E17-22C9-4192-A3B0-F688110333F4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D2454E17-22C9-4192-A3B0-F688110333F4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{442959A5-A23D-42A1-867E-D088DBD916CD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{442959A5-A23D-42A1-867E-D088DBD916CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{442959A5-A23D-42A1-867E-D088DBD916CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{442959A5-A23D-42A1-867E-D088DBD916CD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
