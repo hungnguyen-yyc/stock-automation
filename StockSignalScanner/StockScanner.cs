@@ -42,11 +42,11 @@ namespace StockSignalScanner
                 var data = await StockScanner.RunAnalysis(stock.Symbol, stock.ExchangeShortName, apiKey);
                 if (data != null)
                 {
-                    // RunAroonLeadStrategy(data, scanFolderPath);
-                    // RunMacdLeadStrategy(data, scanFolderPath);
-                    // RunEmaCrossLeadStrategy(data, scanFolderPath);
-                    // RunEmaCrossLeadFastSettingStrategy(data, scanFolderPath);
-                    // RunEmaBandLeadStrategy(data, scanFolderPath);
+                    RunAroonLeadStrategy(data, scanFolderPath);
+                    RunMacdLeadStrategy(data, scanFolderPath);
+                    RunEmaCrossLeadStrategy(data, scanFolderPath);
+                    RunEmaCrossLeadFastSettingStrategy(data, scanFolderPath);
+                    RunEmaBandLeadStrategy(data, scanFolderPath);
                     RunKeltnerLeadStrategy(data, scanFolderPath);
                 }
             }
