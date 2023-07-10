@@ -21,6 +21,7 @@ namespace StockSignalScanner.Models
         public decimal Low { get; set; }
         public decimal Close { get; set; }
         public decimal Volume { get; set; }
+        public decimal Tema { get; set; }
 
         public Quote ToQuote()
         {

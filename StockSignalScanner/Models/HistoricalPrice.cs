@@ -6,8 +6,8 @@
         public IList<HistoricalPrice> Historical { get; set; }
     }
 
-    public class TickerInterdayPrice
+    public class TickerIntradayPrice
     {
-        public IList<HistoricalPrice> Historical { get; set; }
+        public IList<Price> Historical { get; set; }
     }
 }

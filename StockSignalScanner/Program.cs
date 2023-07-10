@@ -1,14 +1,4 @@
-﻿using log4net;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using StockSignalScanner.Indicators;
-using StockSignalScanner.Models;
-using StockSignalScanner.Strategies;
-using System.Collections.Concurrent;
-using System.Diagnostics;
-using System.Text;
-
-namespace StockSignalScanner
+﻿namespace StockSignalScanner
 {
     public partial class Program
     {
@@ -19,7 +9,7 @@ namespace StockSignalScanner
             var runScanStock = args.Any(a => a.ToLower().Contains("runscanstock") || a.ToLower().Contains("run-scan-stock"));
             var runScanStock15m = args.Any(a => a.ToLower().Contains("runscanstock15m") || a.ToLower().Contains("run-scan-stock-15m"));
             // var failed = new List<string>() { "ATEST-A", "BTAL", "HIBS", "IIGD", "TOPS", "USFR", "WEBS" };
-            var hot = new List<string>() { "AMD", "AAPL", "GOOGL", "TSLA", "NVDA", "META", "AMZN", "GME", "AMC" };
+            var hot = new List<string>() { "AMD", "AAPL", "GOOGL", "TSLA", "NVDA", "META", "AMZN", "GME", "AMC", "COIN", "MARA", "RIOT" };
             using (var httpClient = new HttpClient())
             {
                 if (runScanStock15m)
