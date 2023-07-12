@@ -169,10 +169,6 @@ namespace day_trading_signals
                         {
                             resultString = $"- {ticker}: Regular Bearish Divergence Found for at {price1.Date} and {price2.Date} | {macdString} | {temaString}";
                         }
-                        if (mfiResult1.Mfi < mfiResult2.Mfi && price1.High >= price2.High)
-                        {
-                            resultString = $"- {ticker}: Hidden Bearish Divergence Found for at {price1.Date} and {price2.Date} | {macdString} | {temaString}";
-                        }
 
                         if (!string.IsNullOrEmpty(resultString))
                         {
@@ -247,10 +243,6 @@ namespace day_trading_signals
                         if (mfiResult1.Mfi < mfiResult2.Mfi && price1.Low >= price2.Low)
                         {
                             resultString = $"- {ticker}: Regular Bullish Divergence Found for at {price1.Date} and {price2.Date} | {macdString} | {temaString}";
-                        }
-                        if (mfiResult1.Mfi > mfiResult2.Mfi && price1.Low <= price2.Low)
-                        {
-                            resultString = $"- {ticker}: Hidden Bullish Divergence Found for at {price1.Date} and {price2.Date} | {macdString} | {temaString}";
                         }
 
                         if (!string.IsNullOrEmpty(resultString))
@@ -342,10 +334,6 @@ namespace day_trading_signals
                         {
                             resultString = $"- {ticker}: Regular Bearish Divergence Found for at {price1.Date} and {price2.Date} | {macdString} | {temaString}";
                         }
-                        if (mfiResult1.Mfi < mfiResult2.Mfi && price1.High >= price2.High)
-                        {
-                            resultString = $"- {ticker}: Hidden Bearish Divergence Found for at {price1.Date} and {price2.Date} | {macdString} | {temaString}";
-                        }
 
                         if (!string.IsNullOrEmpty(resultString))
                         {
@@ -419,10 +407,6 @@ namespace day_trading_signals
                         if (mfiResult1.Mfi < mfiResult2.Mfi && price1.Low >= price2.Low)
                         {
                             resultString = $"- {ticker}: Regular Bullish Divergence Found for at {price1.Date} and {price2.Date} | {macdString} | {temaString}";
-                        }
-                        if (mfiResult1.Mfi > mfiResult2.Mfi && price1.Low <= price2.Low)
-                        {
-                            resultString = $"- {ticker}: Hidden Bullish Divergence Found for at {price1.Date} and {price2.Date} | {macdString} | {temaString}";
                         }
 
                         if (!string.IsNullOrEmpty(resultString))
