@@ -23,7 +23,7 @@ namespace day_trading_signals
             var marketOpen = new DateTime(now.Year, now.Month, now.Day, 9, 30, 0);
             var marketClose = new DateTime(now.Year, now.Month, now.Day, 16, 0, 0);
 
-            while (!stoppingToken.IsCancellationRequested && now > marketClose)
+            while (!stoppingToken.IsCancellationRequested && now < marketClose)
             {
                 // run task every 5 minutes from market open to market close
                 if (now > marketOpen && now < marketClose)
@@ -36,14 +36,14 @@ namespace day_trading_signals
                 {
                     await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
                 }
+                now = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, easternZone);
             }
             return;
         }
 
         public async Task Run()
         {
-            //var favs = new List<string>() { "AMD", "AAPL", "GOOGL", "TSLA", "NVDA", "META", "AMZN", "COIN", "MARA", "RIOT", "RBLX", "SPY" };
-            var favs = new List<string>() { "AMD"};
+            var favs = new List<string>() { "AMD", "AAPL", "GOOGL", "TSLA", "NVDA", "META", "AMZN", "COIN", "MARA", "RIOT", "RBLX", "SPY" };
             using (var httpClient = new HttpClient())
             {
                 foreach (var ticker in favs)
