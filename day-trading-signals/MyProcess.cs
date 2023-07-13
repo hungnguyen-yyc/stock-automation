@@ -23,7 +23,6 @@ namespace day_trading_signals
             var marketOpen = new DateTime(now.Year, now.Month, now.Day, 9, 30, 0);
             var marketClose = new DateTime(now.Year, now.Month, now.Day, 16, 0, 0);
 
-            await Run();
             while (!stoppingToken.IsCancellationRequested && now > marketClose)
             {
                 // run task every 5 minutes from market open to market close
@@ -108,8 +107,8 @@ namespace day_trading_signals
             var mfis = prices.GetMfi(9).ToList();
             var macds = prices.GetMacd(12, 26, 9).ToList();
 
-            var swingHighsLast1Days = swingHighs.Where(m => m.Date.Date.CompareTo(new DateTime(2023, 07, 12)) == 0).ToList();
-            var swingLowsLast1Days = swingLows.Where(m => m.Date.Date.CompareTo(new DateTime(2023, 07, 12)) == 0).ToList();
+            var swingHighsLast1Days = swingHighs.Where(m => m.Date.Date.CompareTo(DateTime.Today) == 0).ToList();
+            var swingLowsLast1Days = swingLows.Where(m => m.Date.Date.CompareTo(DateTime.Today) == 0).ToList();
 
             var startDateMap = new Dictionary<DateTime, IList<string>>();
 
