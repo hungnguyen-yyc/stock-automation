@@ -17,13 +17,13 @@ namespace day_trading_signals
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            while (!stoppingToken.IsCancellationRequested)
+            // create easter time zone
+            var easternZone = TimeZoneInfo.FindSystemTimeZoneById("Eastern Standard Time");
+            var now = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, easternZone);
+            var marketOpen = new DateTime(now.Year, now.Month, now.Day, 9, 30, 0);
+            var marketClose = new DateTime(now.Year, now.Month, now.Day, 16, 0, 0);
+            while (!stoppingToken.IsCancellationRequested && now > marketClose)
             {
-                // create easter time zone
-                var easternZone = TimeZoneInfo.FindSystemTimeZoneById("Eastern Standard Time");
-                var now = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, easternZone);
-                var marketOpen = new DateTime(now.Year, now.Month, now.Day, 9, 30, 0);
-                var marketClose = new DateTime(now.Year, now.Month, now.Day, 16, 0, 0);
                 // run task every 5 minutes from market open to market close
                 if (now > marketOpen && now < marketClose)
                 {
@@ -102,11 +102,11 @@ namespace day_trading_signals
             var result = new List<string>();
             var swingHighs = FindSwingHighs(prices.ToList<Price>(), 5);
             var swingLows = FindSwingLows(prices.ToList<Price>(), 5);
-            var mfis = prices.GetMfi(14).ToList();
+            var mfis = prices.GetMfi(9).ToList();
             var macds = prices.GetMacd(12, 26, 9).ToList();
 
-            var swingHighsLast1Days = swingHighs.Skip(swingHighs.Count - NUMBER_OF_SWING_POINTS).Take(NUMBER_OF_SWING_POINTS).ToList();
-            var swingLowsLast1Days = swingLows.Skip(swingLows.Count - NUMBER_OF_SWING_POINTS).Take(NUMBER_OF_SWING_POINTS).ToList();
+            var swingHighsLast1Days = swingHighs.Where(m => m.Date.Date.CompareTo(DateTime.Today) == 0).ToList();
+            var swingLowsLast1Days = swingLows.Where(m => m.Date.Date.CompareTo(DateTime.Today) == 0).ToList();
 
             var startDateMap = new Dictionary<DateTime, string>();
 
@@ -271,9 +271,9 @@ namespace day_trading_signals
         private IList<string> DetectDivergenceByTopAndBottomMfis(string ticker, IList<Price> prices)
         {
             var result = new List<string>();
-            var mfis = prices.GetMfi(14).ToList();
+            var mfis = prices.GetMfi(9).ToList();
             var macds = prices.GetMacd(12, 26, 9).ToList();
-            var mfisLast2Days = mfis.Skip(mfis.Count - NUMBER_OF_5_MIN_CANDLES_IN_A_DAY).Take(NUMBER_OF_5_MIN_CANDLES_IN_A_DAY).ToList();
+            var mfisLast2Days = mfis.Where(m => m.Date.CompareTo(DateTime.Now) == 0).ToList();
 
             var highestMfisOrderByDate = mfisLast2Days.OrderByDescending(m => m.Mfi).Take(TOP_OR_BOTTOM_LIMIT).OrderBy(m => m.Date).ToList();
             var pricesAtMfiDate = prices.Where(p => highestMfisOrderByDate.Any(m => m.Date == p.Date)).OrderBy(m => m.Date).ToList();
@@ -434,17 +434,16 @@ namespace day_trading_signals
 
         private List<Price> FindSwingLows(List<Price> prices, int range)
         {
-            List<Price> swingLows = new List<Price>(); 
-            int startIndex = range;
-            int endIndex = prices.Count - range;
+            List<Price> swingLows = new List<Price>();
 
-            for (int i = range; i < prices.Count - range; i++)
+            for (int i = range; i < prices.Count; i++)
             {
                 var currentPrice = prices[i];
 
                 bool isSwingLow = true;
+                var innerRange = i < prices.Count - range ? i + range : prices.Count - 1;
 
-                for (int j = i - range; j <= i + range; j++)
+                for (int j = i - range; j <= innerRange; j++)
                 {
                     if (j == i)
                         continue;
@@ -464,34 +463,21 @@ namespace day_trading_signals
                 }
             }
 
-            // Check if last items within range have potential to be swing lows
-            if (startIndex >= 1 && endIndex < prices.Count)
-            {
-                var secondLastPrice = prices[endIndex - 1];
-                var lastPrice = prices[endIndex];
-
-                if (lastPrice.Low <= secondLastPrice.Low)
-                {
-                    swingLows.Add(lastPrice);
-                }
-            }
-
             return swingLows;
         }
 
         private List<Price> FindSwingHighs(List<Price> prices, int range)
         {
             var swingHighs = new List<Price>();
-            int startIndex = range;
-            int endIndex = prices.Count - range;
 
-            for (int i = range; i < prices.Count - range; i++)
+            for (int i = range; i < prices.Count; i++)
             {
                 var currentPrice = prices[i];
 
                 bool isSwingHigh = true;
+                var innerRange = i < prices.Count - range ? i + range : prices.Count - 1;
 
-                for (int j = i - range; j <= i + range; j++)
+                for (int j = i - range; j <= innerRange; j++)
                 {
                     if (j == i)
                         continue;
@@ -511,29 +497,7 @@ namespace day_trading_signals
                 }
             }
 
-            // Check if last items within range have potential to be swing highs
-            if (startIndex >= 1 && endIndex < prices.Count)
-            {
-                var secondLastPrice = prices[endIndex - 1];
-                var lastPrice = prices[endIndex];
-
-                if (lastPrice.High >= secondLastPrice.High)
-                {
-                    swingHighs.Add(lastPrice);
-                }
-            }
-
             return swingHighs;
-        }
-
-        private enum SignalState
-        {
-            HiddenBullishDivergenceFound,
-            RegularBullishDivergenceFound,
-            HiddenBearishDivergenceFound,
-            RegularBearishDivergenceFound,
-            SignalConfirm,
-            Reset,
         }
     }
 }
