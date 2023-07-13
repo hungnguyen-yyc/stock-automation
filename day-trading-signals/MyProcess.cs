@@ -10,10 +10,10 @@ namespace day_trading_signals
     {
         private static string API_KEY = "bc00404c44fcc9fe338ac768f222f6ab";
         private static string PATH = @"C:\Users\hnguyen\Documents\stock-scan-logs-day-trade";
-        private static int TIME_BETWEEN_PIVOTS = 60;
+        private static int TIME_BETWEEN_PIVOTS = 45;
         private static int NUMBER_OF_5_MIN_CANDLES_IN_A_DAY = 79;
         private static int TOP_OR_BOTTOM_LIMIT = 30;
-        private static int NUMBER_OF_SWING_POINTS = 5;
+        private static int NUMBER_OF_SWING_POINTS = 4;
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
@@ -22,6 +22,8 @@ namespace day_trading_signals
             var now = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, easternZone);
             var marketOpen = new DateTime(now.Year, now.Month, now.Day, 9, 30, 0);
             var marketClose = new DateTime(now.Year, now.Month, now.Day, 16, 0, 0);
+
+            await Run();
             while (!stoppingToken.IsCancellationRequested && now > marketClose)
             {
                 // run task every 5 minutes from market open to market close
@@ -41,7 +43,8 @@ namespace day_trading_signals
 
         public async Task Run()
         {
-            var favs = new List<string>() { "AMD", "AAPL", "GOOGL", "TSLA", "NVDA", "META", "AMZN", "COIN", "MARA", "RIOT", "RBLX", "SPY" };
+            //var favs = new List<string>() { "AMD", "AAPL", "GOOGL", "TSLA", "NVDA", "META", "AMZN", "COIN", "MARA", "RIOT", "RBLX", "SPY" };
+            var favs = new List<string>() { "AMD"};
             using (var httpClient = new HttpClient())
             {
                 foreach (var ticker in favs)
@@ -100,15 +103,15 @@ namespace day_trading_signals
         private IList<string> DetectDivergenceBySwingHighsOrLows(string ticker, IList<Price> prices)
         {
             var result = new List<string>();
-            var swingHighs = FindSwingHighs(prices.ToList<Price>(), 5);
-            var swingLows = FindSwingLows(prices.ToList<Price>(), 5);
+            var swingHighs = FindSwingHighs(prices.ToList<Price>(), NUMBER_OF_SWING_POINTS);
+            var swingLows = FindSwingLows(prices.ToList<Price>(), NUMBER_OF_SWING_POINTS);
             var mfis = prices.GetMfi(9).ToList();
             var macds = prices.GetMacd(12, 26, 9).ToList();
 
-            var swingHighsLast1Days = swingHighs.Where(m => m.Date.Date.CompareTo(DateTime.Today) == 0).ToList();
-            var swingLowsLast1Days = swingLows.Where(m => m.Date.Date.CompareTo(DateTime.Today) == 0).ToList();
+            var swingHighsLast1Days = swingHighs.Where(m => m.Date.Date.CompareTo(new DateTime(2023, 07, 12)) == 0).ToList();
+            var swingLowsLast1Days = swingLows.Where(m => m.Date.Date.CompareTo(new DateTime(2023, 07, 12)) == 0).ToList();
 
-            var startDateMap = new Dictionary<DateTime, string>();
+            var startDateMap = new Dictionary<DateTime, IList<string>>();
 
             for (int i = 0; i < swingHighsLast1Days.Count; i++)
             {
@@ -174,11 +177,11 @@ namespace day_trading_signals
                         {
                             if (!startDateMap.ContainsKey(price1.Date))
                             {
-                                startDateMap.Add(price1.Date, resultString);
+                                startDateMap.Add(price1.Date, new List<string>() { resultString });
                             }
                             else
                             {
-                                startDateMap[price1.Date] = resultString;
+                                startDateMap[price1.Date].Add(resultString);
                             }
                         }
                     }
@@ -249,11 +252,11 @@ namespace day_trading_signals
                         {
                             if (!startDateMap.ContainsKey(price1.Date))
                             {
-                                startDateMap.Add(price1.Date, resultString);
+                                startDateMap.Add(price1.Date, new List<string>() { resultString });
                             }
                             else
                             {
-                                startDateMap[price1.Date] = resultString;
+                                startDateMap[price1.Date].Add(resultString);
                             }
                         }
                     }
@@ -263,7 +266,7 @@ namespace day_trading_signals
 
             foreach (var item in startDateMap)
             {
-                result.Add(item.Value);
+                result.AddRange(item.Value);
             }
             return result;
         }
