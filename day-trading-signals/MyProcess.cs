@@ -13,7 +13,7 @@ namespace day_trading_signals
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            var favs = new List<string>() { "AMD", "MSFT", "RIVN", "AAPL", "GOOGL", "TSLA", "NVDA", "META", "AMZN", "COIN", "MARA", "RIOT", "RBLX", "SPY" };
+            var favs = new List<string>() { "AMD", "MSFT", "RIVN", "AAPL", "GOOGL", "TSLA", "NVDA", "META", "AMZN", "COIN", "MARA", "RIOT", "RBLX", "SPY", "QQQ" };
 
             foreach (var interval in _interval)
             {
@@ -29,7 +29,8 @@ namespace day_trading_signals
             var easternZone = TimeZoneInfo.FindSystemTimeZoneById("Eastern Standard Time");
             var now = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, easternZone);
             var marketOpen = new DateTime(now.Year, now.Month, now.Day, 9, 30, 0);
-            var marketClose = new DateTime(now.Year, now.Month, now.Day, 16, 0, 0); await RunEveryPeriod.Run(favs, interval);
+            var marketClose = new DateTime(now.Year, now.Month, now.Day, 16, 0, 0); 
+            await RunEveryPeriod.Run(favs, interval);
 
             while (!stoppingToken.IsCancellationRequested && now < marketClose)
             {
