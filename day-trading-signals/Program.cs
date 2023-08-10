@@ -10,7 +10,7 @@ public class Program
             .ConfigureHostConfiguration(h => { })
             .ConfigureServices((hostContext, services) =>
             {
-                services.AddHostedService<MyProcess>();
+                services.AddHostedService(services => new MyProcess(5, 15, 30));
             }).UseConsoleLifetime().Build();
         host.Run();
     }
