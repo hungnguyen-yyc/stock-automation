@@ -2,7 +2,7 @@
 
 namespace StockSignalScanner.Indicators
 {
-    internal static class CrossDirectionDetector
+    public static class CrossDirectionDetector
     {
         public static CrossDirection GetCrossDirection(List<(DateTime, decimal)> line1, List<(DateTime, decimal)> line2)
         {

@@ -4,7 +4,7 @@ using StockSignalScanner.Models;
 
 namespace day_trading_signals
 {
-    internal static class RunEveryPeriod
+    internal static class MftDivergenceRunner
     {
 
         public static async Task Run(List<string> favs, int interval)
