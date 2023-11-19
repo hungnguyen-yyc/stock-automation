@@ -8,7 +8,6 @@ namespace day_trading_signals
 {
     internal static class KaufmanMfiRunner
     {
-
         public static async Task Run(List<string> favs, int interval)
         {
             using (var httpClient = new HttpClient())
@@ -16,21 +15,32 @@ namespace day_trading_signals
                 foreach (var ticker in favs)
                 {
                     string API_ENDPOINT = $"https://financialmodelingprep.com/api/v3/technical_indicator/{interval}min/{ticker}?period=50&type=tema&apikey={MyProcessHelpers.API_KEY}";
+                    string API_ENDPOINT_HOUR = $"https://financialmodelingprep.com/api/v3/technical_indicator/1hour/{ticker}?period=50&type=tema&apikey={MyProcessHelpers.API_KEY}";
 
                     var response = await httpClient.GetAsync(API_ENDPOINT);
+                    var responseHour = await httpClient.GetAsync(API_ENDPOINT_HOUR);
 
-                    if (response.IsSuccessStatusCode)
+                    if (response.IsSuccessStatusCode && responseHour.IsSuccessStatusCode)
                     {
                         string content = await response.Content.ReadAsStringAsync();
                         var tickerHistoricalPrices = JsonConvert.DeserializeObject<IList<Price>>(content, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+
+                        var contentHour = await responseHour.Content.ReadAsStringAsync();
+                        var tickerHistoricalPricesHour = JsonConvert.DeserializeObject<IList<Price>>(contentHour, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
 
                         if (tickerHistoricalPrices == null)
                         {
                             return;
                         }
 
+                        if (tickerHistoricalPricesHour == null)
+                        {
+                            return;
+                        }
+
+                        var pricesHour = tickerHistoricalPricesHour.Reverse().ToList();
                         var prices = tickerHistoricalPrices.Reverse().ToList();
-                        var resultBySwingHighsLows = DetectKaufmanMfi(ticker, prices);
+                        var resultBySwingHighsLows = DetectKaufmanMfi(ticker, prices, pricesHour);
 
                         if (resultBySwingHighsLows.Any())
                         {
@@ -45,20 +55,20 @@ namespace day_trading_signals
                             {
                                 Directory.CreateDirectory(todayPath);
                             }
-                            File.WriteAllText($@"{todayPath}\{ticker}-kaufman-mfi-{interval}-mins.txt", string.Join("\n", resultBySwingHighsLows));
+                            File.AppendAllText($@"{todayPath}\{ticker}-kaufman-mfi-{interval}-mins.txt", "\n" + string.Join("\n", resultBySwingHighsLows));
                         }
                     }
                 }
             }
         }
 
-        private static IList<string> DetectKaufmanMfi(string ticker, IList<Price> prices)
+        private static IList<string> DetectKaufmanMfi(string ticker, IList<Price> prices, IList<Price> pricesInHour)
         {
             var result = new List<string>();
 
-            var kaufman25 = prices.GetKama(25).Select(x => x.Kama ?? 0).ToList();
-            var kaufman100 = prices.GetKama(100).Select(x => x.Kama ?? 0).ToList();
-            var ema200 = prices.GetEma(200).Select(x => x.Ema ?? 0).ToList();
+            var kaufman25 = prices.GetKama(25, 5, 30).Select(x => x.Kama ?? 0).ToList();
+            var kaufman100 = prices.GetKama(100, 5).Select(x => x.Kama ?? 0).ToList();
+            var ema50Hour = pricesInHour.GetEma(50).Select(x => x.Ema ?? 0).ToList();
             var mfis = Indicator.GetMfi<Price>(prices, 14);
 
             var closeLast5 = prices.Select(e => (double)e.Close).Skip(prices.Count - 5).ToList();
@@ -70,23 +80,23 @@ namespace day_trading_signals
 
             if (priceCrossKama25Direction == CrossDirection.CROSS_ABOVE)
             {
-                var isMfiOver60 = (mfis.Last().Mfi ?? 0) >= 60;
+                var isMfiOver60 = (mfis.Last().Mfi ?? 0) >= 50;
                 var isKauffman25Last5Over100Last5 = kaufman25Last5.Zip(kaufman100.Skip(prices.Count - 5)).All(x => x.First > x.Second);
-                var isPriceOverEma50 = closeLast5.Zip(ema200.Skip(prices.Count - 5)).All(x => x.First > x.Second);
+                var isPriceOverEma50 = closeLast5.Zip(ema50Hour.Skip(prices.Count - 5)).All(x => x.First > x.Second);
                 if (isMfiOver60 && isPriceOverEma50 && isKauffman25Last5Over100Last5)
                 {
-                    result.Add($"{ticker} - {Enumerable.Last<Price>(prices).Date} - Price cross above Kama 25 - Mfi: {(mfis.Last().Mfi ?? 0).ToString("0.##")} - Kama25: {kaufman25.Last().ToString("0.##")} - Kama: 100{kaufman100.Last().ToString("0.##")} - Ema50: {ema200.Last().ToString("0.##")}");
+                    result.Add($"{ticker} - {Enumerable.Last<Price>(prices).Date} - Price cross above Kama 25 - Mfi: {(mfis.Last().Mfi ?? 0).ToString("0.##")} - Kama25: {kaufman25.Last().ToString("0.##")} - Kama: 100{kaufman100.Last().ToString("0.##")} - Ema50: {ema50Hour.Last().ToString("0.##")}");
                 }
 
             }
             else if (priceCrossKama25Direction == CrossDirection.CROSS_BELOW)
             {
-                var isMfiBelow40 = (mfis.Last().Mfi ?? 0) <= 40;
-                var isPriveBelowEma50 = closeLast5.Zip(ema200.Skip(prices.Count - 5)).All(x => x.First < x.Second);
+                var isMfiBelow40 = (mfis.Last().Mfi ?? 0) <= 50;
+                var isPriveBelowEma50 = closeLast5.Zip(ema50Hour.Skip(prices.Count - 5)).All(x => x.First < x.Second);
                 var isKauffman25Last5Below100Last5 = kaufman25Last5.Zip(kaufman100.Skip(prices.Count - 5)).All(x => x.First < x.Second);
                 if (isMfiBelow40 && isPriveBelowEma50 && isKauffman25Last5Below100Last5)
                 {
-                    result.Add($"{ticker} - {Enumerable.Last<Price>(prices).Date} - Price cross below Kama 25 - Mfi: {(mfis.Last().Mfi ?? 0).ToString("0.##")} - Kama25: {kaufman25.Last().ToString("0.##")} - Kama: 100{kaufman100.Last().ToString("0.##")} - Ema50: {ema200.Last().ToString("0.##")}");
+                    result.Add($"{ticker} - {Enumerable.Last<Price>(prices).Date} - Price cross below Kama 25 - Mfi: {(mfis.Last().Mfi ?? 0).ToString("0.##")} - Kama25: {kaufman25.Last().ToString("0.##")} - Kama: 100{kaufman100.Last().ToString("0.##")} - Ema50: {ema50Hour.Last().ToString("0.##")}");
                 }
             }
             else if (priceCrossKama100Direction == CrossDirection.CROSS_BELOW)
@@ -94,7 +104,7 @@ namespace day_trading_signals
                 var isKauffman25Last5Below100Last5 = kaufman25Last5.Zip(kaufman100.Skip(prices.Count - 5)).All(x => x.First < x.Second);
                 if (isKauffman25Last5Below100Last5)
                 {
-                    result.Add($"{ticker} - {Enumerable.Last<Price>(prices).Date} - Price cross below Kama 100 - Mfi: {(mfis.Last().Mfi ?? 0).ToString("0.##")} - Kama25: {kaufman25.Last().ToString("0.##")} - Kama: 100{kaufman100.Last().ToString("0.##")} - Ema50: {ema200.Last().ToString("0.##")}");
+                    result.Add($"{ticker} - {Enumerable.Last<Price>(prices).Date} - Price cross below Kama 100 - Mfi: {(mfis.Last().Mfi ?? 0).ToString("0.##")} - Kama25: {kaufman25.Last().ToString("0.##")} - Kama: 100{kaufman100.Last().ToString("0.##")} - Ema50: {ema50Hour.Last().ToString("0.##")}");
                 }
             }
             else if (priceCrossKama100Direction == CrossDirection.CROSS_ABOVE)
@@ -102,7 +112,7 @@ namespace day_trading_signals
                 var isKauffman25Last5Over100Last5 = kaufman25Last5.Zip(kaufman100.Skip(prices.Count - 5)).All(x => x.First > x.Second);
                 if (isKauffman25Last5Over100Last5)
                 {
-                    result.Add($"{ticker} - {Enumerable.Last<Price>(prices).Date} - Price cross above Kama 100 - Mfi: {(mfis.Last().Mfi ?? 0).ToString("0.##")} - Kama25: {kaufman25.Last().ToString("0.##")} - Kama: 100{kaufman100.Last().ToString("0.##")} - Ema50: {ema200.Last().ToString("0.##")}");
+                    result.Add($"{ticker} - {Enumerable.Last<Price>(prices).Date} - Price cross above Kama 100 - Mfi: {(mfis.Last().Mfi ?? 0).ToString("0.##")} - Kama25: {kaufman25.Last().ToString("0.##")} - Kama: 100{kaufman100.Last().ToString("0.##")} - Ema50: {ema50Hour.Last().ToString("0.##")}");
                 }
             }
             else
@@ -119,15 +129,15 @@ namespace day_trading_signals
 
                 if (kama25InPriceRange && last14PriceUnderKama25Last14 && !isMfiOver60)
                 {
-                    result.Add($"{ticker} - {Enumerable.Last<Price>(prices).Date} - Price touch Kama 25 from under - Mfi: {(mfis.Last().Mfi ?? 0).ToString("0.##")} - Kama25: {kaufman25.Last().ToString("0.##")} - Kama: 100{kaufman100.Last().ToString("0.##")} - Ema50: {ema200.Last().ToString("0.##")}");
+                    result.Add($"{ticker} - {Enumerable.Last<Price>(prices).Date} - Price touch Kama 25 from under - Mfi: {(mfis.Last().Mfi ?? 0).ToString("0.##")} - Kama25: {kaufman25.Last().ToString("0.##")} - Kama: 100{kaufman100.Last().ToString("0.##")} - Ema50: {ema50Hour.Last().ToString("0.##")}");
                 }
                 else if (kama25InPriceRange && last14PriceAboveKama25Last14 && !isMfiUnder40)
                 {
-                    result.Add($"{ticker} - {Enumerable.Last<Price>(prices).Date} - Price touch Kama 25 from above - Mfi: {(mfis.Last().Mfi ?? 0).ToString("0.##")} - Kama25: {kaufman25.Last().ToString("0.##")} - Kama: 100{kaufman100.Last().ToString("0.##")} - Ema50: {ema200.Last().ToString("0.##")}");
+                    result.Add($"{ticker} - {Enumerable.Last<Price>(prices).Date} - Price touch Kama 25 from above - Mfi: {(mfis.Last().Mfi ?? 0).ToString("0.##")} - Kama25: {kaufman25.Last().ToString("0.##")} - Kama: 100{kaufman100.Last().ToString("0.##")} - Ema50: {ema50Hour.Last().ToString("0.##")}");
                 }
                 else if (kama25InPriceRange && kama25InSecondLastPriceRange)
                 {
-                    result.Add($"{ticker} - {Enumerable.Last<Price>(prices).Date} - Price touch Kama 25 consolidating - Mfi: {(mfis.Last().Mfi ?? 0).ToString("0.##")} - Kama25: {kaufman25.Last().ToString("0.##")} - Kama: 100{kaufman100.Last().ToString("0.##")} - Ema50: {ema200.Last().ToString("0.##")}");
+                    result.Add($"{ticker} - {Enumerable.Last<Price>(prices).Date} - Price touch Kama 25 consolidating - Mfi: {(mfis.Last().Mfi ?? 0).ToString("0.##")} - Kama25: {kaufman25.Last().ToString("0.##")} - Kama: 100{kaufman100.Last().ToString("0.##")} - Ema50: {ema50Hour.Last().ToString("0.##")}");
                 }
             }
 

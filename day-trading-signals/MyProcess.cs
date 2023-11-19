@@ -40,12 +40,9 @@ namespace day_trading_signals
                     await KaufmanMfiRunner.Run(favs, interval);
                     await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
                 }
-                else
-                {
-                    break;
-                }
                 now = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, easternZone);
             }
+            Environment.Exit(0);
         }
     }
 }
