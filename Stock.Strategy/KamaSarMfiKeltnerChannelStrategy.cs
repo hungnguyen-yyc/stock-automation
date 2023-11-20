@@ -3,17 +3,16 @@ using Stock.Shared.Helpers;
 using Stock.Shared.Models;
 using Stock.Strategies.Helpers;
 using Stock.Strategies.Parameters;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Stock.Strategy
 {
     public class KamaSarMfiKeltnerChannelStrategy
     {
-        public static IList<Order> Run(string ticker, KamaSarMfiKeltnerChannelParameter param, double gap = 2.5, int lastNDay = 5, Timeframe timeframe = Timeframe.Daily)
+        public static IList<Order> Run(string ticker, KamaSarMfiKeltnerChannelParameter param, Timeframe timeframe = Timeframe.Daily, int lastNDay1 = 5, int lastNDay2 = 3)
         {
             var stockData = new StockDataCollector();
-            var prices = stockData.CollectData(ticker, timeframe, DateTime.Now.AddYears(-4)).Result;
+            var prices = stockData.CollectData(ticker, timeframe, DateTime.Now.AddYears(-7)).Result;
 
             if (prices == null || prices.Count < 155)
             {
@@ -39,10 +38,8 @@ namespace Stock.Strategy
                 var sarValue = sar[i].Sar;
 
                 // kama check
-                var lastNDayClose = prices.Skip(i - lastNDay).Take(lastNDay).Select(x => x.Close).ToList();
-                var lastNDayKama = kamaFast.Skip(i - lastNDay).Take(lastNDay).Select(x => (decimal)x.Kama!).ToList();
-                var upperRange80 = prices.Skip(i - lastNDay).Take(lastNDay).Select(x => (decimal)80).ToList();
-                var lowerRange20 = prices.Skip(i - lastNDay).Take(lastNDay).Select(x => (decimal)20).ToList();
+                var lastNDayClose = prices.Skip(i - lastNDay1).Take(lastNDay1).Select(x => x.Close).ToList();
+                var lastNDayKama = kamaFast.Skip(i - lastNDay1).Take(lastNDay1).Select(x => (decimal)x.Kama!).ToList();
                 var priceCrossKama = CrossDirectionDetector.GetCrossDirection(lastNDayClose, lastNDayKama);
                 var priceOpenAndCloseAboveKama = (double)price.Open >= kamaValue && (double)price.Close >= kamaValue;
                 var priceOpenAndCloseUnderKama = (double)price.Open <= kamaValue && (double)price.Close <= kamaValue;
@@ -52,7 +49,7 @@ namespace Stock.Strategy
                 // sar check
                 var sarLowerThanPrice = (decimal)sarValue! < close;
                 var sarGreaterThanPrice = (decimal)sarValue! > close;
-                var sarReverseLastNDay = sar.Skip(i - 3).Take(3).Any(x => x.IsReversal ?? false); // make sure sar is still fresh
+                var sarReverseLastNDay = sar.Skip(i - lastNDay2).Take(lastNDay2).Any(x => x.IsReversal ?? false); // make sure sar is still fresh
                 var isReverse = sar[i].IsReversal ?? false;
 
                 // mfi check
@@ -60,20 +57,55 @@ namespace Stock.Strategy
                 var bullishMfi = mfis[i].Mfi > param.MfiParameter.MiddleLimit && mfis[i].Mfi < param.MfiParameter.UpperLimit; // not too overbought
 
                 // kelner check
-                var keltnerUpperInsidePrice = (decimal)keltners[i].UpperBand! > price.Low && (decimal)keltners[i].UpperBand! < price.High;
-                var priceHigherThanKelnerUpper = price.Low > (decimal)keltners[i].UpperBand!;
-                var keltnerLowerInsidePrice = (decimal)keltners[i].LowerBand! > price.Low && (decimal)keltners[i].LowerBand! < price.High;
-                var priceLowerThanKelnerLower = price.High < (decimal)keltners[i].LowerBand!;
-                var priceTouchOrCrossKelnerUpper = keltnerUpperInsidePrice || priceHigherThanKelnerUpper;
-                var priceTouchOrCrossKelnerLower = keltnerLowerInsidePrice || priceLowerThanKelnerLower;
+                // +1 so that we check for the current price
+                var upperKeltnerInsideAnyPrice = prices.Skip(i - lastNDay2).Take(lastNDay2 + 1).Any(x => (decimal)keltners[i].UpperBand! > x.Low && (decimal)keltners[i].UpperBand! < x.High);
+                var lowerKeltnerInsideAnyPrice = prices.Skip(i - lastNDay2).Take(lastNDay2 + 1).Any(x => (decimal)keltners[i].LowerBand! > x.Low && (decimal)keltners[i].LowerBand! < x.High);
+                var anyPriceHigherThanUpperKeltner = prices.Skip(i - lastNDay2).Take(lastNDay2 + 1).Any(x => x.Low > (decimal)keltners[i].UpperBand!);
+                var anyPriceLowerThanLowerKeltner = prices.Skip(i - lastNDay2).Take(lastNDay2 + 1).Any(x => x.High < (decimal)keltners[i].LowerBand!);
+                var upperKeltnerInsidePrice = (decimal)keltners[i].UpperBand! > price.Low && (decimal)keltners[i].UpperBand! < price.High;
+                var priceHigherThanUpperKeltner = price.Low > (decimal)keltners[i].UpperBand!;
+                var lowerKeltnerInsidePrice = (decimal)keltners[i].LowerBand! > price.Low && (decimal)keltners[i].LowerBand! < price.High;
+                var priceLowerThanLowerKeltner = price.High < (decimal)keltners[i].LowerBand!;
+                var priceTouchOrCrossUpperKeltner = upperKeltnerInsidePrice || priceHigherThanUpperKeltner;
+                var priceTouchOrCrossLowerKeltner = lowerKeltnerInsidePrice || priceLowerThanLowerKeltner;
                 
                 // price check
                 var greenCandle = price.Open < price.Close;
                 var redCandle = price.Open > price.Close;
 
-                // TODO: should check for touching kama from below or above, or low of previous candle
-                var exitSignal = (priceTouchOrCrossKelnerLower && greenCandle) // exit for short position when price touch or cross kelner lower and green candle
-                    || (priceTouchOrCrossKelnerUpper && redCandle); // exit for long position when price touch or cross kelner upper and red candle
+                // exit signal
+                var lastOrder = orders.LastOrDefault();
+                var kamaExitSignal = false;
+                var lowestPriceInLastNDays = prices.Skip(i - lastNDay1).Take(lastNDay1).Min(x => x.Low);
+                var highestPriceInLastNDays = prices.Skip(i - lastNDay1).Take(lastNDay1).Min(x => x.High);
+                var priceExitSignal = false;
+                if (lastOrder != null && lastOrder.Action == EnterSignal.Open && lastOrder.Time.CompareTo(date) != 0)
+                {
+                    var lastOrderType = lastOrder.Type;
+                    if (lastOrderType == OrderType.Long)
+                    {
+                        priceExitSignal = price.Close < lowestPriceInLastNDays;
+                    }
+                    else if (lastOrderType == OrderType.Short)
+                    {
+                        priceExitSignal = price.Close > highestPriceInLastNDays;
+                    }
+                }
+                if (lastOrder != null && lastOrder.Action == EnterSignal.Open && lastOrder.Time.CompareTo(date) != 0)
+                {
+                    var lastOrderType = lastOrder.Type;
+                    if (lastOrderType == OrderType.Long)
+                    {
+                        kamaExitSignal = price.Close < (decimal)kamaValue!;
+                    }
+                    else if (lastOrderType == OrderType.Short)
+                    {
+                        kamaExitSignal = price.Close > (decimal)kamaValue!;
+                    }
+                }
+
+                var exitSignal = kamaExitSignal
+                    || priceExitSignal; 
 
                 // TODO: check for touching kama from below or above
                 if (priceOpenAndCloseAboveKama 
@@ -81,16 +113,12 @@ namespace Stock.Strategy
                     && priceCompletelyAboveKamaSlow
                     && sarReverseLastNDay 
                     && sarLowerThanPrice 
-                    && bullishMfi)
+                    && bullishMfi
+                    && !upperKeltnerInsideAnyPrice
+                    && !anyPriceHigherThanUpperKeltner)
                 {
-                    // TODO: so that we don't have too many orders, we check if the last order is closed
                     if (i - lastOrderIndex <= 5)
                     {
-                        if (exitSignal)
-                        {
-                            var lastOrder = orders.LastOrDefault();
-                            CheckAndAddCloseOrder(orders, lastOrder, date, close);
-                        }
                         continue;
                     }
 
@@ -101,7 +129,7 @@ namespace Stock.Strategy
                         Ticker = ticker,
                         Time = date,
                         Type = OrderType.Long,
-                        Price = close,
+                        Price = price,
                         Quantity = 1,
                         Action = EnterSignal.Open,
                         Reason = $"Price cross above Kama"
@@ -113,16 +141,12 @@ namespace Stock.Strategy
                     && priceCompletelyUnderKamaSlow
                     && sarReverseLastNDay 
                     && sarGreaterThanPrice 
-                    && bearishMfi)
+                    && bearishMfi
+                    && !lowerKeltnerInsideAnyPrice 
+                    && !anyPriceLowerThanLowerKeltner)
                 {
-                    // TODO: so that we don't have too many orders, we check if the last order is closed
                     if (i - lastOrderIndex <= 5)
                     {
-                        if (exitSignal)
-                        {
-                            var lastOrder = orders.LastOrDefault();
-                            CheckAndAddCloseOrder(orders, lastOrder, date, close);
-                        }
                         continue;
                     }
 
@@ -133,7 +157,7 @@ namespace Stock.Strategy
                         Ticker = ticker,
                         Time = date,
                         Type = OrderType.Short,
-                        Price = close,
+                        Price = price,
                         Quantity = 1,
                         Action = EnterSignal.Open,
                         Reason = $"Price cross below Kama"
@@ -143,15 +167,43 @@ namespace Stock.Strategy
 
                 if (exitSignal)
                 {
-                    var lastOrder = orders.LastOrDefault();
-                    CheckAndAddCloseOrder(orders, lastOrder, date, close);
+                    var reason = new StringBuilder();
+                    if (priceTouchOrCrossLowerKeltner && greenCandle)
+                    {
+                        reason = reason.Append("Price touch or cross kelner lower and green candle");
+                    }
+                    if (priceTouchOrCrossUpperKeltner && redCandle)
+                    {
+                        if (reason.Length > 0)
+                        {
+                            reason = reason.Append('-');
+                        }
+                        reason = reason.Append("Price touch or cross kelner upper and red candle");
+                    }
+                    if (kamaExitSignal)
+                    {
+                        if (reason.Length > 0)
+                        {
+                            reason = reason.Append('-');
+                        }
+                        reason = reason.Append("Price cross kama");
+                    }
+                    if (priceExitSignal)
+                    {
+                        if (reason.Length > 0)
+                        {
+                            reason = reason.Append('-');
+                        }
+                        reason = reason.Append("Price close lower or higher previous days' price level");
+                    }
+                    CheckAndAddCloseOrder(orders, lastOrder, date, price, reason.ToString());
                 }
             }
 
             return orders;
         }
 
-        private static void CheckAndAddCloseOrder(List<Order> allOrderMade, Order? lastOrder, DateTime closeDate, decimal closePrice)
+        private static void CheckAndAddCloseOrder(List<Order> allOrderMade, Order? lastOrder, DateTime closeDate, IPrice closePrice, string reason)
         {
             if (lastOrder != null && lastOrder.Action == EnterSignal.Open && lastOrder.Time.CompareTo(closeDate) != 0)
             {
@@ -163,7 +215,7 @@ namespace Stock.Strategy
                     Price = closePrice,
                     Quantity = lastOrder.Quantity,
                     Action = EnterSignal.Close,
-                    Reason = $"Exit previous {lastOrder.Type} postion"
+                    Reason = reason
                 };
 
                 allOrderMade.Add(closeOrder);

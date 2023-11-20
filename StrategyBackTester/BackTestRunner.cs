@@ -1,4 +1,5 @@
-﻿using Stock.Shared.Models.Parameters;
+﻿using Stock.Shared.Models;
+using Stock.Shared.Models.Parameters;
 using Stock.Strategies.Parameters;
 using Stock.Strategy;
 using System;
@@ -47,16 +48,22 @@ namespace StrategyBackTester
                     KeltnerAtrPeriod = 10
                 }
             };
-            var orders = KamaSarMfiKeltnerChannelStrategy.Run("AAPL", parameter);
+            var tickers = new List<string> { "AMD", "MSFT", "RIVN", "AAPL", "GOOGL", "TSLA", "NVDA", "META", "AMZN", "COIN", "MARA", "RIOT", "RBLX", "SPY", "QQQ", "CAT", "DIS" };
 
-            var result = orders.Select(x => x.ToString());
-            var fileName = $"{nameof(KamaSarMfiKeltnerChannelStrategy)}-orders-{orders.FirstOrDefault()?.Ticker}-{DateTime.Now:yyyyMMdd}.txt";
-            if (File.Exists(fileName))
+            foreach (var ticker in tickers)
             {
-                File.Delete(fileName);
-            }
 
-            File.AppendAllLines(fileName, result);
+                var orders = KamaSarMfiKeltnerChannelStrategy.Run(ticker, parameter, Timeframe.Daily, 5);
+
+                var result = orders.Select(x => x.ToString());
+                var fileName = $"{nameof(KamaSarMfiKeltnerChannelStrategy)}-orders-{orders.FirstOrDefault()?.Ticker}-{DateTime.Now:yyyyMMdd}.txt";
+                if (File.Exists(fileName))
+                {
+                    File.Delete(fileName);
+                }
+
+                File.AppendAllLines(fileName, result);
+            }
         }
     }
 }
