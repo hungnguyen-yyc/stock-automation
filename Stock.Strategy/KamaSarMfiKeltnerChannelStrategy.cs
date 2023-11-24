@@ -1,7 +1,7 @@
 ﻿using Skender.Stock.Indicators;
+using Stock.DataProvider;
 using Stock.Shared.Helpers;
 using Stock.Shared.Models;
-using Stock.Strategies.Helpers;
 using Stock.Strategies.Parameters;
 using System.Text;
 
@@ -11,8 +11,8 @@ namespace Stock.Strategy
     {
         public static IList<Order> Run(string ticker, KamaSarMfiKeltnerChannelParameter param, Timeframe timeframe = Timeframe.Daily, int lastNDay1 = 5, int lastNDay2 = 3)
         {
-            var stockData = new StockDataCollector();
-            var prices = stockData.CollectData(ticker, timeframe, DateTime.Now.AddYears(-7)).Result;
+            var dataProvider = new FmpStockDataProvider();
+            var prices = dataProvider.CollectData(ticker, timeframe, DateTime.Now.AddYears(-7)).Result;
 
             if (prices == null || prices.Count < 155)
             {

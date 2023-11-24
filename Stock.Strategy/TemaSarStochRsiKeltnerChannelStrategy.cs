@@ -1,7 +1,6 @@
 ﻿using Skender.Stock.Indicators;
 using Stock.Shared.Helpers;
 using Stock.Shared.Models;
-using Stock.Strategies.Helpers;
 using Stock.Strategies.Parameters;
 using System.Diagnostics;
 

@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
@@ -11,8 +11,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Stock.Indicators\src\Indicators.csproj" />
-    <ProjectReference Include="..\Stock.DataProvider\Stock.DataProvider.csproj" />
     <ProjectReference Include="..\Stock.Shared\Stock.Shared.csproj" />
   </ItemGroup>
 

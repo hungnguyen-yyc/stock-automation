@@ -2,17 +2,23 @@
 using Stock.Shared.Helpers;
 using Stock.Shared.Models;
 
-namespace Stock.Strategies.Helpers
+namespace Stock.DataProvider
 {
-    public class StockDataCollector
+    // Provider to get data from https://site.financialmodelingprep.com/
+    public class FmpStockDataProvider
     {
         private const string API_KEY = "bc00404c44fcc9fe338ac768f222f6ab";
 
         public async Task<IList<Price>?> CollectData(string ticker, Timeframe timeframe, DateTime from)
         {
+            return await CollectData(ticker, timeframe, from, DateTime.Now);
+        }
+
+        public async Task<IList<Price>?> CollectData(string ticker, Timeframe timeframe, DateTime from, DateTime to)
+        {
             using var httpClient = new HttpClient();
             var fromDate = from.ToString("yyyy-MM-dd");
-            var nowDate = DateTime.Now.ToString("yyyy-MM-dd");
+            var nowDate = to.ToString("yyyy-MM-dd");
             var interval = FmpTimeframeHelper.GetTimeframe(timeframe);
             var API_ENDPOINT = $"https://financialmodelingprep.com/api/v3/historical-chart/{interval}/{ticker}?from={fromDate}&to={nowDate}&apikey={API_KEY}";
 

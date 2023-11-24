@@ -1,0 +1,280 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Syncfusion.Licensing" Version="23.2.4" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Stock.DataProvider\Stock.DataProvider.csproj" />
+    <ProjectReference Include="..\Stock.Shared\Stock.Shared.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Syncfusion.Calculate.Base">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.Calculate.Base.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.Compression.Base">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.Compression.Base.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.Data.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.Data.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.DocIO.Base">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.DocIO.Base.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.Edit.Wpf">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.Edit.Wpf.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.Gantt.Wpf">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.Gantt.Wpf.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.Grid.Wpf">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.Grid.Wpf.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.GridCommon.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.GridCommon.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.Linq.Base">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.Linq.Base.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.OfficeChart.Base">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.OfficeChart.Base.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.Pdf.Base">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.Pdf.Base.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.PdfViewer.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.PdfViewer.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.PivotAnalysis.Base">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.PivotAnalysis.Base.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.PivotAnalysis.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.PivotAnalysis.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.PivotGridConverter.Wpf">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.PivotGridConverter.Wpf.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.Presentation.Base">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.Presentation.Base.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.PropertyGrid.Wpf">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.PropertyGrid.Wpf.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.SfAccordion.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.SfAccordion.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.SfBarcode.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.SfBarcode.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.SfBulletGraph.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.SfBulletGraph.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.SfBusyIndicator.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.SfBusyIndicator.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.SfCellGrid.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.SfCellGrid.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.SfChart.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.SfChart.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.SfChromelessWindow.Wpf">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.SfChromelessWindow.Wpf.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.SfColorPalette.Wpf">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.SfColorPalette.Wpf.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.SfDiagram.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.SfDiagram.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.SfGauge.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.SfGauge.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.SfGrid.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.SfGrid.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.SfGridCommon.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.SfGridCommon.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.SfHeatMap.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.SfHeatMap.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.SfHubTile.Wpf">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.SfHubTile.Wpf.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.SfImageEditor.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.SfImageEditor.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.SfInput.Wpf">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.SfInput.Wpf.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.SfKanban.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.SfKanban.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.SfMaps.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.SfMaps.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.SfNavigationDrawer.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.SfNavigationDrawer.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.SfProgressBar.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.SfProgressBar.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.SfRadialMenu.Wpf">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.SfRadialMenu.Wpf.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.SfRichTextBoxAdv.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.SfRichTextBoxAdv.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.SfRichTextRibbon.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.SfRichTextRibbon.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.SfScheduler.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.SfScheduler.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.SfShared.Wpf">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.SfShared.Wpf.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.SfSkinManager.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.SfSkinManager.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.SfSmithChart.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.SfSmithChart.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.SfSpellChecker.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.SfSpellChecker.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.SfSpreadsheet.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.SfSpreadsheet.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.SfTextInputLayout.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.SfTextInputLayout.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.SfTreeMap.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.SfTreeMap.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.SfTreeNavigator.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.SfTreeNavigator.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.SfTreeView.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.SfTreeView.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.Shared.Base">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.Shared.Base.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.Shared.MVVM.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.Shared.MVVM.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.Shared.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.Shared.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.SpellChecker.Base">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.SpellChecker.Base.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.Themes.Blend.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.Themes.Blend.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.Themes.FluentDark.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.Themes.FluentDark.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.Themes.FluentLight.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.Themes.FluentLight.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.Themes.Lime.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.Themes.Lime.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.Themes.MaterialDark.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.Themes.MaterialDark.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.Themes.MaterialDarkBlue.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.Themes.MaterialDarkBlue.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.Themes.MaterialLight.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.Themes.MaterialLight.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.Themes.MaterialLightBlue.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.Themes.MaterialLightBlue.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.Themes.Metro.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.Themes.Metro.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.Themes.Office2010Black.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.Themes.Office2010Black.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.Themes.Office2010Blue.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.Themes.Office2010Blue.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.Themes.Office2010Silver.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.Themes.Office2010Silver.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.Themes.Office2013DarkGray.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.Themes.Office2013DarkGray.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.Themes.Office2013LightGray.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.Themes.Office2013LightGray.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.Themes.Office2013White.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.Themes.Office2013White.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.Themes.Office2016Colorful.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.Themes.Office2016Colorful.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.Themes.Office2016DarkGray.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.Themes.Office2016DarkGray.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.Themes.Office2016White.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.Themes.Office2016White.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.Themes.Office2019Black.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.Themes.Office2019Black.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.Themes.Office2019Colorful.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.Themes.Office2019Colorful.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.Themes.Office2019DarkGray.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.Themes.Office2019DarkGray.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.Themes.Office2019HighContrast.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.Themes.Office2019HighContrast.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.Themes.Office2019HighContrastWhite.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.Themes.Office2019HighContrastWhite.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.Themes.Office2019White.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.Themes.Office2019White.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.Themes.Office365.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.Themes.Office365.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.Themes.Saffron.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.Themes.Saffron.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.Themes.SystemTheme.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.Themes.SystemTheme.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.Themes.VisualStudio2013.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.Themes.VisualStudio2013.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.Themes.VisualStudio2015.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.Themes.VisualStudio2015.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.Themes.Windows11Dark.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.Themes.Windows11Dark.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.Themes.Windows11Light.WPF">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.Themes.Windows11Light.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.Tools.Wpf">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.Tools.Wpf.dll</HintPath>
+    </Reference>
+    <Reference Include="Syncfusion.XlsIO.Base">
+      <HintPath>C:\Program Files (x86)\Syncfusion\Essential Studio\WPF\23.1.36\precompiledassemblies\net6.0\Syncfusion.XlsIO.Base.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+</Project>
