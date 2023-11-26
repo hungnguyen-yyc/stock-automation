@@ -7,10 +7,12 @@ using System.Text;
 
 namespace Stock.Strategy
 {
-    public class KamaSarMfiKeltnerChannelStrategy
+
+    public class KamaSarMfiKeltnerChannelStrategy : IStrategy
     {
-        public static IList<Order> Run(string ticker, KamaSarMfiKeltnerChannelParameter param, Timeframe timeframe = Timeframe.Daily, int lastNDay1 = 5, int lastNDay2 = 3)
+        public IList<Order> Run(string ticker, IStrategyParameter strategyParameter, Timeframe timeframe = Timeframe.Daily, int lastNDay1 = 5, int lastNDay2 = 3)
         {
+            KamaSarMfiKeltnerChannelParameter param = (KamaSarMfiKeltnerChannelParameter)strategyParameter;
             var dataProvider = new FmpStockDataProvider();
             var prices = dataProvider.CollectData(ticker, timeframe, DateTime.Now.AddYears(-7)).Result;
 

@@ -1,5 +1,6 @@
 ﻿using Stock.Shared.Models;
 using Stock.Shared.Models.Parameters;
+using Stock.Strategies;
 using Stock.Strategies.Parameters;
 using Stock.Strategy;
 using System;
@@ -53,16 +54,61 @@ namespace StrategyBackTester
             foreach (var ticker in tickers)
             {
 
-                var orders = KamaSarMfiKeltnerChannelStrategy.Run(ticker, parameter, Timeframe.Daily, 5);
+                var orders = (new HmaBandSarStrategy()).Run(ticker, parameter, Timeframe.Daily, 5);
+
+                if (orders == null || orders.Count < 2)
+                {
+                    continue;
+                }
 
                 var result = orders.Select(x => x.ToString());
-                var fileName = $"{nameof(KamaSarMfiKeltnerChannelStrategy)}-orders-{orders.FirstOrDefault()?.Ticker}-{DateTime.Now:yyyyMMdd}.txt";
+                var fileName = $"{nameof(HmaBandSarStrategy)}-orders-{orders.FirstOrDefault()?.Ticker}-{DateTime.Now:yyyyMMdd-hhmmss}.txt";
                 if (File.Exists(fileName))
                 {
                     File.Delete(fileName);
                 }
 
                 File.AppendAllLines(fileName, result);
+
+                var totalOfOrders = orders.Count;
+                var wins = 0;
+                var losses = 0;
+                var positionDays = new List<int>();
+                for (int i = 1; i < orders.Count; i += 2)
+                {
+                    var previousOrder = orders[i - 1];
+                    var currentOrder = orders[i];
+                    if (previousOrder.Type == OrderType.Long)
+                    {
+                        if (currentOrder.Price.Close > previousOrder.Price.Close)
+                        {
+                            wins++;
+                        }
+                        else
+                        {
+                            losses++;
+                        }
+                        positionDays.Add((currentOrder.Time - previousOrder.Time).Days);
+                    }
+                    else
+                    {
+                        if (currentOrder.Price.Close < previousOrder.Price.Close)
+                        {
+                            wins++;
+                        }
+                        else
+                        {
+                            losses++;
+                        }
+                        positionDays.Add((currentOrder.Time - previousOrder.Time).Days);
+                    }
+                }
+
+                File.AppendAllLines(fileName, new List<string> {
+                    $"Total of orders: {totalOfOrders}", 
+                    $"Total of wins: {wins}", 
+                    $"Total of losses: {losses}", 
+                    $"Average position days: {positionDays.Average():F}" });
             }
         }
     }
