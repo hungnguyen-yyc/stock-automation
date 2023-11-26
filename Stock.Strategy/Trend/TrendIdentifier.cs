@@ -4,7 +4,7 @@ namespace Stock.Strategies.Trend
 {
     internal class TrendIdentifier
     {
-        public static List<Price> FindSwingLows(List<Price> prices, int numberOfCandlesToLookBack)
+        public List<Price> FindSwingLows(List<Price> prices, int numberOfCandlesToLookBack)
         {
             List<Price> swingLows = new List<Price>();
 
@@ -38,7 +38,7 @@ namespace Stock.Strategies.Trend
             return swingLows;
         }
 
-        public static List<Price> FindSwingHighs(List<Price> prices, int numberOfCandlesToLookBack)
+        public List<Price> FindSwingHighs(List<Price> prices, int numberOfCandlesToLookBack)
         {
             var swingHighs = new List<Price>();
 

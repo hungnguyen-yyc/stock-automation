@@ -12,13 +12,19 @@ using System.Threading.Tasks;
 
 namespace Stock.Strategies
 {
-    public class HmaBandSarStrategy : IStrategy
+    /// <summary>
+    /// This version of HMA Band strategy is based on the following rules:
+    /// - Slow HMA band is switch to bullist or bearish
+    /// - Slow HMA band is interwine or not
+    /// - Work quite well with AMD but failed with the rest of the tickers
+    /// </summary>
+    public class HmaBandBullBearSignalWithInterwineStrategy : IStrategy
     {
-        public IList<Order> Run(string ticker, IStrategyParameter strategyParameter, Timeframe timeframe = Timeframe.Daily, int lastNDay1 = 5, int lastNDay2 = 3)
+        public IList<Order> Run(string ticker, IStrategyParameter strategyParameter, DateTime from, Timeframe timeframe = Timeframe.Daily, int lastNDay1 = 5, int lastNDay2 = 3)
         {
             var dataProvider = new FmpStockDataProvider();
             var trendIdentifier = new TrendIdentifier();
-            var prices = dataProvider.CollectData(ticker, Timeframe.Daily, DateTime.Now.AddYears(-2)).Result;
+            var prices = dataProvider.CollectData(ticker, Timeframe.Daily, from).Result;
             var orders = new List<Order>();
 
             if (prices == null || prices.Count < 155)

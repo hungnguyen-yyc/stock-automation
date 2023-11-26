@@ -54,7 +54,7 @@ namespace StrategyBackTester
             foreach (var ticker in tickers)
             {
 
-                var orders = (new HmaBandSarStrategy()).Run(ticker, parameter, Timeframe.Daily, 5);
+                var orders = (new MfiHmaStrategy()).Run(ticker, parameter, DateTime.Now.AddYears(-5), Timeframe.Daily, 5);
 
                 if (orders == null || orders.Count < 2)
                 {
@@ -62,13 +62,21 @@ namespace StrategyBackTester
                 }
 
                 var result = orders.Select(x => x.ToString());
-                var fileName = $"{nameof(HmaBandSarStrategy)}-orders-{orders.FirstOrDefault()?.Ticker}-{DateTime.Now:yyyyMMdd-hhmmss}.txt";
-                if (File.Exists(fileName))
+                var strategyName = $"strategies/{nameof(MfiHmaStrategy)}";
+                var fileName = $"{orders.FirstOrDefault()?.Ticker}-{DateTime.Now:yyyyMMdd-hhmmss}.txt";
+
+                if (!Directory.Exists(strategyName))
                 {
-                    File.Delete(fileName);
+                    Directory.CreateDirectory(strategyName);
                 }
 
-                File.AppendAllLines(fileName, result);
+                var filePath = Path.Combine(strategyName, fileName);
+                if (File.Exists(filePath))
+                {
+                    File.Delete(filePath);
+                }
+
+                File.AppendAllLines(filePath, result);
 
                 var totalOfOrders = orders.Count;
                 var wins = 0;
@@ -104,7 +112,7 @@ namespace StrategyBackTester
                     }
                 }
 
-                File.AppendAllLines(fileName, new List<string> {
+                File.AppendAllLines(filePath, new List<string> {
                     $"Total of orders: {totalOfOrders}", 
                     $"Total of wins: {wins}", 
                     $"Total of losses: {losses}", 

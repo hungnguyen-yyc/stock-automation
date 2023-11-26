@@ -10,11 +10,11 @@ namespace Stock.Strategy
 
     public class KamaSarMfiKeltnerChannelStrategy : IStrategy
     {
-        public IList<Order> Run(string ticker, IStrategyParameter strategyParameter, Timeframe timeframe = Timeframe.Daily, int lastNDay1 = 5, int lastNDay2 = 3)
+        public IList<Order> Run(string ticker, IStrategyParameter strategyParameter, DateTime from, Timeframe timeframe = Timeframe.Daily, int lastNDay1 = 5, int lastNDay2 = 3)
         {
             KamaSarMfiKeltnerChannelParameter param = (KamaSarMfiKeltnerChannelParameter)strategyParameter;
             var dataProvider = new FmpStockDataProvider();
-            var prices = dataProvider.CollectData(ticker, timeframe, DateTime.Now.AddYears(-7)).Result;
+            var prices = dataProvider.CollectData(ticker, timeframe, from).Result;
 
             if (prices == null || prices.Count < 155)
             {
