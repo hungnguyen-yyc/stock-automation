@@ -80,7 +80,7 @@ namespace Stock.Strategies.Trend
             return DetermineTrend(swingHighs, swingLows, numberOfCandlesToLookBack);
         }
 
-        private static OverallTrend DetermineTrend(List<Price> swingHighs, List<Price> swingLows, int numberOfSwingPoints = 7)
+        private OverallTrend DetermineTrend(List<Price> swingHighs, List<Price> swingLows, int numberOfSwingPoints = 7)
         {
             var determindSwingHighTrend = DetermineSwingTrend(swingHighs.Select(x => x.High).ToList(), numberOfSwingPoints);
             var determindSwingLowTrend = DetermineSwingTrend(swingLows.Select(x => x.Low).ToList(), numberOfSwingPoints);
@@ -88,7 +88,7 @@ namespace Stock.Strategies.Trend
             return new OverallTrend(determindSwingHighTrend, determindSwingLowTrend, swingHighs, swingLows, numberOfSwingPoints);
         }
 
-        private static TrendDirection DetermineSwingTrend(List<decimal> swings, int numSwingPoints)
+        public TrendDirection DetermineSwingTrend(List<decimal> swings, int numSwingPoints)
         {
             if (swings.Count < numSwingPoints)
             {
