@@ -20,7 +20,7 @@ namespace StrategyBackTester
                     continue;
                 }
 
-                var strategyName = $"strategies/{nameof(SwingPointsStrategy)}/{timeFrame}";
+                var strategyName = $"C:/Users/hnguyen/Documents/stock-back-test/strategies/{nameof(SwingPointsStrategy)}/{timeFrame}";
                 var fileNameWithoutExtension = $"{orders.FirstOrDefault()?.Ticker}-{DateTime.Now:yyyyMMdd-hhmmss}";
                 var fileName = $"{fileNameWithoutExtension}.txt";
 
