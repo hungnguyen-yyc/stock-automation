@@ -1,26 +1,32 @@
 ﻿using Stock.Shared.Models;
 using Stock.Strategies;
+using Stock.Strategies.Parameters;
 
 namespace StrategyBackTester
 {
-    internal class BackTestRunner
+    internal class SwingPointBackTestRunner
     {
         public void Run()
         {
             var tickers = new List<string> { "AMD", "MSFT", "RIVN", "AAPL", "GOOGL", "TSLA", "NVDA", "META", "AMZN", "COIN", "MARA", "RIOT", "RBLX", "SPY", "QQQ", "CAT", "DIS" };
-            var timeFrame = Timeframe.Daily;
+            var timeFrame = Timeframe.Hour1;
+            var swingPointStrategyParameter = new SwingPointStrategyParameter
+            {
+                NumberOfSwingPointsToLookBack = 4,
+                NumberOfCandlesticksToLookBack = 30
+            };
 
             foreach (var ticker in tickers)
             {
                 var strategy = new SwingPointsStrategy();
-                var orders = strategy.Run(ticker, null, DateTime.Now.AddYears(-3), timeFrame);
+                var orders = strategy.Run(ticker, swingPointStrategyParameter, DateTime.Now.AddYears(-3), timeFrame);
 
                 if (orders == null || orders.Count < 2)
                 {
                     continue;
                 }
 
-                var strategyName = $"C:/Users/hnguyen/Documents/stock-back-test/strategies/{nameof(SwingPointsStrategy)}/{timeFrame}";
+                var strategyName = $"C:/Users/hnguyen/Documents/stock-back-test/{DateTime.Now:yyyy-MM-ddThh-mm}/{nameof(SwingPointsStrategy)}/{timeFrame}";
                 var fileNameWithoutExtension = $"{orders.FirstOrDefault()?.Ticker}-{DateTime.Now:yyyyMMdd-hhmmss}";
                 var fileName = $"{fileNameWithoutExtension}.txt";
 
@@ -90,7 +96,7 @@ namespace StrategyBackTester
                     $"Total of orders: {totalOfOrders}", 
                     $"Total of wins: {wins}", 
                     $"Total of losses: {losses}",
-                    $"Win rate: {((decimal)wins / (decimal)(wins + losses)) * 100:F}%",
+                    $"Win rate: {wins / (decimal)(wins + losses) * 100:F}%",
                     $"Average position days: {positionDays.Average():F}" });
             }
         }

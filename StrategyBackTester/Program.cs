@@ -9,7 +9,7 @@ namespace StrategyBackTester
     {
         static void Main(string[] args)
         {
-            var testRunner = new BackTestRunner();
+            var testRunner = new SwingPointBackTestRunner();
             testRunner.Run();
         }
     }

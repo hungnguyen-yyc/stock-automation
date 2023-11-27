@@ -8,14 +8,15 @@ namespace Stock.Strategies
 {
     public class SwingPointsStrategy : IStrategy
     {
-        public string Description => "This strategy looks back 14 candles and calculates swing highs and lows. \n"
+        public string Description => "This strategy looks back a number of candles (specified in parameters) and calculates swing highs and lows. \n"
             + "The order then will be created at 2 candles after most recent swing lows or highs found. \n"
             + "The problem now is how to eliminate loss as soon as posible.";
 
         public IList<Order> Run(string ticker, IStrategyParameter strategyParameter, DateTime from, Timeframe timeframe = Timeframe.Daily)
         {
-            var numberOfSwingPointsToLookBack = 4;
-            var numberOfCandlesticksToLookBack = 14;
+            var parameter = (SwingPointStrategyParameter)strategyParameter;
+            var numberOfSwingPointsToLookBack = parameter.NumberOfSwingPointsToLookBack;
+            var numberOfCandlesticksToLookBack = parameter.NumberOfCandlesticksToLookBack;
             var dataProvider = new FmpStockDataProvider();
             var trendIdentifier = new TrendIdentifier();
             var prices = dataProvider.CollectData(ticker, timeframe, from).Result;
