@@ -93,8 +93,7 @@ namespace Stock.Strategies
                                 Price = price,
                                 Quantity = 1,
                                 Action = EnterSignal.Open,
-                                Time = price.Date,
-                                Reason = $"Price reversed 2 days after most recent swing low."
+                                Time = price.Date
                             });
                             previousSwingLow = immediateSwingLowBeforePrice;
                             previousSwingHigh = immediateSwingHighBeforePrice;
@@ -111,8 +110,7 @@ namespace Stock.Strategies
                                 Price = price,
                                 Quantity = 1,
                                 Action = EnterSignal.Open,
-                                Time = price.Date,
-                                Reason = $"Price reversed 2 days after most recent swing high."
+                                Time = price.Date
                             });
                             previousSwingLow = immediateSwingLowBeforePrice;
                             previousSwingHigh = immediateSwingHighBeforePrice;
@@ -137,8 +135,7 @@ namespace Stock.Strategies
                                 Price = price,
                                 Quantity = 1,
                                 Action = EnterSignal.Close,
-                                Time = price.Date,
-                                Reason = $"Price crossed below immediate swing low before price."
+                                Time = price.Date
                             });
                         }
                         else if (newSwingHigh)
@@ -150,8 +147,7 @@ namespace Stock.Strategies
                                 Price = price,
                                 Quantity = 1,
                                 Action = EnterSignal.Close,
-                                Time = price.Date,
-                                Reason = $"New swing high and potential reverse."
+                                Time = price.Date
                             });
                         }
                     }
@@ -169,8 +165,7 @@ namespace Stock.Strategies
                                 Price = price,
                                 Quantity = 1,
                                 Action = EnterSignal.Close,
-                                Time = price.Date,
-                                Reason = $"Price crossed above immediate swing high before price."
+                                Time = price.Date
                             });
                         }
                         else if (newSwingLow)
@@ -182,8 +177,7 @@ namespace Stock.Strategies
                                 Price = price,
                                 Quantity = 1,
                                 Action = EnterSignal.Close,
-                                Time = price.Date,
-                                Reason = $"New swing low and potential reverse."
+                                Time = price.Date
                             });
                         }
                     }

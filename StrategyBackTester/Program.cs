@@ -11,6 +11,7 @@ namespace StrategyBackTester
     {
         static void Main(string[] args)
         {
+#if (!DEBUG)
             var host = new HostBuilder()
                 .ConfigureHostConfiguration(h => { })
                 .ConfigureServices((hostContext, services) =>
@@ -18,6 +19,10 @@ namespace StrategyBackTester
                     services.AddHostedService(services => new SwingPointBackTestRunner());
                 }).UseConsoleLifetime().Build();
             host.Run();
+#else
+            var swingbacktest = new SwingPointBackTestRunner();
+            swingbacktest.Run();
+#endif
         }
     }
 }

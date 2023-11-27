@@ -12,7 +12,7 @@
 
         public override string ToString()
         {
-            return $"{Time:s};{Ticker};{Action};{Type};{Price.Close};{Quantity};{Reason}";
+            return $"{Time:s};{Ticker};{Action};{Type};{Price.Close};{Reason}";
         }
     }
 }
