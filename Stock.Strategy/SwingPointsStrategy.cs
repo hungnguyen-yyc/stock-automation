@@ -16,9 +16,10 @@ namespace Stock.Strategies
         public IList<Order> Run(string ticker, IStrategyParameter strategyParameter, DateTime from, Timeframe timeframe = Timeframe.Daily, int lastNDay1 = 5, int lastNDay2 = 3)
         {
             var numberOfSwingPointsToLookBack = 4;
+            var numberOfCandlesticksToLookBack = 14;
             var dataProvider = new FmpStockDataProvider();
             var trendIdentifier = new TrendIdentifier();
-            var prices = dataProvider.CollectData(ticker, Timeframe.Daily, from).Result;
+            var prices = dataProvider.CollectData(ticker, timeframe, from).Result;
             var orders = new List<Order>();
 
             if (prices == null || prices.Count < 155)
@@ -27,8 +28,8 @@ namespace Stock.Strategies
             }
 
             List<Price> orderedPrices = prices.Reverse().ToList();
-            var swingLows = trendIdentifier.FindSwingLows(orderedPrices, 14);
-            var swingHighs = trendIdentifier.FindSwingHighs(orderedPrices, 14);
+            var swingLows = trendIdentifier.FindSwingLows(orderedPrices, numberOfCandlesticksToLookBack);
+            var swingHighs = trendIdentifier.FindSwingHighs(orderedPrices, numberOfCandlesticksToLookBack);
             var minCount = Math.Min(swingLows.Count, swingHighs.Count);
 
             if (minCount <= numberOfSwingPointsToLookBack)
@@ -64,9 +65,14 @@ namespace Stock.Strategies
                     continue;
                 }
 
+                var indexOfImmediateSwingLowBeforePrice = orderedPrices.IndexOf(immediateSwingLowBeforePrice);
+                var indexOfImmediateSwingHighBeforePrice = orderedPrices.IndexOf(immediateSwingHighBeforePrice);
+
                 var lastorder = orders.LastOrDefault();
-                var daysAfterSwingLow = CalculateBusinessDays(immediateSwingLowBeforePrice.Date, price.Date);
-                var daysAfterSwingHigh = CalculateBusinessDays(immediateSwingHighBeforePrice.Date, price.Date);
+                //var daysAfterSwingLow = CalculateBusinessDays(immediateSwingLowBeforePrice.Date, price.Date);
+                //var daysAfterSwingHigh = CalculateBusinessDays(immediateSwingHighBeforePrice.Date, price.Date);
+                var daysAfterSwingLow = i - indexOfImmediateSwingLowBeforePrice;
+                var daysAfterSwingHigh = i - indexOfImmediateSwingHighBeforePrice;
 
                 if (lastorder == null || lastorder.Action == EnterSignal.Close)
                 {

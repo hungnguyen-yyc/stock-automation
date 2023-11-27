@@ -15,56 +15,22 @@ namespace StrategyBackTester
     {
         public void Run()
         {
-            var parameter = new KamaSarMfiKeltnerChannelParameter
-            {
-                Kama14Parameter = new KamaParameter
-                {
-                    KamaPeriod = 14,
-                    KamaFastPeriod = 5,
-                    KamaSlowPeriod = 30
-                },
-                Kama75Parameter = new KamaParameter
-                {
-                    KamaPeriod = 75,
-                    KamaFastPeriod = 5,
-                    KamaSlowPeriod = 30
-                },
-                SarParameter = new SarParameter
-                {
-                    SarMaxAcceleration = 0.2,
-                    SarAcceleration = 0.1,
-                    SarInitial = 0.1
-                },
-                MfiParameter = new MfiParameter
-                {
-                    MfiPeriod = 10,
-                    UpperLimit = 80,
-                    LowerLimit = 20,
-                    MiddleLimit = 50
-                },
-                KeltnerParameter = new KeltnerParameter
-                {
-                    KeltnerPeriod = 20,
-                    KeltnerMultiplier = 2,
-                    KeltnerAtrPeriod = 10
-                }
-            };
-            //var tickers = new List<string> { "AAPL" };
             var tickers = new List<string> { "AMD", "MSFT", "RIVN", "AAPL", "GOOGL", "TSLA", "NVDA", "META", "AMZN", "COIN", "MARA", "RIOT", "RBLX", "SPY", "QQQ", "CAT", "DIS" };
+            var timeFrame = Timeframe.Daily;
 
             foreach (var ticker in tickers)
             {
 
-                var orders = (new SwingPointsStrategy()).Run(ticker, parameter, DateTime.Now.AddYears(-3), Timeframe.Daily, 5);
+                var orders = (new SwingPointsStrategy()).Run(ticker, null, DateTime.Now.AddYears(-3), timeFrame, 5);
 
                 if (orders == null || orders.Count < 2)
                 {
                     continue;
                 }
 
-                var result = orders.Select(x => x.ToString());
-                var strategyName = $"strategies/{nameof(SwingPointsStrategy)}";
-                var fileName = $"{orders.FirstOrDefault()?.Ticker}-{DateTime.Now:yyyyMMdd-hhmmss}.txt";
+                var strategyName = $"strategies/{nameof(SwingPointsStrategy)}/{timeFrame}";
+                var fileNameWithoutExtension = $"{orders.FirstOrDefault()?.Ticker}-{DateTime.Now:yyyyMMdd-hhmmss}";
+                var fileName = $"{fileNameWithoutExtension}.txt";
 
                 if (!Directory.Exists(strategyName))
                 {
@@ -72,51 +38,74 @@ namespace StrategyBackTester
                 }
 
                 var filePath = Path.Combine(strategyName, fileName);
+                var filePathResult = Path.Combine(strategyName, $"{fileNameWithoutExtension}-result.txt");
                 if (File.Exists(filePath))
                 {
                     File.Delete(filePath);
                 }
 
-                File.AppendAllLines(filePath, result);
-
                 var totalOfOrders = orders.Count;
                 var wins = 0;
                 var losses = 0;
                 var positionDays = new List<int>();
-                for (int i = 1; i < orders.Count; i += 2)
+                for (int i = 1; i < orders.Count; i++)
                 {
                     var previousOrder = orders[i - 1];
                     var currentOrder = orders[i];
+                    if (i % 2 == 0 && i == orders.Count - 1)
+                    {
+                        File.AppendAllText(filePath, previousOrder.ToString());
+                        File.AppendAllText(filePath, "\n");
+                        continue;
+                    }
+
+                    if (i % 2 == 0)
+                    {
+                        continue;
+                    }
+
+                    File.AppendAllText(filePath, previousOrder.ToString());
+                    File.AppendAllText(filePath, "\n");
                     if (previousOrder.Type == OrderType.Long)
                     {
                         if (currentOrder.Price.Close > previousOrder.Price.Close)
                         {
                             wins++;
+                            File.AppendAllText(filePath, currentOrder.ToString());
+                            File.AppendAllText(filePath, "\n");
                         }
                         else
                         {
                             losses++;
+                            File.AppendAllText(filePath, currentOrder.ToString());
+                            File.AppendAllText(filePath, " (L)");
+                            File.AppendAllText(filePath, "\n");
                         }
-                        positionDays.Add((currentOrder.Time - previousOrder.Time).Days);
                     }
                     else
                     {
                         if (currentOrder.Price.Close < previousOrder.Price.Close)
                         {
                             wins++;
+                            File.AppendAllText(filePath, currentOrder.ToString());
+                            File.AppendAllText(filePath, "\n");
                         }
                         else
                         {
                             losses++;
+                            File.AppendAllText(filePath, currentOrder.ToString());
+                            File.AppendAllText(filePath, " (L)");
+                            File.AppendAllText(filePath, "\n");
                         }
-                        positionDays.Add((currentOrder.Time - previousOrder.Time).Days);
                     }
+                    positionDays.Add((currentOrder.Time - previousOrder.Time).Days);
                 }
 
-                File.AppendAllLines(filePath, new List<string> {
+                File.AppendAllLines(filePathResult, new List<string> {
                     $"Total of orders: {totalOfOrders}", 
                     $"Total of wins: {wins}", 
-                    $"Total of losses: {losses}", 
+                    $"Total of losses: {losses}",
+                    $"Win rate: {((decimal)wins / (decimal)(wins + losses)) * 100:F}%",
                     $"Average position days: {positionDays.Average():F}" });
             }
         }
