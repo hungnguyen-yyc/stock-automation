@@ -76,11 +76,10 @@ namespace Stock.Strategies
                 var isLowerSwingLow = swingLowsBeforePriceDate.Count == 2 && swingLowsBeforePriceDate[0].Low > swingLowsBeforePriceDate[1].Low;
                 var isHigherSwingLow = swingLowsBeforePriceDate.Count == 2 && swingLowsBeforePriceDate[0].Low < swingLowsBeforePriceDate[1].Low;
 
-                // check if mfi cross above 60
-                var mfiCrossAbove60 = mfi[i].Mfi > 60 && mfi[i - 1].Mfi < 60;
-                var mfiCrossBelow40 = mfi[i].Mfi < 40 && mfi[i - 1].Mfi > 40;
-                var mfiCrossAbove50 = mfi[i].Mfi > 50 && mfi[i - 1].Mfi < 50;
-                var mfiCrossBelow50 = mfi[i].Mfi < 50 && mfi[i - 1].Mfi > 50;
+                // check if mfi is bullish or bearish
+                var mfiAbove60 = mfi[i].Mfi >= 60;
+                var mfiBelow40 = mfi[i].Mfi <= 40;
+                var mfiAbove50 = mfi[i].Mfi >= 50;
 
                 // check if hma band is bullish or bearish
                 var slowHmaBand = slowHmaBands[i];
@@ -88,13 +87,27 @@ namespace Stock.Strategies
                 var isSlowHmaBandBearish = slowHmaBand.IsBearish;
                 var priceRange = new NumericRange(orderedPrices[i].Low, orderedPrices[i].High);
                 var slowHmaBandRange = new NumericRange(slowHmaBand.LowestValue, slowHmaBand.HighestValue);
+                var previousSlowHmaBandRange = new NumericRange(slowHmaBands[i - 1].LowestValue, slowHmaBands[i - 1].HighestValue);
+                var previousPriceRange = new NumericRange(orderedPrices[i - 1].Low, orderedPrices[i - 1].High);
                 var priceTouchSlowHmaBand = RangesIntersect(priceRange, slowHmaBandRange);
+                var previousPriceTouchSlowHmaBand = RangesIntersect(previousPriceRange, previousSlowHmaBandRange);
 
                 if (lastOrder == null || lastOrder.Action == EnterSignal.Close)
                 {
-                    var isBullishBySwingPoints = (isHigherSwingHigh || isHigherSwingLow);
-                    var isBearishBySwingPoints = (isLowerSwingHigh || isLowerSwingLow);
-                    if (mfiCrossAbove60 && isSlowHmaBandBullish && isBullishBySwingPoints && latestSwingLowAfterLatestSwingHigh && !priceTouchSlowHmaBand && !slowHmaBand.IsInterwine)
+                    var isBullishBySwingPoints = false;
+                    var isBearishBySwingPoints = false;
+                    if (latestSwingLowAfterLatestSwingHigh)
+                    {
+                        isBullishBySwingPoints = isHigherSwingLow;
+                    }
+                    else
+                    {
+                        isBearishBySwingPoints = isLowerSwingHigh;
+                    }
+
+                    var priceCrossAboveSlowHmaBand = previousPriceTouchSlowHmaBand && !priceTouchSlowHmaBand && price.Low > slowHmaBand.HighestValue;
+                    var priceCrossBelowSlowHmaBand = previousPriceTouchSlowHmaBand && !priceTouchSlowHmaBand && price.High < slowHmaBand.LowestValue;
+                    if (priceCrossAboveSlowHmaBand && isBullishBySwingPoints && slowHmaBand.IsBullish && mfiAbove60)
                     {
                         orders.Add(new Order
                         {
@@ -103,9 +116,10 @@ namespace Stock.Strategies
                             Time = orderedPrices[i].Date,
                             Price = orderedPrices[i],
                             Type = OrderType.Long,
+                            Reason = $"Price cross above slow HMA band on {orderedPrices[i].Date:yyyy-MM-dd}"
                         });
                     }
-                    else if (mfiCrossBelow40 && isSlowHmaBandBearish && isBearishBySwingPoints && latestSwingHighAfterLatestSwingLow && !priceTouchSlowHmaBand && !slowHmaBand.IsInterwine)
+                    else if (priceCrossBelowSlowHmaBand && isBearishBySwingPoints && slowHmaBand.IsBearish && mfiBelow40)
                     {
                         orders.Add(new Order
                         {
@@ -114,6 +128,7 @@ namespace Stock.Strategies
                             Time = orderedPrices[i].Date,
                             Price = orderedPrices[i],
                             Type = OrderType.Short,
+                            Reason = $"Price cross below slow HMA band on {orderedPrices[i].Date:yyyy-MM-dd}"
                         });
                     }
                 }
@@ -121,7 +136,7 @@ namespace Stock.Strategies
                 // close order
                 if (lastOrder != null && lastOrder.Action == EnterSignal.Open)
                 {
-                    if ((mfiCrossBelow50 || priceRange.End < slowHmaBandRange.Start) && lastOrder.Type == OrderType.Long)
+                    if ((priceRange.End < slowHmaBandRange.Start) && lastOrder.Type == OrderType.Long)
                     {
                         orders.Add(new Order
                         {
@@ -145,7 +160,7 @@ namespace Stock.Strategies
                             Reason = $"Price touch slow HMA band on {orderedPrices[i].Date:yyyy-MM-dd}"
                         });
                     }
-                    else if ((mfiCrossAbove50 || priceRange.Start < slowHmaBandRange.End)&& lastOrder.Type == OrderType.Short)
+                    else if ((priceRange.Start < slowHmaBandRange.End)&& lastOrder.Type == OrderType.Short)
                     {
                         orders.Add(new Order
                         {

@@ -49,12 +49,13 @@ namespace StrategyBackTester
                     KeltnerAtrPeriod = 10
                 }
             };
-            var tickers = new List<string> { "AMD", "MSFT", "RIVN", "AAPL", "GOOGL", "TSLA", "NVDA", "META", "AMZN", "COIN", "MARA", "RIOT", "RBLX", "SPY", "QQQ", "CAT", "DIS" };
+            var tickers = new List<string> { "AAPL" };
+            //var tickers = new List<string> { "AMD", "MSFT", "RIVN", "AAPL", "GOOGL", "TSLA", "NVDA", "META", "AMZN", "COIN", "MARA", "RIOT", "RBLX", "SPY", "QQQ", "CAT", "DIS" };
 
             foreach (var ticker in tickers)
             {
 
-                var orders = (new MfiHmaStrategy()).Run(ticker, parameter, DateTime.Now.AddYears(-5), Timeframe.Daily, 5);
+                var orders = (new MfiHmaStrategy()).Run(ticker, parameter, DateTime.Now.AddYears(-3), Timeframe.Daily, 5);
 
                 if (orders == null || orders.Count < 2)
                 {
