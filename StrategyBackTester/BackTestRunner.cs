@@ -52,13 +52,7 @@ namespace StrategyBackTester
                 {
                     var previousOrder = orders[i - 1];
                     var currentOrder = orders[i];
-                    if (i % 2 == 0 && i == orders.Count - 1)
-                    {
-                        File.AppendAllText(filePath, previousOrder.ToString());
-                        File.AppendAllText(filePath, "\n");
-                        continue;
-                    }
-
+                    
                     if (i % 2 == 0)
                     {
                         continue;
@@ -66,20 +60,17 @@ namespace StrategyBackTester
 
                     File.AppendAllText(filePath, previousOrder.ToString());
                     File.AppendAllText(filePath, "\n");
+                    File.AppendAllText(filePath, currentOrder.ToString());
                     if (previousOrder.Type == OrderType.Long)
                     {
                         if (currentOrder.Price.Close > previousOrder.Price.Close)
                         {
                             wins++;
-                            File.AppendAllText(filePath, currentOrder.ToString());
-                            File.AppendAllText(filePath, "\n");
                         }
                         else
                         {
                             losses++;
-                            File.AppendAllText(filePath, currentOrder.ToString());
                             File.AppendAllText(filePath, " (L)");
-                            File.AppendAllText(filePath, "\n");
                         }
                     }
                     else
@@ -87,17 +78,15 @@ namespace StrategyBackTester
                         if (currentOrder.Price.Close < previousOrder.Price.Close)
                         {
                             wins++;
-                            File.AppendAllText(filePath, currentOrder.ToString());
-                            File.AppendAllText(filePath, "\n");
                         }
                         else
                         {
                             losses++;
-                            File.AppendAllText(filePath, currentOrder.ToString());
                             File.AppendAllText(filePath, " (L)");
-                            File.AppendAllText(filePath, "\n");
                         }
                     }
+
+                    File.AppendAllText(filePath, "\n");
                     positionDays.Add((currentOrder.Time - previousOrder.Time).Days);
                 }
 
