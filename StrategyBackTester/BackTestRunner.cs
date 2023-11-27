@@ -12,8 +12,8 @@ namespace StrategyBackTester
 
             foreach (var ticker in tickers)
             {
-
-                var orders = (new SwingPointsStrategy()).Run(ticker, null, DateTime.Now.AddYears(-3), timeFrame);
+                var strategy = new SwingPointsStrategy();
+                var orders = strategy.Run(ticker, null, DateTime.Now.AddYears(-3), timeFrame);
 
                 if (orders == null || orders.Count < 2)
                 {
@@ -83,6 +83,10 @@ namespace StrategyBackTester
                 }
 
                 File.AppendAllLines(filePathResult, new List<string> {
+                    $"Strategy: {nameof(SwingPointsStrategy)}",
+                    $"Timeframe: {timeFrame}",
+                    $"Ticker: {ticker}",
+                    $"Description: {strategy.Description}",
                     $"Total of orders: {totalOfOrders}", 
                     $"Total of wins: {wins}", 
                     $"Total of losses: {losses}",
