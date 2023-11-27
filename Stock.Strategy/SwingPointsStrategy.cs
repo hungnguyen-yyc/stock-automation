@@ -3,17 +3,16 @@ using Stock.Shared.Models;
 using Stock.Strategies.Parameters;
 using Stock.Strategies.Trend;
 using Stock.Strategy;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Stock.Strategies
 {
     public class SwingPointsStrategy : IStrategy
     {
-        public IList<Order> Run(string ticker, IStrategyParameter strategyParameter, DateTime from, Timeframe timeframe = Timeframe.Daily, int lastNDay1 = 5, int lastNDay2 = 3)
+        public string Description => "This strategy looks back 14 candles and calculates swing highs and lows. \n"
+            + "The order then will be created at 2 candles after most recent swing lows or highs found. \n"
+            + "The problem now is how to eliminate loss as soon as posible.";
+
+        public IList<Order> Run(string ticker, IStrategyParameter strategyParameter, DateTime from, Timeframe timeframe = Timeframe.Daily)
         {
             var numberOfSwingPointsToLookBack = 4;
             var numberOfCandlesticksToLookBack = 14;

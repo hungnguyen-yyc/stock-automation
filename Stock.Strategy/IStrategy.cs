@@ -5,6 +5,8 @@ namespace Stock.Strategy
 {
     public interface IStrategy
     {
-        IList<Order> Run(string ticker, IStrategyParameter strategyParameter, DateTime from, Timeframe timeframe = Timeframe.Daily, int lastNDay1 = 5, int lastNDay2 = 3);
+        string Description { get; }
+
+        IList<Order> Run(string ticker, IStrategyParameter strategyParameter, DateTime from, Timeframe timeframe = Timeframe.Daily);
     }
 }

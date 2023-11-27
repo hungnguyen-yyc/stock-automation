@@ -11,10 +11,11 @@ namespace Stock.Strategies
     /// This version of HMA Band strategy is based on the following rules:
     /// - TODO: update the rules
     /// </summary>
-    public class RsiHmaStrategy
-        : IStrategy
+    public class RsiHmaStrategy : IStrategy
     {
-        public IList<Order> Run(string ticker, IStrategyParameter strategyParameter, DateTime from, Timeframe timeframe = Timeframe.Daily, int lastNDay1 = 5, int lastNDay2 = 3)
+        public string Description => string.Empty;
+
+        public IList<Order> Run(string ticker, IStrategyParameter strategyParameter, DateTime from, Timeframe timeframe = Timeframe.Daily)
         {
             var dataProvider = new FmpStockDataProvider();
             var trendIdentifier = new TrendIdentifier();

@@ -10,5 +10,7 @@ namespace Stock.Strategies.Parameters
         public SarParameter SarParameter { get; set; }
         public MfiParameter MfiParameter { get; set; }
         public KeltnerParameter KeltnerParameter { get; set; }
+        public int LastNDay1 { get; set; }
+        public int LastNDay2 { get; set; }
     }
 }

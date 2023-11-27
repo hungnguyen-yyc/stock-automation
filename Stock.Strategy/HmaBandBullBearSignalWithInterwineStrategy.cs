@@ -4,23 +4,17 @@ using Stock.Shared.Models;
 using Stock.Strategies.Parameters;
 using Stock.Strategies.Trend;
 using Stock.Strategy;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Stock.Strategies
 {
-    /// <summary>
-    /// This version of HMA Band strategy is based on the following rules:
-    /// - Slow HMA band is switch to bullist or bearish
-    /// - Slow HMA band is interwine or not
-    /// - Work quite well with AMD but failed with the rest of the tickers
-    /// </summary>
     public class HmaBandBullBearSignalWithInterwineStrategy : IStrategy
     {
-        public IList<Order> Run(string ticker, IStrategyParameter strategyParameter, DateTime from, Timeframe timeframe = Timeframe.Daily, int lastNDay1 = 5, int lastNDay2 = 3)
+        public string Description => "This version of HMA Band strategy is based on the following rules:\r\n" +
+            "- Slow HMA band is switch to bullist or bearish\r\n" +
+            "- Slow HMA band is interwine or not\r\n" +
+            "- Work quite well with AMD but failed with the rest of the tickers";
+
+        public IList<Order> Run(string ticker, IStrategyParameter strategyParameter, DateTime from, Timeframe timeframe = Timeframe.Daily)
         {
             var dataProvider = new FmpStockDataProvider();
             var trendIdentifier = new TrendIdentifier();

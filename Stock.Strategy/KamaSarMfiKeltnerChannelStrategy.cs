@@ -7,10 +7,11 @@ using System.Text;
 
 namespace Stock.Strategy
 {
-
     public class KamaSarMfiKeltnerChannelStrategy : IStrategy
     {
-        public IList<Order> Run(string ticker, IStrategyParameter strategyParameter, DateTime from, Timeframe timeframe = Timeframe.Daily, int lastNDay1 = 5, int lastNDay2 = 3)
+        public string Description => string.Empty;
+
+        public IList<Order> Run(string ticker, IStrategyParameter strategyParameter, DateTime from, Timeframe timeframe = Timeframe.Daily)
         {
             KamaSarMfiKeltnerChannelParameter param = (KamaSarMfiKeltnerChannelParameter)strategyParameter;
             var dataProvider = new FmpStockDataProvider();
@@ -40,8 +41,8 @@ namespace Stock.Strategy
                 var sarValue = sar[i].Sar;
 
                 // kama check
-                var lastNDayClose = prices.Skip(i - lastNDay1).Take(lastNDay1).Select(x => x.Close).ToList();
-                var lastNDayKama = kamaFast.Skip(i - lastNDay1).Take(lastNDay1).Select(x => (decimal)x.Kama!).ToList();
+                var lastNDayClose = prices.Skip(i - param.LastNDay1).Take(param.LastNDay1).Select(x => x.Close).ToList();
+                var lastNDayKama = kamaFast.Skip(i - param.LastNDay1).Take(param.LastNDay1).Select(x => (decimal)x.Kama!).ToList();
                 var priceCrossKama = CrossDirectionDetector.GetCrossDirection(lastNDayClose, lastNDayKama);
                 var priceOpenAndCloseAboveKama = (double)price.Open >= kamaValue && (double)price.Close >= kamaValue;
                 var priceOpenAndCloseUnderKama = (double)price.Open <= kamaValue && (double)price.Close <= kamaValue;
@@ -51,7 +52,7 @@ namespace Stock.Strategy
                 // sar check
                 var sarLowerThanPrice = (decimal)sarValue! < close;
                 var sarGreaterThanPrice = (decimal)sarValue! > close;
-                var sarReverseLastNDay = sar.Skip(i - lastNDay2).Take(lastNDay2).Any(x => x.IsReversal ?? false); // make sure sar is still fresh
+                var sarReverseLastNDay = sar.Skip(i - param.LastNDay2).Take(param.LastNDay2).Any(x => x.IsReversal ?? false); // make sure sar is still fresh
                 var isReverse = sar[i].IsReversal ?? false;
 
                 // mfi check
@@ -60,10 +61,10 @@ namespace Stock.Strategy
 
                 // kelner check
                 // +1 so that we check for the current price
-                var upperKeltnerInsideAnyPrice = prices.Skip(i - lastNDay2).Take(lastNDay2 + 1).Any(x => (decimal)keltners[i].UpperBand! > x.Low && (decimal)keltners[i].UpperBand! < x.High);
-                var lowerKeltnerInsideAnyPrice = prices.Skip(i - lastNDay2).Take(lastNDay2 + 1).Any(x => (decimal)keltners[i].LowerBand! > x.Low && (decimal)keltners[i].LowerBand! < x.High);
-                var anyPriceHigherThanUpperKeltner = prices.Skip(i - lastNDay2).Take(lastNDay2 + 1).Any(x => x.Low > (decimal)keltners[i].UpperBand!);
-                var anyPriceLowerThanLowerKeltner = prices.Skip(i - lastNDay2).Take(lastNDay2 + 1).Any(x => x.High < (decimal)keltners[i].LowerBand!);
+                var upperKeltnerInsideAnyPrice = prices.Skip(i - param.LastNDay2).Take(param.LastNDay2 + 1).Any(x => (decimal)keltners[i].UpperBand! > x.Low && (decimal)keltners[i].UpperBand! < x.High);
+                var lowerKeltnerInsideAnyPrice = prices.Skip(i - param.LastNDay2).Take(param.LastNDay2 + 1).Any(x => (decimal)keltners[i].LowerBand! > x.Low && (decimal)keltners[i].LowerBand! < x.High);
+                var anyPriceHigherThanUpperKeltner = prices.Skip(i - param.LastNDay2).Take(param.LastNDay2 + 1).Any(x => x.Low > (decimal)keltners[i].UpperBand!);
+                var anyPriceLowerThanLowerKeltner = prices.Skip(i - param.LastNDay2).Take(param.LastNDay2 + 1).Any(x => x.High < (decimal)keltners[i].LowerBand!);
                 var upperKeltnerInsidePrice = (decimal)keltners[i].UpperBand! > price.Low && (decimal)keltners[i].UpperBand! < price.High;
                 var priceHigherThanUpperKeltner = price.Low > (decimal)keltners[i].UpperBand!;
                 var lowerKeltnerInsidePrice = (decimal)keltners[i].LowerBand! > price.Low && (decimal)keltners[i].LowerBand! < price.High;
@@ -78,8 +79,8 @@ namespace Stock.Strategy
                 // exit signal
                 var lastOrder = orders.LastOrDefault();
                 var kamaExitSignal = false;
-                var lowestPriceInLastNDays = prices.Skip(i - lastNDay1).Take(lastNDay1).Min(x => x.Low);
-                var highestPriceInLastNDays = prices.Skip(i - lastNDay1).Take(lastNDay1).Min(x => x.High);
+                var lowestPriceInLastNDays = prices.Skip(i - param.LastNDay1).Take(param.LastNDay1).Min(x => x.Low);
+                var highestPriceInLastNDays = prices.Skip(i - param.LastNDay1).Take(param.LastNDay1).Min(x => x.High);
                 var priceExitSignal = false;
                 if (lastOrder != null && lastOrder.Action == EnterSignal.Open && lastOrder.Time.CompareTo(date) != 0)
                 {

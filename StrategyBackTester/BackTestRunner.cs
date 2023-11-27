@@ -1,13 +1,5 @@
 ﻿using Stock.Shared.Models;
-using Stock.Shared.Models.Parameters;
 using Stock.Strategies;
-using Stock.Strategies.Parameters;
-using Stock.Strategy;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace StrategyBackTester
 {
@@ -21,7 +13,7 @@ namespace StrategyBackTester
             foreach (var ticker in tickers)
             {
 
-                var orders = (new SwingPointsStrategy()).Run(ticker, null, DateTime.Now.AddYears(-3), timeFrame, 5);
+                var orders = (new SwingPointsStrategy()).Run(ticker, null, DateTime.Now.AddYears(-3), timeFrame);
 
                 if (orders == null || orders.Count < 2)
                 {
