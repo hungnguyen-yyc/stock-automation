@@ -12,7 +12,9 @@ namespace StrategyBackTester
         {
             var easternZone = TimeZoneInfo.FindSystemTimeZoneById("Eastern Standard Time");
             var now = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, easternZone);
-            var marketOpen = new DateTime(now.Year, now.Month, now.Day, 9, 30, 0);
+            // time to run 10 min before next candle hour, this is bc of FMP API
+            // or we can set window task to run at 9:50 AM EST and set this back to 9:30 AM EST
+            var marketOpen = new DateTime(now.Year, now.Month, now.Day, 9, 50, 0); 
             var marketClose = new DateTime(now.Year, now.Month, now.Day, 16, 0, 0);
 
             while (!stoppingToken.IsCancellationRequested && now < marketClose)
@@ -22,7 +24,7 @@ namespace StrategyBackTester
                 {
                     Console.WriteLine($"Running at {now}");
                     Run();
-                    await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
+                    await Task.Delay(TimeSpan.FromMinutes(60), stoppingToken);
                 }
                 now = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, easternZone);
             }
