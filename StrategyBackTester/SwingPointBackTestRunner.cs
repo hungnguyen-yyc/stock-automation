@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using Stock.Shared.Models;
 using Stock.Strategies;
 using Stock.Strategies.Parameters;
+using System.Diagnostics;
 
 namespace StrategyBackTester
 {
@@ -23,7 +24,7 @@ namespace StrategyBackTester
                 if (now > marketOpen && now < marketClose)
                 {
                     Console.WriteLine($"Running at {now}");
-                    Run();
+                    await Run();
                     await Task.Delay(TimeSpan.FromMinutes(60), stoppingToken);
                 }
                 now = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, easternZone);
@@ -31,116 +32,131 @@ namespace StrategyBackTester
             Environment.Exit(0);
         }
 
-        public void Run()
+        public async Task Run()
         {
-            var tickers = new List<string> { "AMD", "MSFT", "RIVN", "AAPL", "GOOGL", "TSLA", "NVDA", "META", "AMZN", "COIN", "MARA", "RIOT", "RBLX", "SPY", "QQQ", "CAT", "DIS", "V", "AVGO", "SCHW" };
-            var timeframes = new[] { Timeframe.Hour1, Timeframe.Hour4, Timeframe.Daily };
+            var tickerBatch = new[] { TickersToTrade.CHEAP_TICKERS };
+            var timeframes = new[] { Timeframe.Hour1, Timeframe.Daily };
             var numberOfCandlesticksToLookBacks = new[] { 14, 21, 30 };
             var dateAtRun = DateTime.Now.ToString("yyyy-MM-dd");
             var timeAtRun = DateTime.Now.ToString("HH-mm");
 
-            foreach (var timeframe in timeframes)
+            foreach (var tickers in tickerBatch)
             {
-
-#if DEBUG
-                var outputPath = $"C:/Users/hnguyen/Documents/stock-back-test/debug/{nameof(SwingPointsStrategy)}/{dateAtRun}/{timeAtRun}/{timeframe}";
-#else
-                var outputPath = $"C:/Users/hnguyen/Documents/stock-back-test/{nameof(SwingPointsStrategy)}/{dateAtRun}/{timeAtRun}/{timeFrame}";
-#endif
-
-                foreach (var numberOfCandlestickToLookBack in numberOfCandlesticksToLookBacks)
+                foreach (var timeframe in timeframes)
                 {
-                    var swingPointStrategyParameter = new SwingPointStrategyParameter
+#if DEBUG
+                    var outputPath = $"C:/Users/hnguyen/Documents/stock-back-test/debug/{nameof(SwingPointsStrategy)}/{dateAtRun}/{timeAtRun}/{timeframe}";
+#else
+                    var outputPath = $"C:/Users/hnguyen/Documents/stock-back-test/release/{nameof(SwingPointsStrategy)}/{dateAtRun}/{timeAtRun}/{timeframe}";
+#endif
+                    foreach (var numberOfCandlestickToLookBack in numberOfCandlesticksToLookBacks)
                     {
-                        NumberOfSwingPointsToLookBack = 4,
-                        NumberOfCandlesticksToLookBack = numberOfCandlestickToLookBack
-                    };
-
-                    var strategyPath = Path.Combine(outputPath, $"lookback-{numberOfCandlestickToLookBack}");
-                    foreach (var ticker in tickers)
-                    {
-                        var strategy = new SwingPointsStrategy();
-                        var orders = strategy.Run(ticker, swingPointStrategyParameter, DateTime.Now.AddYears(-5), timeframe);
-
-                        if (orders == null || orders.Count < 2)
+                        var swingPointStrategyParameter = new SwingPointStrategyParameter
                         {
-                            continue;
-                        }
+                            NumberOfSwingPointsToLookBack = 4,
+                            NumberOfCandlesticksToLookBack = numberOfCandlestickToLookBack
+                        };
 
-                        var fileNameWithoutExtension = $"{orders.FirstOrDefault()?.Ticker}-{DateTime.Now:yyyyMMdd-hhmmss}";
-                        var fileName = $"{fileNameWithoutExtension}.txt";
-
-                        if (!Directory.Exists(strategyPath))
+                        var strategyPath = Path.Combine(outputPath, $"lookback-{numberOfCandlestickToLookBack}");
+                        foreach (var ticker in tickers)
                         {
-                            Directory.CreateDirectory(strategyPath);
-                        }
+                            decimal cap = 1000;
+                            Debug.WriteLine($"Running {nameof(SwingPointsStrategy)} for {ticker} at {timeframe} with {numberOfCandlestickToLookBack} lookback");
+                            var strategy = new SwingPointsStrategy();
 
-                        var filePath = Path.Combine(strategyPath, fileName);
-                        var filePathResult = Path.Combine(strategyPath, $"{fileNameWithoutExtension}-result.txt");
-                        if (File.Exists(filePath))
-                        {
-                            File.Delete(filePath);
-                        }
-
-                        var totalOfOrders = orders.Count;
-                        var wins = 0;
-                        var losses = 0;
-                        var positionDays = new List<int>();
-                        for (int i = 1; i < orders.Count; i++)
-                        {
-                            var previousOrder = orders[i - 1];
-                            var currentOrder = orders[i];
-
-                            if (i % 2 == 0 && i == orders.Count - 1)
+                            IList<Order>? orders = null;
+                            if (timeframe == Timeframe.Daily)
                             {
-                                File.AppendAllText(filePath, currentOrder.ToString());
-                                continue;
-                            }
-
-                            if (i % 2 == 0)
-                            {
-                                continue;
-                            }
-
-                            File.AppendAllText(filePath, previousOrder.ToString());
-                            File.AppendAllText(filePath, "\n");
-                            File.AppendAllText(filePath, currentOrder.ToString());
-
-                            var priceChange = currentOrder.Price.Close - previousOrder.Price.Close;
-                            var priceChangeInPercent = (currentOrder.Price.Close - previousOrder.Price.Close) / previousOrder.Price.Close * 100;
-                            var days = (currentOrder.Time - previousOrder.Time).Days;
-                            File.AppendAllText(filePath, $"Change: {priceChange:C}({priceChangeInPercent:F}%) in {days} days.");
-
-                            if (previousOrder.Type == OrderType.Long)
-                            {
-                                if (currentOrder.Price.Close > previousOrder.Price.Close)
-                                {
-                                    wins++;
-                                }
-                                else
-                                {
-                                    losses++;
-                                    File.AppendAllText(filePath, " (L)");
-                                }
+                                orders = await strategy.Run(ticker, swingPointStrategyParameter, DateTime.Now.AddYears(-5), DateTime.Now, timeframe);
                             }
                             else
                             {
-                                if (currentOrder.Price.Close < previousOrder.Price.Close)
+                                orders = await strategy.Run(ticker, swingPointStrategyParameter, DateTime.Now.AddYears(-2), DateTime.Now, timeframe);
+                            }
+
+                            if (orders == null || orders.Count < 2)
+                            {
+                                continue;
+                            }
+
+                            var fileNameWithoutExtension = $"{orders.FirstOrDefault()?.Ticker}-{DateTime.Now:yyyyMMdd-hhmmss}";
+                            var fileName = $"{fileNameWithoutExtension}.txt";
+
+                            if (!Directory.Exists(strategyPath))
+                            {
+                                Directory.CreateDirectory(strategyPath);
+                            }
+
+                            var filePath = Path.Combine(strategyPath, fileName);
+                            var filePathResult = Path.Combine(strategyPath, $"{fileNameWithoutExtension}-result.txt");
+                            if (File.Exists(filePath))
+                            {
+                                File.Delete(filePath);
+                            }
+
+                            var totalOfOrders = orders.Count;
+                            var wins = 0;
+                            var losses = 0;
+                            var positionDays = new List<int>();
+                            for (int i = 1; i < orders.Count; i++)
+                            {
+                                var previousOrder = orders[i - 1];
+                                var currentOrder = orders[i];
+
+                                if (i % 2 == 0 && i == orders.Count - 1)
                                 {
-                                    wins++;
+                                    File.AppendAllText(filePath, currentOrder.ToString());
+                                    continue;
+                                }
+
+                                if (i % 2 == 0)
+                                {
+                                    continue;
+                                }
+
+                                File.AppendAllText(filePath, previousOrder.ToString());
+                                File.AppendAllText(filePath, "\n");
+                                File.AppendAllText(filePath, currentOrder.ToString());
+
+                                var priceChange = currentOrder.Price.Close - previousOrder.Price.Close;
+                                var priceChangeInPercent = (currentOrder.Price.Close - previousOrder.Price.Close) / previousOrder.Price.Close * 100;
+                                var days = (currentOrder.Time - previousOrder.Time).Days;
+                                File.AppendAllText(filePath, $";{priceChange:C};{priceChangeInPercent:F}%; {days} days");
+
+                                if (previousOrder.Type == OrderType.Long)
+                                {
+                                    if (currentOrder.Price.Close > previousOrder.Price.Close)
+                                    {
+                                        wins++;
+                                        File.AppendAllText(filePath, ";W");
+                                    }
+                                    else
+                                    {
+                                        losses++;
+                                        File.AppendAllText(filePath, ";L");
+                                    }
+                                    cap = cap + priceChange * currentOrder.Quantity;
                                 }
                                 else
                                 {
-                                    losses++;
-                                    File.AppendAllText(filePath, " (L)");
+                                    if (currentOrder.Price.Close < previousOrder.Price.Close)
+                                    {
+                                        wins++;
+                                        File.AppendAllText(filePath, ";W");
+                                    }
+                                    else
+                                    {
+                                        losses++;
+                                        File.AppendAllText(filePath, ";L");
+                                    }
+                                    cap = cap - priceChange * currentOrder.Quantity;
                                 }
+
+                                File.AppendAllText(filePath, "\n");
+                                positionDays.Add((currentOrder.Time - previousOrder.Time).Days);
                             }
 
-                            File.AppendAllText(filePath, "\n");
-                            positionDays.Add((currentOrder.Time - previousOrder.Time).Days);
-                        }
-
-                        File.AppendAllLines(filePathResult, new List<string> {
+                            File.AppendAllLines(filePathResult, new List<string> {
                             $"Strategy: {nameof(SwingPointsStrategy)}",
                             $"Timeframe: {timeframe}",
                             $"Ticker: {ticker}",
@@ -151,8 +167,10 @@ namespace StrategyBackTester
                             $"Total of wins: {wins}",
                             $"Total of losses: {losses}",
                             $"Win rate: {wins / (decimal)(wins + losses) * 100:F}%",
+                            $"Capital ($1000): {cap:C}",
                             $"Average position days: {positionDays.Average():F}" });
                         }
+                    }
                 }
             }
         }

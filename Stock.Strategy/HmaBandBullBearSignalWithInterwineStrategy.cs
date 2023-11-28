@@ -14,11 +14,11 @@ namespace Stock.Strategies
             "- Slow HMA band is interwine or not\r\n" +
             "- Work quite well with AMD but failed with the rest of the tickers";
 
-        public IList<Order> Run(string ticker, IStrategyParameter strategyParameter, DateTime from, Timeframe timeframe = Timeframe.Daily)
+        public async Task<IList<Order>> Run(string ticker, IStrategyParameter strategyParameter, DateTime from, DateTime to, Timeframe timeframe = Timeframe.Daily)
         {
             var dataProvider = new FmpStockDataProvider();
             var trendIdentifier = new TrendIdentifier();
-            var prices = dataProvider.CollectData(ticker, Timeframe.Daily, from).Result;
+            var prices = await dataProvider.CollectData(ticker, Timeframe.Daily, from);
             var orders = new List<Order>();
 
             if (prices == null || prices.Count < 155)

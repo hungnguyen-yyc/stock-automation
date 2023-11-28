@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using Stock.Shared.Helpers;
 using Stock.Shared.Models;
+using System.Diagnostics;
 
 namespace Stock.DataProvider
 {
@@ -17,27 +18,40 @@ namespace Stock.DataProvider
         public async Task<IList<Price>?> CollectData(string ticker, Timeframe timeframe, DateTime from, DateTime to)
         {
             using var httpClient = new HttpClient();
+            var prices = new List<Price>();
             var fromDate = from.ToString("yyyy-MM-dd");
-            var nowDate = to.ToString("yyyy-MM-dd");
-            var interval = FmpTimeframeHelper.GetTimeframe(timeframe);
-            var API_ENDPOINT = $"https://financialmodelingprep.com/api/v3/historical-chart/{interval}/{ticker}?from={fromDate}&to={nowDate}&apikey={API_KEY}";
 
-            var response = await httpClient.GetAsync(API_ENDPOINT);
-
-            if (response.IsSuccessStatusCode)
+            while (from < to)
             {
-                string contentMinute = await response.Content.ReadAsStringAsync();
-                var prices = JsonConvert.DeserializeObject<IList<Price>>(contentMinute, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+                var nowDate = to.ToString("yyyy-MM-dd");
+                var interval = FmpTimeframeHelper.GetTimeframe(timeframe);
+                var API_ENDPOINT = $"https://financialmodelingprep.com/api/v3/historical-chart/{interval}/{ticker}?to={nowDate}&apikey={API_KEY}";
+                Debug.WriteLine(API_ENDPOINT);
 
-                if (prices == null)
+                var response = await httpClient.GetAsync(API_ENDPOINT);
+
+                if (response.IsSuccessStatusCode)
                 {
-                    return null;
+                    string contentMinute = await response.Content.ReadAsStringAsync();
+                    var priceByDateRange = JsonConvert.DeserializeObject<IList<Price>>(contentMinute, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+
+                    if (priceByDateRange == null)
+                    {
+                        return null;
+                    }
+
+                    prices.AddRange(priceByDateRange);
                 }
 
-                return prices;
+                if (prices.Last().Date == to)
+                {
+                    break;
+                }
+
+                to = prices.Last().Date;
             }
 
-            return null;
+            return prices.Distinct().ToList();
         }
     }
 }

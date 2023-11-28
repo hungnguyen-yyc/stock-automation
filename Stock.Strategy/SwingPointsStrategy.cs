@@ -12,14 +12,14 @@ namespace Stock.Strategies
             + "The order then will be created at 2 candles after most recent swing lows or highs found. \n"
             + "The problem now is how to eliminate loss as soon as posible.";
 
-        public IList<Order> Run(string ticker, IStrategyParameter strategyParameter, DateTime from, Timeframe timeframe = Timeframe.Daily)
+        public async Task<IList<Order>> Run(string ticker, IStrategyParameter strategyParameter, DateTime from, DateTime to, Timeframe timeframe = Timeframe.Daily)
         {
             var parameter = (SwingPointStrategyParameter)strategyParameter;
             var numberOfSwingPointsToLookBack = parameter.NumberOfSwingPointsToLookBack;
             var numberOfCandlesticksToLookBack = parameter.NumberOfCandlesticksToLookBack;
             var dataProvider = new FmpStockDataProvider();
             var trendIdentifier = new TrendIdentifier();
-            var prices = dataProvider.CollectData(ticker, timeframe, from).Result;
+            var prices = await dataProvider.CollectData(ticker, timeframe, from, to);
             var orders = new List<Order>();
 
             if (prices == null || prices.Count < 155)

@@ -11,11 +11,11 @@ namespace Stock.Strategy
     {
         public string Description => string.Empty;
 
-        public IList<Order> Run(string ticker, IStrategyParameter strategyParameter, DateTime from, Timeframe timeframe = Timeframe.Daily)
+        public async Task<IList<Order>> Run(string ticker, IStrategyParameter strategyParameter, DateTime from, DateTime to, Timeframe timeframe = Timeframe.Daily)
         {
             KamaSarMfiKeltnerChannelParameter param = (KamaSarMfiKeltnerChannelParameter)strategyParameter;
             var dataProvider = new FmpStockDataProvider();
-            var prices = dataProvider.CollectData(ticker, timeframe, from).Result;
+            var prices = await dataProvider.CollectData(ticker, timeframe, from);
 
             if (prices == null || prices.Count < 155)
             {

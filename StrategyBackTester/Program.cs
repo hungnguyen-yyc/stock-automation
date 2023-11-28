@@ -21,7 +21,7 @@ namespace StrategyBackTester
             host.Run();
 #else
             var swingbacktest = new SwingPointBackTestRunner();
-            swingbacktest.Run();
+            swingbacktest.Run().Wait();
 #endif
         }
     }
