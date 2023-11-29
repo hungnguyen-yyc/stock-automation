@@ -25,8 +25,17 @@ namespace Stock.DataProvider
             {
                 var nowDate = to.ToString("yyyy-MM-dd");
                 var interval = FmpTimeframeHelper.GetTimeframe(timeframe);
-                var API_ENDPOINT = $"https://financialmodelingprep.com/api/v3/historical-chart/{interval}/{ticker}?to={nowDate}&apikey={API_KEY}";
-                Debug.WriteLine(API_ENDPOINT);
+                var API_ENDPOINT = string.Empty;
+                
+                if (timeframe == Timeframe.Daily)
+                {
+                    // with dayly timeframe, we need to specify from date, or it will fetch all data from the beginning
+                    API_ENDPOINT = $"https://financialmodelingprep.com/api/v3/historical-chart/{interval}/{ticker}?from={fromDate}&to={nowDate}&apikey={API_KEY}";
+                }
+                else
+                {
+                    API_ENDPOINT = $"https://financialmodelingprep.com/api/v3/historical-chart/{interval}/{ticker}?to={nowDate}&apikey={API_KEY}";
+                }
 
                 var response = await httpClient.GetAsync(API_ENDPOINT);
 
@@ -43,7 +52,7 @@ namespace Stock.DataProvider
                     prices.AddRange(priceByDateRange);
                 }
 
-                if (prices.Last().Date == to)
+                if (prices.Last().Date.Date == to.Date)
                 {
                     break;
                 }

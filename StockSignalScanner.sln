@@ -21,7 +21,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Stock.Strategies", "Stock.S
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Stock.UI", "Stock.UI\Stock.UI.csproj", "{0C791A58-1A1B-4FC1-AF88-F5AA2280A7AB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stock.DataProvider", "Stock.DataProvider\Stock.DataProvider.csproj", "{0BF0E4E7-6419-4FB4-8A6C-21895D6A64FF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Stock.Data", "Stock.DataProvider\Stock.Data.csproj", "{0BF0E4E7-6419-4FB4-8A6C-21895D6A64FF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

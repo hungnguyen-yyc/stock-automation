@@ -77,21 +77,21 @@ namespace Stock.Strategies
                 if (lastorder == null || lastorder.Action == EnterSignal.Close)
                 {
                     var previousPrice = orderedPrices[i - 1];
-
+                    var orderSize = 100;
                     /**
                      * if price is closer to swing low we start checking for buy signal
                      * and vice versa.
                      **/
                     if (daysAfterSwingLow < daysAfterSwingHigh)
                     {
-                        if (daysAfterSwingLow == 2 && previousPrice.Low > immediateSwingLowBeforePrice.Low)
+                        if (daysAfterSwingLow == parameter.NumberOfCandlesticksToSkipAfterSwingPoint && previousPrice.Low > immediateSwingLowBeforePrice.Low)
                         {
                             orders.Add(new Order
                             {
                                 Ticker = ticker,
                                 Type = OrderType.Long,
                                 Price = price,
-                                Quantity = 1,
+                                Quantity = orderSize,
                                 Action = EnterSignal.Open,
                                 Time = price.Date
                             });
@@ -101,14 +101,14 @@ namespace Stock.Strategies
                     }
                     else if (daysAfterSwingHigh < daysAfterSwingLow)
                     {
-                        if (daysAfterSwingHigh == 2 && previousPrice.High < immediateSwingHighBeforePrice.High)
+                        if (daysAfterSwingHigh == parameter.NumberOfCandlesticksToSkipAfterSwingPoint && previousPrice.High < immediateSwingHighBeforePrice.High)
                         {
                             orders.Add(new Order
                             {
                                 Ticker = ticker,
                                 Type = OrderType.Short,
                                 Price = price,
-                                Quantity = 1,
+                                Quantity = orderSize,
                                 Action = EnterSignal.Open,
                                 Time = price.Date
                             });
@@ -133,7 +133,7 @@ namespace Stock.Strategies
                                 Ticker = ticker,
                                 Type = OrderType.Long,
                                 Price = price,
-                                Quantity = 1,
+                                Quantity = lastorder.Quantity,
                                 Action = EnterSignal.Close,
                                 Time = price.Date
                             });
@@ -145,7 +145,7 @@ namespace Stock.Strategies
                                 Ticker = ticker,
                                 Type = OrderType.Long,
                                 Price = price,
-                                Quantity = 1,
+                                Quantity = lastorder.Quantity,
                                 Action = EnterSignal.Close,
                                 Time = price.Date
                             });

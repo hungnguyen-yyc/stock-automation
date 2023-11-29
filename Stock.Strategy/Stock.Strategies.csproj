@@ -12,7 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Stock.Indicators\src\Indicators.csproj" />
-    <ProjectReference Include="..\Stock.DataProvider\Stock.DataProvider.csproj" />
+    <ProjectReference Include="..\Stock.DataProvider\Stock.Data.csproj" />
     <ProjectReference Include="..\Stock.Shared\Stock.Shared.csproj" />
   </ItemGroup>
 

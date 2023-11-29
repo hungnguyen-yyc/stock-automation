@@ -4,6 +4,7 @@ using Stock.Shared.Models;
 using Stock.Strategies;
 using Stock.Strategies.Parameters;
 using System.Diagnostics;
+using System.Threading.Tasks;
 
 namespace StrategyBackTester
 {
@@ -36,47 +37,59 @@ namespace StrategyBackTester
         {
             var tickerBatch = new[] { TickersToTrade.CHEAP_TICKERS };
             var timeframes = new[] { Timeframe.Hour1, Timeframe.Daily };
-            var numberOfCandlesticksToLookBacks = new[] { 14, 21, 30 };
+            var numberOfCandlesticksToLookBacks = new[] {  30, 15  };
             var dateAtRun = DateTime.Now.ToString("yyyy-MM-dd");
             var timeAtRun = DateTime.Now.ToString("HH-mm");
+            ParallelOptions parallelOptions = new()
+            {
+                MaxDegreeOfParallelism = 2
+            };
 
             foreach (var tickers in tickerBatch)
             {
-                foreach (var timeframe in timeframes)
+                await Parallel.ForEachAsync(timeframes, parallelOptions, async (timeframe, token) =>
                 {
 #if DEBUG
                     var outputPath = $"C:/Users/hnguyen/Documents/stock-back-test/debug/{nameof(SwingPointsStrategy)}/{dateAtRun}/{timeAtRun}/{timeframe}";
 #else
                     var outputPath = $"C:/Users/hnguyen/Documents/stock-back-test/release/{nameof(SwingPointsStrategy)}/{dateAtRun}/{timeAtRun}/{timeframe}";
 #endif
-                    foreach (var numberOfCandlestickToLookBack in numberOfCandlesticksToLookBacks)
+
+                    await Parallel.ForEachAsync(numberOfCandlesticksToLookBacks, parallelOptions, async (numberOfCandlestickToLookBack, token) =>
                     {
                         var swingPointStrategyParameter = new SwingPointStrategyParameter
                         {
-                            NumberOfSwingPointsToLookBack = 4,
-                            NumberOfCandlesticksToLookBack = numberOfCandlestickToLookBack
+                            NumberOfSwingPointsToLookBack = 3,
+                            NumberOfCandlesticksToLookBack = numberOfCandlestickToLookBack,
+                            NumberOfCandlesticksToSkipAfterSwingPoint = 2
                         };
 
                         var strategyPath = Path.Combine(outputPath, $"lookback-{numberOfCandlestickToLookBack}");
+
+                        //await Parallel.ForEachAsync(tickers, parallelOptions, async (ticker, token) => {
+                            
+                        //});
+
                         foreach (var ticker in tickers)
                         {
-                            decimal cap = 1000;
+                            decimal initialCap = 2000;
+                            decimal cap = initialCap;
                             Debug.WriteLine($"Running {nameof(SwingPointsStrategy)} for {ticker} at {timeframe} with {numberOfCandlestickToLookBack} lookback");
                             var strategy = new SwingPointsStrategy();
 
                             IList<Order>? orders = null;
                             if (timeframe == Timeframe.Daily)
                             {
-                                orders = await strategy.Run(ticker, swingPointStrategyParameter, DateTime.Now.AddYears(-5), DateTime.Now, timeframe);
+                                orders = await strategy.Run(ticker, swingPointStrategyParameter, DateTime.Now.AddYears(-20), DateTime.Now, timeframe);
                             }
                             else
                             {
-                                orders = await strategy.Run(ticker, swingPointStrategyParameter, DateTime.Now.AddYears(-2), DateTime.Now, timeframe);
+                                orders = await strategy.Run(ticker, swingPointStrategyParameter, DateTime.Now.AddYears(-5), DateTime.Now, timeframe);
                             }
 
                             if (orders == null || orders.Count < 2)
                             {
-                                continue;
+                                return;
                             }
 
                             var fileNameWithoutExtension = $"{orders.FirstOrDefault()?.Ticker}-{DateTime.Now:yyyyMMdd-hhmmss}";
@@ -167,11 +180,11 @@ namespace StrategyBackTester
                             $"Total of wins: {wins}",
                             $"Total of losses: {losses}",
                             $"Win rate: {wins / (decimal)(wins + losses) * 100:F}%",
-                            $"Capital ($1000): {cap:C}",
+                            $"Capital ({initialCap:C}): {cap:C}",
                             $"Average position days: {positionDays.Average():F}" });
                         }
-                    }
-                }
+                    });
+                });
             }
         }
     }
