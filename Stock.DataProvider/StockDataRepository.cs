@@ -1,18 +1,66 @@
 ﻿using Microsoft.Data.Sqlite;
 using Stock.DataProvider;
 using Stock.Shared.Models;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Stock.Data
 {
-    public class DbHandler
+    public class StockDataRepository
     {
         private const string _dbPath = @"C:\Users\hnguyen\Documents\stock-back-test\stock-historical-data.db";
+
+        public async Task<IReadOnlyCollection<Price>> GetStockData(string ticker, Timeframe timeframe, DateTime from)
+        {
+            var list = new List<Price>();
+            using var conn = new SqliteConnection($"Data Source={_dbPath}");
+            conn.Open();
+
+            var table = string.Empty;
+            switch (timeframe)
+            {
+                case Timeframe.Daily:
+                    table = "daily_price";
+                    break;
+                case Timeframe.Hour1:
+                    table = "one_hour_price";
+                    break;
+                case Timeframe.Minute15:
+                    table = "fifteen_minute_price";
+                    break;
+                default:
+                    throw new Exception("Timeframe not supported");
+            }
+
+            var cmd = conn.CreateCommand();
+            cmd.CommandText = $"SELECT ticker_id FROM ticker WHERE name = '{ticker}'";
+            var result = cmd.ExecuteScalar();
+            var tickerId = Convert.ToInt32(result);
+
+            if (Convert.ToInt32(result) == 0)
+            {
+                throw new Exception($"Ticker {ticker} not found in database");
+            }
+
+            cmd.CommandText = $"SELECT * FROM {table} WHERE ticker_id = {tickerId} AND Date >= '{from:yyyy-MM-dd HH:mm:ss}' ORDER BY Date ASC;";
+            var reader = await cmd.ExecuteReaderAsync();
+
+            while (reader.Read())
+            {
+                var price = new Price
+                {
+                    Date = Convert.ToDateTime(reader["date"]),
+                    Open = Convert.ToDecimal(reader["open"]),
+                    Close = Convert.ToDecimal(reader["close"]),
+                    High = Convert.ToDecimal(reader["high"]),
+                    Low = Convert.ToDecimal(reader["low"]),
+                    Volume = Convert.ToInt64(reader["volume"])
+                };
+
+                list.Add(price);
+            }
+
+            return list;
+        }
 
         public async Task FillDbWithTickerPrice(string ticker, Timeframe timeframe, DateTime from)
         {

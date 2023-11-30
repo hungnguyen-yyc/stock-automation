@@ -7,7 +7,7 @@ namespace Stock.Data.ScheduledCollector
     {
         static void Main(string[] args)
         {
-            var dbHandler = new DbHandler();
+            var dbHandler = new StockDataRepository();
             var tickers = TickersToTrade.POPULAR_TICKERS.Concat(TickersToTrade.CHEAP_TICKERS).ToList();
             foreach (var ticker in tickers)
             {

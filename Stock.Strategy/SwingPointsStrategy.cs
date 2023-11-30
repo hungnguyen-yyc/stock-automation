@@ -1,4 +1,5 @@
-﻿using Stock.DataProvider;
+﻿using Stock.Data;
+using Stock.DataProvider;
 using Stock.Shared.Models;
 using Stock.Strategies.Parameters;
 using Stock.Strategies.Trend;
@@ -17,9 +18,9 @@ namespace Stock.Strategies
             var parameter = (SwingPointStrategyParameter)strategyParameter;
             var numberOfSwingPointsToLookBack = parameter.NumberOfSwingPointsToLookBack;
             var numberOfCandlesticksToLookBack = parameter.NumberOfCandlesticksToLookBack;
-            var dataProvider = new FmpStockDataProvider();
+            var repo = new StockDataRepository();
             var trendIdentifier = new TrendIdentifier();
-            var prices = await dataProvider.CollectData(ticker, timeframe, from, to);
+            var prices = await repo.GetStockData(ticker, timeframe, from);
             var orders = new List<Order>();
 
             if (prices == null || prices.Count < 155)
@@ -27,7 +28,7 @@ namespace Stock.Strategies
                 return orders;
             }
 
-            List<Price> orderedPrices = prices.Reverse().ToList();
+            List<Price> orderedPrices = prices.ToList();
             var swingLows = trendIdentifier.FindSwingLows(orderedPrices, numberOfCandlesticksToLookBack);
             var swingHighs = trendIdentifier.FindSwingHighs(orderedPrices, numberOfCandlesticksToLookBack);
             var minCount = Math.Min(swingLows.Count, swingHighs.Count);

@@ -1,52 +1,27 @@
-﻿using Microsoft.Extensions.Hosting;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Stock.Shared;
 using Stock.Shared.Models;
 using Stock.Strategies;
 using Stock.Strategies.Parameters;
 using System.Diagnostics;
-using System.Threading.Tasks;
 
 namespace StrategyBackTester
 {
-    internal class SwingPointBackTestRunner : BackgroundService
+    internal class SwingPointBackTestRunner
     {
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-        {
-            var easternZone = TimeZoneInfo.FindSystemTimeZoneById("Eastern Standard Time");
-            var now = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, easternZone);
-            // time to run 10 min before next candle hour, this is bc of FMP API
-            // or we can set window task to run at 9:50 AM EST and set this back to 9:30 AM EST
-            var marketOpen = new DateTime(now.Year, now.Month, now.Day, 9, 50, 0); 
-            var marketClose = new DateTime(now.Year, now.Month, now.Day, 16, 0, 0);
-
-            while (!stoppingToken.IsCancellationRequested && now < marketClose)
-            {
-                // run task every interval minutes from market open to market close
-                if (now > marketOpen && now < marketClose)
-                {
-                    Console.WriteLine($"Running at {now}");
-                    await Run();
-                    await Task.Delay(TimeSpan.FromMinutes(60), stoppingToken);
-                }
-                now = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, easternZone);
-            }
-            Environment.Exit(0);
-        }
-
         public async Task Run()
         {
-            var tickerBatch = new[] { TickersToTrade.CHEAP_TICKERS };
-            var timeframes = new[] { Timeframe.Hour1, Timeframe.Daily };
+            var tickerBatch = new[] { TickersToTrade.CHEAP_TICKERS, TickersToTrade.POPULAR_TICKERS };
+            var timeframes = new[] { Timeframe.Hour1, Timeframe.Daily, Timeframe.Minute15 };
             var numberOfCandlesticksToLookBacks = new[] {  30, 15  };
             var dateAtRun = DateTime.Now.ToString("yyyy-MM-dd");
             var timeAtRun = DateTime.Now.ToString("HH-mm");
             ParallelOptions parallelOptions = new()
             {
-                MaxDegreeOfParallelism = 2
+                MaxDegreeOfParallelism = Environment.ProcessorCount
             };
 
-            foreach (var tickers in tickerBatch)
+            await Parallel.ForEachAsync(tickerBatch, parallelOptions, async (tickers, token) =>
             {
                 await Parallel.ForEachAsync(timeframes, parallelOptions, async (timeframe, token) =>
                 {
@@ -67,12 +42,7 @@ namespace StrategyBackTester
 
                         var strategyPath = Path.Combine(outputPath, $"lookback-{numberOfCandlestickToLookBack}");
 
-                        //await Parallel.ForEachAsync(tickers, parallelOptions, async (ticker, token) => {
-                            
-                        //});
-
-                        foreach (var ticker in tickers)
-                        {
+                        await Parallel.ForEachAsync(tickers, parallelOptions, async (ticker, token) => {
                             decimal initialCap = 2000;
                             decimal cap = initialCap;
                             Debug.WriteLine($"Running {nameof(SwingPointsStrategy)} for {ticker} at {timeframe} with {numberOfCandlestickToLookBack} lookback");
@@ -81,11 +51,11 @@ namespace StrategyBackTester
                             IList<Order>? orders = null;
                             if (timeframe == Timeframe.Daily)
                             {
-                                orders = await strategy.Run(ticker, swingPointStrategyParameter, DateTime.Now.AddYears(-20), DateTime.Now, timeframe);
+                                orders = await strategy.Run(ticker, swingPointStrategyParameter, DateTime.Now.AddYears(-10), DateTime.Now, timeframe);
                             }
                             else
                             {
-                                orders = await strategy.Run(ticker, swingPointStrategyParameter, DateTime.Now.AddYears(-5), DateTime.Now, timeframe);
+                                orders = await strategy.Run(ticker, swingPointStrategyParameter, DateTime.Now.AddYears(-10), DateTime.Now, timeframe);
                             }
 
                             if (orders == null || orders.Count < 2)
@@ -112,6 +82,7 @@ namespace StrategyBackTester
                             var wins = 0;
                             var losses = 0;
                             var positionDays = new List<int>();
+                            var percentageChange = new List<decimal>();
                             for (int i = 1; i < orders.Count; i++)
                             {
                                 var previousOrder = orders[i - 1];
@@ -134,7 +105,10 @@ namespace StrategyBackTester
 
                                 var priceChange = currentOrder.Price.Close - previousOrder.Price.Close;
                                 var priceChangeInPercent = (currentOrder.Price.Close - previousOrder.Price.Close) / previousOrder.Price.Close * 100;
+                                percentageChange.Add(priceChangeInPercent);
+
                                 var days = (currentOrder.Time - previousOrder.Time).Days;
+
                                 File.AppendAllText(filePath, $";{priceChange:C};{priceChangeInPercent:F}%; {days} days");
 
                                 if (previousOrder.Type == OrderType.Long)
@@ -182,11 +156,16 @@ namespace StrategyBackTester
                             $"Total of losses: {losses}",
                             $"Win rate: {wins / (decimal)(wins + losses) * 100:F}%",
                             $"Capital ({initialCap:C}): {cap:C}",
+                            $"Max percentage change: {percentageChange.Max():F}%",
+                            $"Min percentage change: {percentageChange.Min():F}%",
+                            $"Percentage change: {percentageChange.Average():F}%",
+                            $"Max position days: {positionDays.Max()}",
+                            $"Min position days: {positionDays.Min()}",
                             $"Average position days: {positionDays.Average():F}" });
-                        }
+                        });
                     });
                 });
-            }
+            });
         }
     }
 }
