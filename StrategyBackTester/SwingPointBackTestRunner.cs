@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
+using Stock.Shared;
 using Stock.Shared.Models;
 using Stock.Strategies;
 using Stock.Strategies.Parameters;
