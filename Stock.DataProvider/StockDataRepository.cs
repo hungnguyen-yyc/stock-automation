@@ -27,6 +27,9 @@ namespace Stock.Data
                 case Timeframe.Minute15:
                     table = "fifteen_minute_price";
                     break;
+                case Timeframe.Minute30:
+                    table = "thirty_minute_price";
+                    break;
                 default:
                     throw new Exception("Timeframe not supported");
             }
@@ -64,51 +67,69 @@ namespace Stock.Data
 
         public async Task FillDbWithTickerPrice(string ticker, Timeframe timeframe, DateTime from)
         {
-            var collector = new FmpStockDataProvider();
-            var table = string.Empty;
-
-            switch (timeframe)
-            {
-                case Timeframe.Daily:
-                    table = "daily_price";
-                    break;
-                case Timeframe.Hour1:
-                    table = "one_hour_price";
-                    break;
-                case Timeframe.Minute15:
-                    table = "fifteen_minute_price";
-                    break;
-            }
-
             using var conn = new SqliteConnection($"Data Source={_dbPath}");
-            conn.Open();
-
-            var cmd = conn.CreateCommand();
-            cmd.CommandText = $"SELECT ticker_id FROM ticker WHERE name = '{ticker}'";
-            var result = cmd.ExecuteScalar();
-            var tickerId = Convert.ToInt32(result);
-
-            if (Convert.ToInt32(result) == 0)
+            try
             {
-                cmd.CommandText = "INSERT INTO Ticker (Name) VALUES (@Name); SELECT MAX(ticker_id) FROM Ticker;";
-                cmd.Parameters.AddWithValue("@Name", ticker);
-                tickerId = Convert.ToInt32(cmd.ExecuteScalar());
+                var collector = new FmpStockDataProvider();
+                var table = string.Empty;
+
+                switch (timeframe)
+                {
+                    case Timeframe.Daily:
+                        table = "daily_price";
+                        break;
+                    case Timeframe.Hour1:
+                        table = "one_hour_price";
+                        break;
+                    case Timeframe.Minute15:
+                        table = "fifteen_minute_price";
+                        break;
+                    case Timeframe.Minute30:
+                        table = "thirty_minute_price";
+                        break;
+                    default:
+                        throw new Exception("Timeframe not supported");
+                }
+                conn.Open();
+
+                var cmd = conn.CreateCommand();
+                cmd.CommandText = $"SELECT ticker_id FROM ticker WHERE name = '{ticker}'";
+                var result = cmd.ExecuteScalar();
+                var tickerId = Convert.ToInt32(result);
+
+                if (Convert.ToInt32(result) == 0)
+                {
+                    cmd.CommandText = "INSERT INTO Ticker (Name) VALUES (@Name); SELECT MAX(ticker_id) FROM Ticker;";
+                    cmd.Parameters.AddWithValue("@Name", ticker);
+                    tickerId = Convert.ToInt32(cmd.ExecuteScalar());
+                }
+
+                cmd = conn.CreateCommand();
+                cmd.CommandText = $"SELECT MAX(Date) FROM {table} WHERE ticker_id = {tickerId}";
+                result = cmd.ExecuteScalar();
+                var lastDate = from;
+                if (result != null && result != DBNull.Value)
+                {
+                    lastDate = Convert.ToDateTime(result);
+                }
+
+                var prices = await collector.CollectData(ticker, timeframe, lastDate, DateTime.Now);
+                if (prices == null || prices.Count == 0)
+                {
+                    return;
+                }
+
+                InsertHistoricalPriceToTable(conn, tickerId, table, prices.ToArray());
             }
-
-            cmd = conn.CreateCommand();
-            cmd.CommandText = $"SELECT MAX(Date) FROM {table} WHERE ticker_id = {tickerId}";
-            result = cmd.ExecuteScalar();
-            var lastDate = result == null ? from : Convert.ToDateTime(result);
-
-            var prices = await collector.CollectData(ticker, timeframe, lastDate, DateTime.Now);
-            if (prices == null || prices.Count == 0)
+            catch (Exception ex)
             {
-                return;
+                throw new Exception($"Error when filling database with ticker {ticker} and timeframe {timeframe}", ex);
             }
-
-            InsertHistoricalPriceToTable(conn, tickerId, table, prices.ToArray());
-
-            conn.Close();
+            finally
+            {
+                Debug.WriteLine($"Finished filling database with ticker {ticker} and timeframe {timeframe}");
+                conn.Close();
+            }
         }
 
         private void InsertHistoricalPriceToTable(SqliteConnection conn, int tickerId, string table, IReadOnlyCollection<Price> dailyPrices)

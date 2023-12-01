@@ -11,9 +11,10 @@ namespace Stock.Data.ScheduledCollector
             var tickers = TickersToTrade.POPULAR_TICKERS.Concat(TickersToTrade.CHEAP_TICKERS).ToList();
             foreach (var ticker in tickers)
             {
-                dbHandler.FillDbWithTickerPrice(ticker, Timeframe.Daily, DateTime.Now.AddYears(-10)).Wait();
-                dbHandler.FillDbWithTickerPrice(ticker, Timeframe.Hour1, DateTime.Now.AddYears(-10)).Wait();
-                dbHandler.FillDbWithTickerPrice(ticker, Timeframe.Minute15, DateTime.Now.AddYears(-7)).Wait();
+                 dbHandler.FillDbWithTickerPrice(ticker, Timeframe.Daily, DateTime.Now.AddYears(-10)).Wait();
+                 dbHandler.FillDbWithTickerPrice(ticker, Timeframe.Hour1, DateTime.Now.AddYears(-10)).Wait();
+                 dbHandler.FillDbWithTickerPrice(ticker, Timeframe.Minute15, DateTime.Now.AddYears(-7)).Wait();
+                 dbHandler.FillDbWithTickerPrice(ticker, Timeframe.Minute30, DateTime.Now.AddYears(-7)).Wait();
             }
         }
     }

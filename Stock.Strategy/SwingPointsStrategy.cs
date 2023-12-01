@@ -28,9 +28,9 @@ namespace Stock.Strategies
                 return orders;
             }
 
-            List<Price> orderedPrices = prices.ToList();
-            var swingLows = trendIdentifier.FindSwingLows(orderedPrices, numberOfCandlesticksToLookBack);
-            var swingHighs = trendIdentifier.FindSwingHighs(orderedPrices, numberOfCandlesticksToLookBack);
+            List<Price> sortedPrices = prices.ToList();
+            var swingLows = trendIdentifier.FindSwingLows(sortedPrices, numberOfCandlesticksToLookBack);
+            var swingHighs = trendIdentifier.FindSwingHighs(sortedPrices, numberOfCandlesticksToLookBack);
             var minCount = Math.Min(swingLows.Count, swingHighs.Count);
 
             if (minCount <= numberOfSwingPointsToLookBack)
@@ -46,18 +46,18 @@ namespace Stock.Strategies
 
             if (firstSwingLow.Date > firstSwingHigh.Date)
             {
-                orderedPrices = orderedPrices.Where(x => x.Date >= firstSwingHigh.Date).ToList();
+                sortedPrices = sortedPrices.Where(x => x.Date >= firstSwingHigh.Date).ToList();
             }
             else
             {
-                orderedPrices = orderedPrices.Where(x => x.Date >= firstSwingLow.Date).ToList();
+                sortedPrices = sortedPrices.Where(x => x.Date >= firstSwingLow.Date).ToList();
             }
 
             var previousSwingLow = swingLows[0];
             var previousSwingHigh = swingHighs[0];
-            for (int i = 0; i < orderedPrices.Count; i++)
+            for (int i = 0; i < sortedPrices.Count; i++)
             {
-                var price = orderedPrices[i];
+                var price = sortedPrices[i];
                 var immediateSwingLowBeforePrice = swingLows.Where(x => x.Date < price.Date).OrderByDescending(x => x.Date).FirstOrDefault();
                 var immediateSwingHighBeforePrice = swingHighs.Where(x => x.Date < price.Date).OrderByDescending(x => x.Date).FirstOrDefault();
 
@@ -66,8 +66,8 @@ namespace Stock.Strategies
                     continue;
                 }
 
-                var indexOfImmediateSwingLowBeforePrice = orderedPrices.IndexOf(immediateSwingLowBeforePrice);
-                var indexOfImmediateSwingHighBeforePrice = orderedPrices.IndexOf(immediateSwingHighBeforePrice);
+                var indexOfImmediateSwingLowBeforePrice = sortedPrices.IndexOf(immediateSwingLowBeforePrice);
+                var indexOfImmediateSwingHighBeforePrice = sortedPrices.IndexOf(immediateSwingHighBeforePrice);
 
                 var lastorder = orders.LastOrDefault();
                 //var daysAfterSwingLow = CalculateBusinessDays(immediateSwingLowBeforePrice.Date, price.Date);
@@ -77,7 +77,7 @@ namespace Stock.Strategies
 
                 if (lastorder == null || lastorder.Action == EnterSignal.Close)
                 {
-                    var previousPrice = orderedPrices[i - 1];
+                    var previousPrice = sortedPrices[i - 1];
                     var orderSize = 100;
                     /**
                      * if price is closer to swing low we start checking for buy signal
@@ -85,7 +85,18 @@ namespace Stock.Strategies
                      **/
                     if (daysAfterSwingLow < daysAfterSwingHigh)
                     {
-                        if (daysAfterSwingLow == parameter.NumberOfCandlesticksToSkipAfterSwingPoint && previousPrice.Low > immediateSwingLowBeforePrice.Low)
+                        // sometimes data comes from FMP is not correct
+                        // strange thing is that when we use trend identifier, we have less trades and less profits
+                        //var swingPointsBeforePrice = swingLows.Where(x => x.Date < price.Date).OrderByDescending(x => x.Date).Take(numberOfSwingPointsToLookBack).ToList();
+                        //var swingPointsTrend = trendIdentifier.DetermineSwingTrend(swingPointsBeforePrice.Select(p => p.Low).ToList(), numberOfSwingPointsToLookBack);
+                        //var isValidTrend = swingPointsTrend == TrendDirection.Uptrend || swingPointsTrend == TrendDirection.ReversalToUptrend;
+                        var isValidTrend = true;
+
+                        // make sure that price is higher than previous swing low to confirm the reversal
+                        var priceBetweenSwingLowAndCurrentPrice = sortedPrices.Where(x => x.Date > immediateSwingLowBeforePrice.Date && x.Date < price.Date).ToList();
+                        var confirmedSwingLowByPreviousPrice = priceBetweenSwingLowAndCurrentPrice.All(x => x.Low > immediateSwingLowBeforePrice.Low);
+
+                        if (daysAfterSwingLow == parameter.NumberOfCandlesticksToSkipAfterSwingPoint && confirmedSwingLowByPreviousPrice && isValidTrend)
                         {
                             orders.Add(new Order
                             {
@@ -102,7 +113,15 @@ namespace Stock.Strategies
                     }
                     else if (daysAfterSwingHigh < daysAfterSwingLow)
                     {
-                        if (daysAfterSwingHigh == parameter.NumberOfCandlesticksToSkipAfterSwingPoint && previousPrice.High < immediateSwingHighBeforePrice.High)
+                        //var swingPointsBeforePrice = swingHighs.Where(x => x.Date < price.Date).OrderByDescending(x => x.Date).Take(numberOfSwingPointsToLookBack).ToList();
+                        //var swingPointsTrend = trendIdentifier.DetermineSwingTrend(swingPointsBeforePrice.Select(p => p.High).ToList(), numberOfSwingPointsToLookBack);
+                        //var isValidTrend = swingPointsTrend == TrendDirection.Downtrend || swingPointsTrend == TrendDirection.ReversalToDowntrend;
+                        var isValidTrend = true;
+
+                        var priceBetweenSwingHighAndCurrentPrice = sortedPrices.Where(x => x.Date > immediateSwingHighBeforePrice.Date && x.Date < price.Date).ToList();
+                        var confirmedSwingHighByPreviousPrice = priceBetweenSwingHighAndCurrentPrice.All(x => x.High < immediateSwingHighBeforePrice.High);
+
+                        if (daysAfterSwingHigh == parameter.NumberOfCandlesticksToSkipAfterSwingPoint && confirmedSwingHighByPreviousPrice && isValidTrend)
                         {
                             orders.Add(new Order
                             {
