@@ -19,14 +19,14 @@ namespace StrategyBackTester
         {
             try
             {
-                var tickerBatch = new[] { TickersToTrade.CHEAP_TICKERS, TickersToTrade.POPULAR_TICKERS };
+                var tickerBatch = new[] { new List<string>(), new List<string>() { "AAPL" } };
 
 #if DEBUG
-                var timeframes = new[] { Timeframe.Minute15, Timeframe.Minute30, Timeframe.Hour1, Timeframe.Daily };
-                var numberOfCandlesticksToLookBacks = new[] { 15 };
+                var timeframes = new[] { Timeframe.Minute15 };
+                var numberOfCandlesticksToLookBacks = new[] { 30 };
 #else
                 var timeframes = new[] { Timeframe.Minute15, Timeframe.Minute30, Timeframe.Hour1, Timeframe.Daily };
-                var numberOfCandlesticksToLookBacks = new[] {  15, 23, 30, 45  };
+                var numberOfCandlesticksToLookBacks = new[] {  15, 30  };
 #endif
 
                 var dateAtRun = DateTime.Now.ToString("yyyy-MM-dd");
@@ -67,11 +67,11 @@ namespace StrategyBackTester
                                 IList<Order>? orders = null;
                                 if (timeframe == Timeframe.Daily)
                                 {
-                                    orders = await strategy.Run(ticker, swingPointStrategyParameter, DateTime.Now.AddYears(-10), DateTime.Now, timeframe);
+                                    orders = await strategy.RunBackTest(ticker, swingPointStrategyParameter, DateTime.Now.AddYears(-10), DateTime.Now, timeframe);
                                 }
                                 else
                                 {
-                                    orders = await strategy.Run(ticker, swingPointStrategyParameter, DateTime.Now.AddYears(-10), DateTime.Now, timeframe);
+                                    orders = await strategy.RunBackTest(ticker, swingPointStrategyParameter, DateTime.Now.AddYears(-1), DateTime.Now, timeframe);
                                 }
 
                                 if (orders == null || orders.Count < 2)

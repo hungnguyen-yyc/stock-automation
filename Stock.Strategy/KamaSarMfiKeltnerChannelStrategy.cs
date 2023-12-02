@@ -11,7 +11,7 @@ namespace Stock.Strategy
     {
         public string Description => string.Empty;
 
-        public async Task<IList<Order>> Run(string ticker, IStrategyParameter strategyParameter, DateTime from, DateTime to, Timeframe timeframe = Timeframe.Daily)
+        public async Task<IList<Order>> RunBackTest(string ticker, IStrategyParameter strategyParameter, DateTime from, DateTime to, Timeframe timeframe = Timeframe.Daily)
         {
             KamaSarMfiKeltnerChannelParameter param = (KamaSarMfiKeltnerChannelParameter)strategyParameter;
             var dataProvider = new FmpStockDataProvider();

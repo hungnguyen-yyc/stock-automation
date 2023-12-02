@@ -22,7 +22,10 @@ namespace Stock.Strategies.Trend
 
                     var price = prices[j];
 
-                    if (price.Low <= currentPrice.Low)
+                    // < instead of <= because we want to allow for equal lows/highs
+                    // having <= would mean that the current price is not a swing low/high if it is equal to a previous low/high
+                    // meaning we would miss out on a swing low/high
+                    if (price.Low < currentPrice.Low)
                     {
                         isSwingLow = false;
                         break;
@@ -56,7 +59,7 @@ namespace Stock.Strategies.Trend
 
                     var price = prices[j];
 
-                    if (price.High >= currentPrice.High)
+                    if (price.High > currentPrice.High)
                     {
                         isSwingHigh = false;
                         break;

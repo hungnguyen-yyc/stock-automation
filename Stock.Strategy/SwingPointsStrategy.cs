@@ -13,7 +13,7 @@ namespace Stock.Strategies
             + "The order then will be created at 2 candles after most recent swing lows or highs found. \n"
             + "The problem now is how to eliminate loss as soon as posible.";
 
-        public async Task<IList<Order>> Run(string ticker, IStrategyParameter strategyParameter, DateTime from, DateTime to, Timeframe timeframe = Timeframe.Daily)
+        public async Task<IList<Order>> RunBackTest(string ticker, IStrategyParameter strategyParameter, DateTime from, DateTime to, Timeframe timeframe = Timeframe.Daily)
         {
             var parameter = (SwingPointStrategyParameter)strategyParameter;
             var numberOfSwingPointsToLookBack = parameter.NumberOfSwingPointsToLookBack;
@@ -93,7 +93,7 @@ namespace Stock.Strategies
                         var isValidTrend = true;
 
                         // make sure that price is higher than previous swing low to confirm the reversal
-                        var priceBetweenSwingLowAndCurrentPrice = sortedPrices.Where(x => x.Date > immediateSwingLowBeforePrice.Date && x.Date < price.Date).ToList();
+                        var priceBetweenSwingLowAndCurrentPrice = sortedPrices.Where(x => x.Date > immediateSwingLowBeforePrice.Date && x.Date <= price.Date).ToList();
                         var confirmedSwingLowByPreviousPrice = priceBetweenSwingLowAndCurrentPrice.All(x => x.Low > immediateSwingLowBeforePrice.Low);
 
                         if (daysAfterSwingLow == parameter.NumberOfCandlesticksToSkipAfterSwingPoint && confirmedSwingLowByPreviousPrice && isValidTrend)
@@ -118,7 +118,7 @@ namespace Stock.Strategies
                         //var isValidTrend = swingPointsTrend == TrendDirection.Downtrend || swingPointsTrend == TrendDirection.ReversalToDowntrend;
                         var isValidTrend = true;
 
-                        var priceBetweenSwingHighAndCurrentPrice = sortedPrices.Where(x => x.Date > immediateSwingHighBeforePrice.Date && x.Date < price.Date).ToList();
+                        var priceBetweenSwingHighAndCurrentPrice = sortedPrices.Where(x => x.Date > immediateSwingHighBeforePrice.Date && x.Date <= price.Date).ToList();
                         var confirmedSwingHighByPreviousPrice = priceBetweenSwingHighAndCurrentPrice.All(x => x.High < immediateSwingHighBeforePrice.High);
 
                         if (daysAfterSwingHigh == parameter.NumberOfCandlesticksToSkipAfterSwingPoint && confirmedSwingHighByPreviousPrice && isValidTrend)

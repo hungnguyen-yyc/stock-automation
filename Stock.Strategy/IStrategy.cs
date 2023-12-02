@@ -7,6 +7,6 @@ namespace Stock.Strategy
     {
         string Description { get; }
 
-        Task<IList<Order>> Run(string ticker, IStrategyParameter strategyParameter, DateTime from, DateTime to, Timeframe timeframe = Timeframe.Daily);
+        Task<IList<Order>> RunBackTest(string ticker, IStrategyParameter strategyParameter, DateTime from, DateTime to, Timeframe timeframe = Timeframe.Daily);
     }
 }

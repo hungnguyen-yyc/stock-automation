@@ -23,41 +23,48 @@ namespace Stock.DataProvider
 
             while (from < to)
             {
-                var nowDate = to.ToString("yyyy-MM-dd");
-                var interval = FmpTimeframeHelper.GetTimeframe(timeframe);
-                var API_ENDPOINT = string.Empty;
-                
-                if (timeframe == Timeframe.Daily)
+                try
                 {
-                    // with dayly timeframe, we need to specify from date, or it will fetch all data from the beginning
-                    API_ENDPOINT = $"https://financialmodelingprep.com/api/v3/historical-chart/{interval}/{ticker}?from={fromDate}&to={nowDate}&apikey={API_KEY}";
-                }
-                else
-                {
-                    API_ENDPOINT = $"https://financialmodelingprep.com/api/v3/historical-chart/{interval}/{ticker}?to={nowDate}&apikey={API_KEY}";
-                }
+                    var nowDate = to.ToString("yyyy-MM-dd");
+                    var interval = FmpTimeframeHelper.GetTimeframe(timeframe);
+                    var API_ENDPOINT = string.Empty;
 
-                var response = await httpClient.GetAsync(API_ENDPOINT);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    string contentMinute = await response.Content.ReadAsStringAsync();
-                    var priceByDateRange = JsonConvert.DeserializeObject<IList<Price>>(contentMinute, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
-
-                    if (priceByDateRange == null)
+                    if (timeframe == Timeframe.Daily)
                     {
-                        return null;
+                        // with dayly timeframe, we need to specify from date, or it will fetch all data from the beginning
+                        API_ENDPOINT = $"https://financialmodelingprep.com/api/v3/historical-chart/{interval}/{ticker}?from={fromDate}&to={nowDate}&apikey={API_KEY}";
+                    }
+                    else
+                    {
+                        API_ENDPOINT = $"https://financialmodelingprep.com/api/v3/historical-chart/{interval}/{ticker}?to={nowDate}&apikey={API_KEY}";
                     }
 
-                    prices.AddRange(priceByDateRange);
-                }
+                    var response = await httpClient.GetAsync(API_ENDPOINT);
 
-                if (prices.Last().Date.Date == to.Date)
+                    if (response.IsSuccessStatusCode)
+                    {
+                        string contentMinute = await response.Content.ReadAsStringAsync();
+                        var priceByDateRange = JsonConvert.DeserializeObject<IList<Price>>(contentMinute, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+
+                        if (priceByDateRange == null || !priceByDateRange.Any())
+                        {
+                            return prices;
+                        }
+
+                        prices.AddRange(priceByDateRange);
+                    }
+
+                    if (prices.Last().Date.Date == to.Date || !prices.Any())
+                    {
+                        break;
+                    }
+
+                    to = prices.Last().Date;
+                }
+                catch (Exception ex)
                 {
-                    break;
+                    throw new Exception($"Error fetching data for {ticker} from {fromDate} to {to}", ex);
                 }
-
-                to = prices.Last().Date;
             }
 
             return prices.Distinct().ToList();

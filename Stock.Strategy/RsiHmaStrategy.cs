@@ -15,7 +15,7 @@ namespace Stock.Strategies
     {
         public string Description => string.Empty;
 
-        public async Task<IList<Order>> Run(string ticker, IStrategyParameter strategyParameter, DateTime from, DateTime to, Timeframe timeframe = Timeframe.Daily)
+        public async Task<IList<Order>> RunBackTest(string ticker, IStrategyParameter strategyParameter, DateTime from, DateTime to, Timeframe timeframe = Timeframe.Daily)
         {
             var dataProvider = new FmpStockDataProvider();
             var trendIdentifier = new TrendIdentifier();
