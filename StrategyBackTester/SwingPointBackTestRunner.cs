@@ -1,14 +1,30 @@
 ﻿using Newtonsoft.Json;
+using Stock.Data;
 using Stock.Shared;
 using Stock.Shared.Models;
 using Stock.Strategies;
 using Stock.Strategies.Parameters;
+using Stock.Strategy;
 using System.Diagnostics;
 
 namespace StrategyBackTester
 {
     internal class SwingPointBackTestRunner
     {
+        private readonly IStrategy _strategy;
+
+        public SwingPointBackTestRunner()
+        {
+            _strategy = new SwingPointsStrategy();
+            _strategy.OrderCreated += Strategy_OrderCreated;
+        }
+
+        private void Strategy_OrderCreated(object sender, OrderEventArgs e)
+        {
+            var order = e.Order;
+            Log($"Order created: {order.Ticker} - {order.Time} - {order.Type} - {order.Price.Close} - {order.Quantity}");
+        }
+
         private void Log(string message)
         {
             Debug.WriteLine(message);
@@ -60,18 +76,20 @@ namespace StrategyBackTester
                             await Parallel.ForEachAsync(tickers, parallelOptions, async (ticker, token) => {
                                 decimal initialCap = 2000;
                                 decimal cap = initialCap;
-                                var strategy = new SwingPointsStrategy();
 
                                 Log($"Running {nameof(SwingPointsStrategy)} for {ticker} at {timeframe} with {numberOfCandlestickToLookBack} lookback");
 
                                 IList<Order>? orders = null;
+                                var repo = new StockDataRepository();
                                 if (timeframe == Timeframe.Daily)
                                 {
-                                    orders = await strategy.RunBackTest(ticker, swingPointStrategyParameter, DateTime.Now.AddYears(-10), DateTime.Now, timeframe);
+                                    var prices = await repo.GetStockData(ticker, timeframe, DateTime.Now.AddYears(-5));
+                                    orders = _strategy.Run(ticker, prices.ToList(), swingPointStrategyParameter);
                                 }
                                 else
                                 {
-                                    orders = await strategy.RunBackTest(ticker, swingPointStrategyParameter, DateTime.Now.AddYears(-1), DateTime.Now, timeframe);
+                                    var prices = await repo.GetStockData(ticker, timeframe, DateTime.Now.AddYears(-1));
+                                    orders = _strategy.Run(ticker, prices.ToList(), swingPointStrategyParameter);
                                 }
 
                                 if (orders == null || orders.Count < 2)
@@ -168,7 +186,7 @@ namespace StrategyBackTester
                             $"Strategy: {nameof(SwingPointsStrategy)}",
                             $"Timeframe: {timeframe}",
                             $"Ticker: {ticker}",
-                            $"Description: {strategy.Description}",
+                            $"Description: {_strategy.Description}",
                             $"Parameters: {JsonConvert.SerializeObject(swingPointStrategyParameter)}",
                             $"Total of orders: {totalOfOrders}",
                             $"Total of positions: {wins + losses}",

@@ -1,4 +1,5 @@
 ﻿using Stock.Shared.Models;
+using Stock.Strategies;
 using Stock.Strategies.Parameters;
 
 namespace Stock.Strategy
@@ -7,6 +8,8 @@ namespace Stock.Strategy
     {
         string Description { get; }
 
-        Task<IList<Order>> RunBackTest(string ticker, IStrategyParameter strategyParameter, DateTime from, DateTime to, Timeframe timeframe = Timeframe.Daily);
+        public event OrderEventHandler OrderCreated;
+
+        IList<Order> Run(string ticker, List<Price> ascSortedByDatePrice, IStrategyParameter strategyParameter);
     }
 }

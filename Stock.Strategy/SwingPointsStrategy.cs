@@ -1,6 +1,4 @@
-﻿using Stock.Data;
-using Stock.DataProvider;
-using Stock.Shared.Models;
+﻿using Stock.Shared.Models;
 using Stock.Strategies.Parameters;
 using Stock.Strategies.Trend;
 using Stock.Strategy;
@@ -9,26 +7,26 @@ namespace Stock.Strategies
 {
     public class SwingPointsStrategy : IStrategy
     {
+        public event OrderEventHandler OrderCreated;
+
         public string Description => "This strategy looks back a number of candles (specified in parameters) and calculates swing highs and lows. \n"
             + "The order then will be created at 2 candles after most recent swing lows or highs found. \n"
             + "The problem now is how to eliminate loss as soon as posible.";
 
-        public async Task<IList<Order>> RunBackTest(string ticker, IStrategyParameter strategyParameter, DateTime from, DateTime to, Timeframe timeframe = Timeframe.Daily)
+        public IList<Order> Run(string ticker, List<Price> ascSortedByDatePrice, IStrategyParameter strategyParameter)
         {
             var parameter = (SwingPointStrategyParameter)strategyParameter;
             var numberOfSwingPointsToLookBack = parameter.NumberOfSwingPointsToLookBack;
             var numberOfCandlesticksToLookBack = parameter.NumberOfCandlesticksToLookBack;
-            var repo = new StockDataRepository();
             var trendIdentifier = new TrendIdentifier();
-            var prices = await repo.GetStockData(ticker, timeframe, from);
             var orders = new List<Order>();
 
-            if (prices == null || prices.Count < 155)
+            if (ascSortedByDatePrice == null || ascSortedByDatePrice.Count < 155)
             {
                 return orders;
             }
 
-            List<Price> sortedPrices = prices.ToList();
+            List<Price> sortedPrices = ascSortedByDatePrice.ToList();
             var swingLows = trendIdentifier.FindSwingLows(sortedPrices, numberOfCandlesticksToLookBack);
             var swingHighs = trendIdentifier.FindSwingHighs(sortedPrices, numberOfCandlesticksToLookBack);
             var minCount = Math.Min(swingLows.Count, swingHighs.Count);
@@ -98,7 +96,7 @@ namespace Stock.Strategies
 
                         if (daysAfterSwingLow == parameter.NumberOfCandlesticksToSkipAfterSwingPoint && confirmedSwingLowByPreviousPrice && isValidTrend)
                         {
-                            orders.Add(new Order
+                            var order = new Order
                             {
                                 Ticker = ticker,
                                 Type = OrderType.Long,
@@ -106,9 +104,12 @@ namespace Stock.Strategies
                                 Quantity = orderSize,
                                 Action = EnterSignal.Open,
                                 Time = price.Date
-                            });
+                            };
+                            orders.Add(order);
                             previousSwingLow = immediateSwingLowBeforePrice;
                             previousSwingHigh = immediateSwingHighBeforePrice;
+
+                            OnOrderCreated(new OrderEventArgs(order));
                         }
                     }
                     else if (daysAfterSwingHigh < daysAfterSwingLow)
@@ -123,7 +124,7 @@ namespace Stock.Strategies
 
                         if (daysAfterSwingHigh == parameter.NumberOfCandlesticksToSkipAfterSwingPoint && confirmedSwingHighByPreviousPrice && isValidTrend)
                         {
-                            orders.Add(new Order
+                            var order = new Order
                             {
                                 Ticker = ticker,
                                 Type = OrderType.Short,
@@ -131,9 +132,12 @@ namespace Stock.Strategies
                                 Quantity = orderSize,
                                 Action = EnterSignal.Open,
                                 Time = price.Date
-                            });
+                            };
+                            orders.Add(order);
                             previousSwingLow = immediateSwingLowBeforePrice;
                             previousSwingHigh = immediateSwingHighBeforePrice;
+
+                            OnOrderCreated(new OrderEventArgs(order));
                         }
                     }
                 }
@@ -157,6 +161,8 @@ namespace Stock.Strategies
                                 Action = EnterSignal.Close,
                                 Time = price.Date
                             });
+
+                            OnOrderCreated(new OrderEventArgs(lastorder));
                         }
                         else if (newSwingHigh)
                         {
@@ -169,6 +175,8 @@ namespace Stock.Strategies
                                 Action = EnterSignal.Close,
                                 Time = price.Date
                             });
+
+                            OnOrderCreated(new OrderEventArgs(lastorder));
                         }
                     }
                     else
@@ -183,10 +191,12 @@ namespace Stock.Strategies
                                 Ticker = ticker,
                                 Type = OrderType.Short,
                                 Price = price,
-                                Quantity = 1,
+                                Quantity = lastorder.Quantity,
                                 Action = EnterSignal.Close,
                                 Time = price.Date
                             });
+
+                            OnOrderCreated(new OrderEventArgs(lastorder));
                         }
                         else if (newSwingLow)
                         {
@@ -195,10 +205,12 @@ namespace Stock.Strategies
                                 Ticker = ticker,
                                 Type = OrderType.Short,
                                 Price = price,
-                                Quantity = 1,
+                                Quantity = lastorder.Quantity,
                                 Action = EnterSignal.Close,
                                 Time = price.Date
                             });
+
+                            OnOrderCreated(new OrderEventArgs(lastorder));
                         }
                     }
                 }
@@ -207,21 +219,9 @@ namespace Stock.Strategies
             return orders;
         }
 
-        public int CalculateBusinessDays(DateTime startDate, DateTime endDate)
+        protected virtual void OnOrderCreated(OrderEventArgs e)
         {
-            int businessDays = 0;
-
-            while (startDate < endDate)
-            {
-                if (startDate.DayOfWeek != DayOfWeek.Saturday && startDate.DayOfWeek != DayOfWeek.Sunday)
-                {
-                    businessDays++;
-                }
-
-                startDate = startDate.AddDays(1);
-            }
-
-            return businessDays;
+            OrderCreated?.Invoke(this, e);
         }
     }
 }
