@@ -9,7 +9,13 @@ namespace Stock.Data
     {
         private const string _dbPath = @"C:\Users\hnguyen\Documents\stock-back-test\stock-historical-data.db";
 
-        public async Task<IReadOnlyCollection<Price>> GetStockData(string ticker, Timeframe timeframe, DateTime from)
+        private void Log(string message)
+        {
+            Debug.WriteLine(message);
+            Console.WriteLine(message);
+        }
+
+        public async Task<IReadOnlyCollection<Price>> GetStockData(string ticker, Timeframe timeframe, DateTime from, DateTime to)
         {
             var list = new List<Price>();
             using var conn = new SqliteConnection($"Data Source={_dbPath}");
@@ -44,22 +50,35 @@ namespace Stock.Data
                 throw new Exception($"Ticker {ticker} not found in database");
             }
 
-            cmd.CommandText = $"SELECT * FROM {table} WHERE ticker_id = {tickerId} AND Date >= '{from:yyyy-MM-dd HH:mm:ss}' ORDER BY Date ASC;";
-            var reader = await cmd.ExecuteReaderAsync();
-
-            while (reader.Read())
+            try
             {
-                var price = new Price
-                {
-                    Date = Convert.ToDateTime(reader["date"]),
-                    Open = Convert.ToDecimal(reader["open"]),
-                    Close = Convert.ToDecimal(reader["close"]),
-                    High = Convert.ToDecimal(reader["high"]),
-                    Low = Convert.ToDecimal(reader["low"]),
-                    Volume = Convert.ToInt64(reader["volume"])
-                };
+                cmd.CommandText = $"SELECT * FROM {table} WHERE ticker_id = {tickerId} AND Date >= '{from:yyyy-MM-dd HH:mm:ss}' AND Date <= '{to:yyyy-MM-dd HH:mm:ss}' ORDER BY Date ASC;";
+                var reader = await cmd.ExecuteReaderAsync();
 
-                list.Add(price);
+                while (reader.Read())
+                {
+                    var price = new Price
+                    {
+                        Date = Convert.ToDateTime(reader["date"]),
+                        Open = Convert.ToDecimal(reader["open"]),
+                        Close = Convert.ToDecimal(reader["close"]),
+                        High = Convert.ToDecimal(reader["high"]),
+                        Low = Convert.ToDecimal(reader["low"]),
+                        Volume = Convert.ToInt64(reader["volume"])
+                    };
+
+                    list.Add(price);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log(ex.ToString());
+                throw new Exception($"Error when getting data for ticker {ticker} and timeframe {timeframe}", ex);
+            }
+            finally
+            {
+                Debug.WriteLine($"Finished getting data for ticker {ticker} and timeframe {timeframe}");
+                conn.Close();
             }
 
             return list;
@@ -113,16 +132,20 @@ namespace Stock.Data
                     lastDate = Convert.ToDateTime(result);
                 }
 
-                var prices = await collector.CollectData(ticker, timeframe, lastDate, DateTime.Now);
+                Log($"Collecting data for ticker {ticker} at timeframe {timeframe}");
+                var easternZone = TimeZoneInfo.FindSystemTimeZoneById("Eastern Standard Time");
+                var prices = await collector.CollectData(ticker, timeframe, lastDate, TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, easternZone));
                 if (prices == null || prices.Count == 0)
                 {
                     return;
                 }
 
+                Log($"Inserting data for ticker {ticker} at timeframe {timeframe}");
                 InsertHistoricalPriceToTable(conn, tickerId, table, prices.ToArray());
             }
             catch (Exception ex)
             {
+                Log(ex.ToString());
                 throw new Exception($"Error when filling database with ticker {ticker} and timeframe {timeframe}", ex);
             }
             finally
@@ -140,7 +163,7 @@ namespace Stock.Data
                 foreach (var price in dailyPrices)
                 {
                     var cmd = conn.CreateCommand();
-                    cmd.CommandText = $"INSERT OR IGNORE INTO {table} (ticker_id, Date, Open, High, Low, Close, Volume) VALUES (@TickerId, @Date, @Open, @High, @Low, @Close, @Volume)";
+                    cmd.CommandText = $"INSERT OR REPLACE INTO {table} (ticker_id, Date, Open, High, Low, Close, Volume) VALUES (@TickerId, @Date, @Open, @High, @Low, @Close, @Volume)";
 
                     cmd.Parameters.AddWithValue("@TickerId", tickerId);
                     cmd.Parameters.AddWithValue("@Date", price.Date);

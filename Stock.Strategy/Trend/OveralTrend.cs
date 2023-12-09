@@ -3,9 +3,9 @@ using static Stock.Strategies.Trend.TrendIdentifier;
 
 namespace Stock.Strategies.Trend
 {
-    public class OverallTrend
+    public class OveralTrend
     {
-        public OverallTrend(TrendDirection swingHighTrend, TrendDirection swingLowTrend, List<Price> swingHighs, List<Price> swingLows, int numberOfSwingPoints = 7)
+        public OveralTrend(TrendDirection swingHighTrend, TrendDirection swingLowTrend, List<Price> swingHighs, List<Price> swingLows, int numberOfSwingPoints = 7)
         {
             SwingHighTrend = swingHighTrend;
             SwingLowTrend = swingLowTrend;

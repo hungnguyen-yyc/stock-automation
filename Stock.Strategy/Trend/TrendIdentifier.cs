@@ -1,94 +1,24 @@
 ﻿using Stock.Shared.Models;
+using Stock.Strategies.Helpers;
 
 namespace Stock.Strategies.Trend
 {
     internal class TrendIdentifier
     {
-        public List<Price> FindSwingLows(List<Price> prices, int numberOfCandlesToLookBack)
+        public OveralTrend DetermineTrend(List<Price> prices, int numberOfCandlesToLookBack)
         {
-            List<Price> swingLows = new List<Price>();
-
-            for (int i = numberOfCandlesToLookBack; i < prices.Count; i++)
-            {
-                var currentPrice = prices[i];
-
-                bool isSwingLow = true;
-                var innerRange = i < prices.Count - numberOfCandlesToLookBack ? i + numberOfCandlesToLookBack : prices.Count - 1;
-
-                for (int j = i - numberOfCandlesToLookBack; j <= innerRange; j++)
-                {
-                    if (j == i)
-                        continue;
-
-                    var price = prices[j];
-
-                    // < instead of <= because we want to allow for equal lows/highs
-                    // having <= would mean that the current price is not a swing low/high if it is equal to a previous low/high
-                    // meaning we would miss out on a swing low/high
-                    if (price.Low < currentPrice.Low)
-                    {
-                        isSwingLow = false;
-                        break;
-                    }
-                }
-
-                if (isSwingLow)
-                {
-                    swingLows.Add(currentPrice);
-                }
-            }
-
-            return swingLows;
-        }
-
-        public List<Price> FindSwingHighs(List<Price> prices, int numberOfCandlesToLookBack)
-        {
-            var swingHighs = new List<Price>();
-
-            for (int i = numberOfCandlesToLookBack; i < prices.Count; i++)
-            {
-                var currentPrice = prices[i];
-
-                bool isSwingHigh = true;
-                var innerRange = i < prices.Count - numberOfCandlesToLookBack ? i + numberOfCandlesToLookBack : prices.Count - 1;
-
-                for (int j = i - numberOfCandlesToLookBack; j <= innerRange; j++)
-                {
-                    if (j == i)
-                        continue;
-
-                    var price = prices[j];
-
-                    if (price.High > currentPrice.High)
-                    {
-                        isSwingHigh = false;
-                        break;
-                    }
-                }
-
-                if (isSwingHigh)
-                {
-                    swingHighs.Add(currentPrice);
-                }
-            }
-
-            return swingHighs;
-        }
-
-        public OverallTrend DetermineTrend(List<Price> prices, int numberOfCandlesToLookBack)
-        {
-            var swingHighs = FindSwingHighs(prices, numberOfCandlesToLookBack);
-            var swingLows = FindSwingLows(prices, numberOfCandlesToLookBack);
+            var swingHighs = SwingPointAnalyzer.FindSwingHighs(prices, numberOfCandlesToLookBack);
+            var swingLows = SwingPointAnalyzer.FindSwingLows(prices, numberOfCandlesToLookBack);
 
             return DetermineTrend(swingHighs, swingLows, numberOfCandlesToLookBack);
         }
 
-        private OverallTrend DetermineTrend(List<Price> swingHighs, List<Price> swingLows, int numberOfSwingPoints = 7)
+        private OveralTrend DetermineTrend(List<Price> swingHighs, List<Price> swingLows, int numberOfSwingPoints = 7)
         {
             var determindSwingHighTrend = DetermineSwingTrend(swingHighs.Select(x => x.High).ToList(), numberOfSwingPoints);
             var determindSwingLowTrend = DetermineSwingTrend(swingLows.Select(x => x.Low).ToList(), numberOfSwingPoints);
 
-            return new OverallTrend(determindSwingHighTrend, determindSwingLowTrend, swingHighs, swingLows, numberOfSwingPoints);
+            return new OveralTrend(determindSwingHighTrend, determindSwingLowTrend, swingHighs, swingLows, numberOfSwingPoints);
         }
 
         public TrendDirection DetermineSwingTrend(List<decimal> swings, int numSwingPoints)

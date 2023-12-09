@@ -1,4 +1,5 @@
 ﻿using Stock.Shared.Models;
+using Stock.Strategies.Helpers;
 using Stock.Strategies.Parameters;
 using Stock.Strategies.Trend;
 using Stock.Strategy;
@@ -18,7 +19,6 @@ namespace Stock.Strategies
             var parameter = (SwingPointStrategyParameter)strategyParameter;
             var numberOfSwingPointsToLookBack = parameter.NumberOfSwingPointsToLookBack;
             var numberOfCandlesticksToLookBack = parameter.NumberOfCandlesticksToLookBack;
-            var trendIdentifier = new TrendIdentifier();
             var orders = new List<Order>();
 
             if (ascSortedByDatePrice == null || ascSortedByDatePrice.Count < 155)
@@ -27,8 +27,8 @@ namespace Stock.Strategies
             }
 
             List<Price> sortedPrices = ascSortedByDatePrice.ToList();
-            var swingLows = trendIdentifier.FindSwingLows(sortedPrices, numberOfCandlesticksToLookBack);
-            var swingHighs = trendIdentifier.FindSwingHighs(sortedPrices, numberOfCandlesticksToLookBack);
+            var swingLows = SwingPointAnalyzer.FindSwingLows(sortedPrices, numberOfCandlesticksToLookBack);
+            var swingHighs = SwingPointAnalyzer.FindSwingHighs(sortedPrices, numberOfCandlesticksToLookBack);
             var minCount = Math.Min(swingLows.Count, swingHighs.Count);
 
             if (minCount <= numberOfSwingPointsToLookBack)
@@ -36,6 +36,8 @@ namespace Stock.Strategies
                 return orders;
             }
 
+            var highLines = SwingPointAnalyzer.CheckSwingPointsOnSameLines(sortedPrices, numberOfCandlesticksToLookBack, true);
+            var lowLines = SwingPointAnalyzer.CheckSwingPointsOnSameLines(sortedPrices, numberOfCandlesticksToLookBack, false);
             swingLows = swingLows.Skip(swingLows.Count - minCount - numberOfSwingPointsToLookBack).ToList();
             swingHighs = swingHighs.Skip(swingHighs.Count - minCount - numberOfSwingPointsToLookBack).ToList();
             

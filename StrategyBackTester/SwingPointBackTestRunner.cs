@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.Toolkit.Uwp.Notifications;
+using Newtonsoft.Json;
 using Stock.Data;
 using Stock.Shared;
 using Stock.Shared.Models;
@@ -12,17 +13,37 @@ namespace StrategyBackTester
     internal class SwingPointBackTestRunner
     {
         private readonly IStrategy _strategy;
+        private readonly List<Order> _trackedOrder;
 
         public SwingPointBackTestRunner()
         {
             _strategy = new SwingPointsStrategy();
+            _trackedOrder = new List<Order>();
             _strategy.OrderCreated += Strategy_OrderCreated;
         }
 
         private void Strategy_OrderCreated(object sender, OrderEventArgs e)
         {
             var order = e.Order;
+
+            if (order.Price.Date.Date == DateTime.Now.Date && !_trackedOrder.Contains(order))
+            {
+                Show(order);
+            }
+
+            _trackedOrder.Add(order);
+
             Log($"Order created: {order.Ticker} - {order.Time} - {order.Type} - {order.Price.Close} - {order.Quantity}");
+        }
+
+        private void Show(Order order)
+        {
+            var toastContent = new ToastContentBuilder()
+                .AddText($"New order created: {order.Ticker} - {order.Action} {order.Type}")
+                .AddText($"Price: {order.Price.Close}")
+                .AddText($"At EST: {order.Price.Date:f}");
+
+            toastContent.Show();
         }
 
         private void Log(string message)
@@ -35,11 +56,11 @@ namespace StrategyBackTester
         {
             try
             {
-                var tickerBatch = new[] { new List<string>(), new List<string>() { "AAPL" } };
+                var tickerBatch = new[] { TickersToTrade.POPULAR_TICKERS };
 
 #if DEBUG
                 var timeframes = new[] { Timeframe.Minute15 };
-                var numberOfCandlesticksToLookBacks = new[] { 30 };
+                var numberOfCandlesticksToLookBacks = new[] { 7 };
 #else
                 var timeframes = new[] { Timeframe.Minute15, Timeframe.Minute30, Timeframe.Hour1, Timeframe.Daily };
                 var numberOfCandlesticksToLookBacks = new[] {  15, 30  };
@@ -66,7 +87,7 @@ namespace StrategyBackTester
                         {
                             var swingPointStrategyParameter = new SwingPointStrategyParameter
                             {
-                                NumberOfSwingPointsToLookBack = 3,
+                                NumberOfSwingPointsToLookBack = 6,
                                 NumberOfCandlesticksToLookBack = numberOfCandlestickToLookBack,
                                 NumberOfCandlesticksToSkipAfterSwingPoint = 2
                             };
@@ -83,12 +104,12 @@ namespace StrategyBackTester
                                 var repo = new StockDataRepository();
                                 if (timeframe == Timeframe.Daily)
                                 {
-                                    var prices = await repo.GetStockData(ticker, timeframe, DateTime.Now.AddYears(-5));
+                                    var prices = await repo.GetStockData(ticker, timeframe, DateTime.Now.AddYears(-5), DateTime.Now);
                                     orders = _strategy.Run(ticker, prices.ToList(), swingPointStrategyParameter);
                                 }
                                 else
                                 {
-                                    var prices = await repo.GetStockData(ticker, timeframe, DateTime.Now.AddYears(-1));
+                                    var prices = await repo.GetStockData(ticker, timeframe, DateTime.Now.AddDays(-37), DateTime.Now.AddDays(-7));
                                     orders = _strategy.Run(ticker, prices.ToList(), swingPointStrategyParameter);
                                 }
 

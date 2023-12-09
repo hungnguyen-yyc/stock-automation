@@ -2,6 +2,11 @@
 
 namespace Stock.Shared.Models
 {
+    public class PriceList : List<Price>
+    {
+
+    }
+
     public class Price : IPrice
     {
         public DateTime Date { get; set; }
@@ -10,6 +15,40 @@ namespace Stock.Shared.Models
         public decimal Low { get; set; }
         public decimal Close { get; set; }
         public decimal Volume { get; set; }
+
+        public NumericRange RangeBetweenBodyAndHigh
+        {
+            get
+            {
+                if (Close > Open)
+                {
+                    return new NumericRange(Close, High);
+                }
+                else
+                {
+                    return new NumericRange(Open, High);
+                }
+            }
+        }
+
+        public NumericRange RangeBetweenBodyAndLow
+        {
+            get
+            {
+                if (Close > Open)
+                {
+                    return new NumericRange(Open, Low);
+                }
+                else
+                {
+                    return new NumericRange(Close, Low);
+                }
+            }
+        }
+
+        public NumericRange TopHalfOfCandle => new NumericRange((High + Low) / 2, High);
+
+        public NumericRange BottomHalfOfCandle => new NumericRange(Low, (High + Low) / 2);
 
         public override bool Equals(object? obj)
         {

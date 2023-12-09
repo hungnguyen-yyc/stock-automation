@@ -26,7 +26,7 @@ namespace Stock.UI.Components
         {
             InitializeComponent();
 
-            var viewModel = new MainScreenViewModel(new FmpStockDataProvider());
+            var viewModel = new MainScreenViewModel(new Data.StockDataRepository());
             DataContext = viewModel;
         }
     }

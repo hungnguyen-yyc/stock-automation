@@ -1,27 +1,23 @@
-﻿using Stock.DataProvider;
-using Stock.Shared.Helpers;
+﻿using Stock.Data;
 using Stock.Shared.Models;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Stock.UI.Components
 {
     public class MainScreenViewModel : INotifyPropertyChanged
     {
-        private readonly FmpStockDataProvider _fmpStockDataProvider;
+        private readonly StockDataRepository _repo;
         private IReadOnlyCollection<Price> _prices;
         private Timeframe _selectedTimeframe;
         private string _selectedTicker;
 
-        public MainScreenViewModel(FmpStockDataProvider fmpStockDataProvider)
+        public MainScreenViewModel(StockDataRepository repo)
         {
-            this._fmpStockDataProvider = fmpStockDataProvider;
+            _repo = repo;
             _prices = new List<Price>();
+            _selectedTimeframe = Timeframe.Daily;
+            _selectedTicker = "TSLA";
         }
 
         public IReadOnlyCollection<Price> Prices
@@ -36,7 +32,7 @@ namespace Stock.UI.Components
 
         public ObservableCollection<Timeframe> Timeframes => new ObservableCollection<Timeframe>(Enum.GetValues<Timeframe>());
 
-        public ObservableCollection<string> Tickers => new ObservableCollection<string> { "TSLA", "AAPL", "MSFT", "GOOG", "AMZN" };
+        public ObservableCollection<string> Tickers => new ObservableCollection<string> { "TSLA", "AAPL", "SPY" };
 
         public Timeframe SelectedTimeframe
         {
@@ -68,7 +64,7 @@ namespace Stock.UI.Components
 
         public async Task LoadPrices()
         {
-            var prices = await _fmpStockDataProvider.CollectData(SelectedTicker, SelectedTimeframe, DateTime.Now.AddYears(-5));
+            var prices = await _repo.GetStockData(SelectedTicker, SelectedTimeframe, DateTime.Now.AddMonths(-2), DateTime.Now);
 
             if (prices == null)
             {
