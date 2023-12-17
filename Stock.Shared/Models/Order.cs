@@ -4,7 +4,7 @@
     {
         public OrderType Type { get; set; }
         public DateTime Time { get; set; }
-        public EnterSignal Action { get; set; }
+        public OrderAction Action { get; set; }
         public decimal Quantity { get; set; }
         public string Ticker { get; set; }
         public string Reason { get; set; }

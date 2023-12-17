@@ -13,6 +13,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Stock.DataProvider\Stock.Data.csproj" />
     <ProjectReference Include="..\Stock.Shared\Stock.Shared.csproj" />
+    <ProjectReference Include="..\Stock.Strategy\Stock.Strategies.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Syncfusion.Calculate.Base">

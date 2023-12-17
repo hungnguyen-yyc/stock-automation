@@ -9,6 +9,7 @@ namespace Stock.Strategies
     public class SwingPointsStrategy : IStrategy
     {
         public event OrderEventHandler OrderCreated;
+        public event AlertEventHandler AlertCreated;
 
         public string Description => "This strategy looks back a number of candles (specified in parameters) and calculates swing highs and lows. \n"
             + "The order then will be created at 2 candles after most recent swing lows or highs found. \n"
@@ -36,8 +37,30 @@ namespace Stock.Strategies
                 return orders;
             }
 
-            var highLines = SwingPointAnalyzer.CheckSwingPointsOnSameLines(sortedPrices, numberOfCandlesticksToLookBack, true);
-            var lowLines = SwingPointAnalyzer.CheckSwingPointsOnSameLines(sortedPrices, numberOfCandlesticksToLookBack, false);
+            for (int i = 155; i < ascSortedByDatePrice.Count; i++)
+            {
+                var rangeToCheck = ascSortedByDatePrice.Skip(i).Take(14).ToList();
+                var channel = SwingPointAnalyzer.CheckRunningCandlesFormingChannel(rangeToCheck, 14, 3);
+                if (channel != null)
+                {
+                    var order = new Order
+                    {
+                        Ticker = ticker,
+                        Type = OrderType.Long,
+                        Price = rangeToCheck[0],
+                        Quantity = 100,
+                        Action = OrderAction.Open,
+                        Time = rangeToCheck[0].Date
+                    };
+                    orders.Add(order);
+                    OnOrderCreated(new OrderEventArgs(order));
+                }
+            }
+
+            var highLines = SwingPointAnalyzer.GetTrendlines(sortedPrices, numberOfCandlesticksToLookBack, true);
+            var lowLines = SwingPointAnalyzer.GetTrendlines(sortedPrices, numberOfCandlesticksToLookBack, false);
+            var bottoms = SwingPointAnalyzer.GetNBottoms(sortedPrices, numberOfCandlesticksToLookBack);
+            var tops = SwingPointAnalyzer.GetNTops(sortedPrices, numberOfCandlesticksToLookBack);
             swingLows = swingLows.Skip(swingLows.Count - minCount - numberOfSwingPointsToLookBack).ToList();
             swingHighs = swingHighs.Skip(swingHighs.Count - minCount - numberOfSwingPointsToLookBack).ToList();
             
@@ -75,7 +98,7 @@ namespace Stock.Strategies
                 var daysAfterSwingLow = i - indexOfImmediateSwingLowBeforePrice;
                 var daysAfterSwingHigh = i - indexOfImmediateSwingHighBeforePrice;
 
-                if (lastorder == null || lastorder.Action == EnterSignal.Close)
+                if (lastorder == null || lastorder.Action == OrderAction.Close)
                 {
                     var previousPrice = sortedPrices[i - 1];
                     var orderSize = 100;
@@ -104,7 +127,7 @@ namespace Stock.Strategies
                                 Type = OrderType.Long,
                                 Price = price,
                                 Quantity = orderSize,
-                                Action = EnterSignal.Open,
+                                Action = OrderAction.Open,
                                 Time = price.Date
                             };
                             orders.Add(order);
@@ -132,7 +155,7 @@ namespace Stock.Strategies
                                 Type = OrderType.Short,
                                 Price = price,
                                 Quantity = orderSize,
-                                Action = EnterSignal.Open,
+                                Action = OrderAction.Open,
                                 Time = price.Date
                             };
                             orders.Add(order);
@@ -145,7 +168,7 @@ namespace Stock.Strategies
                 }
 
                 // close order
-                if (lastorder != null && lastorder.Action == EnterSignal.Open)
+                if (lastorder != null && lastorder.Action == OrderAction.Open)
                 {
                     if (lastorder.Type == OrderType.Long)
                     {
@@ -160,7 +183,7 @@ namespace Stock.Strategies
                                 Type = OrderType.Long,
                                 Price = price,
                                 Quantity = lastorder.Quantity,
-                                Action = EnterSignal.Close,
+                                Action = OrderAction.Close,
                                 Time = price.Date
                             });
 
@@ -174,7 +197,7 @@ namespace Stock.Strategies
                                 Type = OrderType.Long,
                                 Price = price,
                                 Quantity = lastorder.Quantity,
-                                Action = EnterSignal.Close,
+                                Action = OrderAction.Close,
                                 Time = price.Date
                             });
 
@@ -194,7 +217,7 @@ namespace Stock.Strategies
                                 Type = OrderType.Short,
                                 Price = price,
                                 Quantity = lastorder.Quantity,
-                                Action = EnterSignal.Close,
+                                Action = OrderAction.Close,
                                 Time = price.Date
                             });
 
@@ -208,7 +231,7 @@ namespace Stock.Strategies
                                 Type = OrderType.Short,
                                 Price = price,
                                 Quantity = lastorder.Quantity,
-                                Action = EnterSignal.Close,
+                                Action = OrderAction.Close,
                                 Time = price.Date
                             });
 
@@ -224,6 +247,11 @@ namespace Stock.Strategies
         protected virtual void OnOrderCreated(OrderEventArgs e)
         {
             OrderCreated?.Invoke(this, e);
+        }
+
+        protected virtual void OnAlertCreated(AlertEventArgs e)
+        {
+            AlertCreated?.Invoke(this, e);
         }
     }
 }

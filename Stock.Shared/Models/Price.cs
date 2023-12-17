@@ -50,6 +50,8 @@ namespace Stock.Shared.Models
 
         public NumericRange BottomHalfOfCandle => new NumericRange(Low, (High + Low) / 2);
 
+        public NumericRange CandleRange => new NumericRange(Low, High);
+
         public override bool Equals(object? obj)
         {
             if (obj is Price price)
@@ -67,6 +69,11 @@ namespace Stock.Shared.Models
         public override int GetHashCode()
         {
             return HashCode.Combine(Date, Open, High, Low, Close, Volume);
+        }
+
+        public override string ToString()
+        {
+            return $"{Date:s};O:{Open};H:{High};L:{Low};C:{Close};V:{Volume}";
         }
     }
 

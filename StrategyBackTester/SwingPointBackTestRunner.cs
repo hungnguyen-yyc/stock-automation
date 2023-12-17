@@ -60,7 +60,7 @@ namespace StrategyBackTester
 
 #if DEBUG
                 var timeframes = new[] { Timeframe.Minute15 };
-                var numberOfCandlesticksToLookBacks = new[] { 7 };
+                var numberOfCandlesticksToLookBacks = new[] { 14 };
 #else
                 var timeframes = new[] { Timeframe.Minute15, Timeframe.Minute30, Timeframe.Hour1, Timeframe.Daily };
                 var numberOfCandlesticksToLookBacks = new[] {  15, 30  };
@@ -109,7 +109,7 @@ namespace StrategyBackTester
                                 }
                                 else
                                 {
-                                    var prices = await repo.GetStockData(ticker, timeframe, DateTime.Now.AddDays(-37), DateTime.Now.AddDays(-7));
+                                    var prices = await repo.GetStockData(ticker, timeframe, DateTime.Now.AddMonths(-3), DateTime.Now.AddDays(-7));
                                     orders = _strategy.Run(ticker, prices.ToList(), swingPointStrategyParameter);
                                 }
 

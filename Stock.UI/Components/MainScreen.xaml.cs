@@ -26,7 +26,7 @@ namespace Stock.UI.Components
         {
             InitializeComponent();
 
-            var viewModel = new MainScreenViewModel(new Data.StockDataRepository());
+            var viewModel = new MainScreenViewModel(new Data.StockDataRepository(), new Strategies.SwingPointsLiveTradingStrategy());
             DataContext = viewModel;
         }
     }

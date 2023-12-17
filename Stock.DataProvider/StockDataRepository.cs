@@ -84,6 +84,25 @@ namespace Stock.Data
             return list;
         }
 
+        public async Task InsertAlerts(Alert alert)
+        {
+            using var conn = new SqliteConnection($"Data Source={_dbPath}");
+            try
+            {
+
+            }
+            catch (Exception ex)
+            {
+                Log(ex.ToString());
+                throw new Exception($"Error when inserting alert {alert}", ex);
+            }
+            finally
+            {
+                Log($"Finished inserting alert {alert}");
+                conn.Close();
+            }
+        }
+
         public async Task FillDbWithTickerPrice(string ticker, Timeframe timeframe, DateTime from)
         {
             using var conn = new SqliteConnection($"Data Source={_dbPath}");

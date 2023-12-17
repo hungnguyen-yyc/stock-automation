@@ -11,6 +11,15 @@
         public decimal Low { get; set; }
         public decimal High { get; set; }
 
+        public bool Intersect(NumericRange range2)
+        {
+            var intersect = this.Low <= range2.Low && this.High >= range2.High
+                || this.Low >= range2.Low && this.High <= range2.High
+                || this.Low <= range2.Low && this.High >= range2.Low
+                || this.Low <= range2.High && this.High >= range2.High;
+            return intersect;
+        }
+
         public override bool Equals(object? obj)
         {
             if (obj is NumericRange range)
