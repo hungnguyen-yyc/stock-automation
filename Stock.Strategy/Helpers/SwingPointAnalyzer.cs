@@ -79,6 +79,8 @@ namespace Stock.Strategies.Helpers
         }
 
         /**
+         * TODO: fix this method, it's not working properly
+         * 
          * check the last n consecutive candles to see if they are forming a descending channel
          * number of candles to check is the number of candles to look back to check for the channel
          * number of candles to look back is the number of candles to look back to find the swing highs and lows, we want to keep this number small because we're checking for consecutive candles
@@ -86,8 +88,8 @@ namespace Stock.Strategies.Helpers
         public static Channel? CheckRunningCandlesFormingChannel(List<Price> prices, int numberOfCandlesToCheck = 10, int numberOfCandlesToLookBack = 3)
         {
             var priceToCheck = prices.Skip(prices.Count - numberOfCandlesToCheck).Take(numberOfCandlesToCheck).ToList();
-            var swingLows = FindSwingLows(priceToCheck, numberOfCandlesToLookBack);
-            var swingHighs = FindSwingHighs(priceToCheck, numberOfCandlesToLookBack);
+            var swingLows = priceToCheck;
+            var swingHighs = priceToCheck;
 
             if (prices.Count < numberOfCandlesToCheck || swingLows.Count < 2 || swingHighs.Count < 2)
                 return null;
@@ -184,7 +186,7 @@ namespace Stock.Strategies.Helpers
          * we want to make sure that lines don't cross body part of the candle
          * then we check for lines that has more than 3 crosses
          */
-        public static Tuple<Price, Price>[] GetTrendlines(List<Price> prices, int numberOfCandlesToLookBack, bool isSwingHigh = true)
+        public static Tuple<Price, Price>[] GetTrendlines(List<Price> prices, int numberOfCandlesToLookBack, int numberOfTouchesToDrawTrendLine = 3, bool isSwingHigh = true)
         {
             var pointLines = new List<Tuple<Price, Price>>();
 
@@ -252,7 +254,7 @@ namespace Stock.Strategies.Helpers
 
             foreach (var lineCount in lineCrossCount)
             {
-                if (lineCount.Value < 3)
+                if (lineCount.Value < numberOfTouchesToDrawTrendLine)
                     continue;
 
                 var line = lineCount.Key;

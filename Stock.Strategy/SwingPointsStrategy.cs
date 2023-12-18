@@ -57,8 +57,8 @@ namespace Stock.Strategies
                 }
             }
 
-            var highLines = SwingPointAnalyzer.GetTrendlines(sortedPrices, numberOfCandlesticksToLookBack, true);
-            var lowLines = SwingPointAnalyzer.GetTrendlines(sortedPrices, numberOfCandlesticksToLookBack, false);
+            var highLines = SwingPointAnalyzer.GetTrendlines(sortedPrices, numberOfCandlesticksToLookBack, 3, true);
+            var lowLines = SwingPointAnalyzer.GetTrendlines(sortedPrices, numberOfCandlesticksToLookBack, 3, false);
             var bottoms = SwingPointAnalyzer.GetNBottoms(sortedPrices, numberOfCandlesticksToLookBack);
             var tops = SwingPointAnalyzer.GetNTops(sortedPrices, numberOfCandlesticksToLookBack);
             swingLows = swingLows.Skip(swingLows.Count - minCount - numberOfSwingPointsToLookBack).ToList();

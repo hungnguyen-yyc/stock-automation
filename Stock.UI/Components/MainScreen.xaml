@@ -20,7 +20,12 @@
             <ColumnDefinition Width="10*"/>
             <ColumnDefinition Width="90*"/>
         </Grid.ColumnDefinitions>
-        <ListView Name="lsvTickers" Grid.Column="0" Grid.Row="0" Height="auto" ItemsSource="{Binding Tickers}" VerticalAlignment="Stretch" Margin="5 10 5 0">
+        <ListView Name="lsvTickers" 
+                  Grid.Column="0" Grid.Row="0" Height="auto" 
+                  ItemsSource="{Binding Tickers}" 
+                  SelectedItem="{Binding SelectedTicker, Mode=TwoWay}" 
+                  VerticalAlignment="Stretch" 
+                  Margin="5 10 5 0">
             <ListView.View>
                 <GridView>
                     <GridViewColumn Header="Tickers" />
