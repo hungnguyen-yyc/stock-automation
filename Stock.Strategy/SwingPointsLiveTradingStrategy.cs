@@ -63,7 +63,7 @@ namespace Stock.Strategies
                 var wma9CrossBelowWma21 = wma9.Last().Wma > wma21.Last().Wma;
                 var pvoCheck = pvo.Last().Pvo > 0 && pvo.Last().Pvo > pvo.Last().Signal;
 
-                if (crossSecondLastPrice && notCrossCurrentPrice && priceBelowLine && wma9CrossBelowWma21 && pvoCheck && priceGreaterThanSecondLastPrice && priceNotIntersectThirdLastPrice)
+                if (crossSecondLastPrice && notCrossCurrentPrice && priceBelowLine && wma9CrossBelowWma21 && pvoCheck)
                 {
                     var alert = new Alert
                     {
@@ -130,7 +130,7 @@ namespace Stock.Strategies
                 var wma9CrossBelowWma21 = wma9.Last().Wma < wma21.Last().Wma;
                 var pvoCheck = pvo.Last().Pvo > 0 && pvo.Last().Pvo > pvo.Last().Signal;
 
-                if (crossSecondLastPrice && notCrossCurrentPrice && priceBelowLine && wma9CrossBelowWma21 && pvoCheck & priceLessThanSecondLastPrice && priceNotIntersectThirdLastPrice)
+                if (crossSecondLastPrice && notCrossCurrentPrice && priceBelowLine && wma9CrossBelowWma21 && pvoCheck)
                 {
                     var alert = new Alert
                     {
