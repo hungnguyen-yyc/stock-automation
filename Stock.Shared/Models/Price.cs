@@ -46,6 +46,12 @@ namespace Stock.Shared.Models
             }
         }
 
+        public bool IsGreenCandle => Close > Open;
+
+        public bool IsRedCandle => Close < Open;
+
+        public bool IsDojiCandle => Close == Open;
+
         public NumericRange TopHalfOfCandle => new NumericRange((High + Low) / 2, High);
 
         public NumericRange BottomHalfOfCandle => new NumericRange(Low, (High + Low) / 2);

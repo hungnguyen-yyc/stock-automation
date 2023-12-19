@@ -211,24 +211,40 @@ namespace Stock.UI.Components
                 case "TSLA":
                     return new SwingPointStrategyParameter
                     {
-                        NumberOfSwingPointsToLookBack = 6,
+                        NumberOfSwingPointsToLookBack = 7,
                         NumberOfCandlesticksToLookBack = 14,
                         NumberOfCandlesticksToSkipAfterSwingPoint = 2,
-                        NumberOfTouchesToDrawTrendLine = 3,
+                        NumberOfTouchesToDrawTrendLine = 2,
                     };
                 case "SPY":
                     return new SwingPointStrategyParameter
                     {
-                        NumberOfSwingPointsToLookBack = 6,
+                        NumberOfSwingPointsToLookBack = 7,
                         NumberOfCandlesticksToLookBack = 21,
                         NumberOfCandlesticksToSkipAfterSwingPoint = 2,
                         NumberOfTouchesToDrawTrendLine = 3,
                     };
+                case "QQQ":
+                    return new SwingPointStrategyParameter
+                    {
+                        NumberOfSwingPointsToLookBack = 7,
+                        NumberOfCandlesticksToLookBack = 30,
+                        NumberOfCandlesticksToSkipAfterSwingPoint = 2,
+                        NumberOfTouchesToDrawTrendLine = 1,
+                    };
+                case "AMD":
+                    return new SwingPointStrategyParameter
+                    {
+                        NumberOfSwingPointsToLookBack = 7,
+                        NumberOfCandlesticksToLookBack = 20,
+                        NumberOfCandlesticksToSkipAfterSwingPoint = 2,
+                        NumberOfTouchesToDrawTrendLine = 1,
+                    };
                 default:
                     return new SwingPointStrategyParameter
                     {
-                        NumberOfSwingPointsToLookBack = 6,
-                        NumberOfCandlesticksToLookBack = 21,
+                        NumberOfSwingPointsToLookBack = 7,
+                        NumberOfCandlesticksToLookBack = 30,
                         NumberOfCandlesticksToSkipAfterSwingPoint = 2,
                         NumberOfTouchesToDrawTrendLine = 3,
                     };

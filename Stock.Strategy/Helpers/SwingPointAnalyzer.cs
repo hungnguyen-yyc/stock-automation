@@ -1,6 +1,7 @@
 ﻿using Stock.Shared.Models;
 using Stock.Shared.Extensions;
 using Stock.Strategies.Trend;
+using Stock.Strategies.Parameters;
 
 namespace Stock.Strategies.Helpers
 {
@@ -186,8 +187,11 @@ namespace Stock.Strategies.Helpers
          * we want to make sure that lines don't cross body part of the candle
          * then we check for lines that has more than 3 crosses
          */
-        public static Tuple<Price, Price>[] GetTrendlines(List<Price> prices, int numberOfCandlesToLookBack, int numberOfTouchesToDrawTrendLine = 3, bool isSwingHigh = true)
+        public static Tuple<Price, Price>[] GetTrendlines(List<Price> prices, SwingPointStrategyParameter param, bool isSwingHigh = true)
         {
+            var numberOfCandlesToLookBack = param.NumberOfCandlesticksToLookBack;
+            var numberOfTouchesToDrawTrendLine = param.NumberOfTouchesToDrawTrendLine;
+            var numberOfSwingPointsToLookBack = param.NumberOfSwingPointsToLookBack;
             var pointLines = new List<Tuple<Price, Price>>();
 
             var swingPoints = isSwingHigh ? 
@@ -206,6 +210,9 @@ namespace Stock.Strategies.Helpers
             {
                 for (var j = i + 1; j < swingPoints.Count; j++)
                 {
+                    if (j - i > numberOfSwingPointsToLookBack)
+                        continue;
+
                     var currentPoint = swingPoints[i];
                     var runningPoint = swingPoints[j];
                     var currentPointIndex = prices.IndexOf(currentPoint);
