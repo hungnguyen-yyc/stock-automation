@@ -12,27 +12,34 @@
     <Grid Margin="0,0,0,0">
 
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="70*"/>
+            <RowDefinition Height="30*"/>
         </Grid.RowDefinitions>
 
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="10*"/>
             <ColumnDefinition Width="90*"/>
         </Grid.ColumnDefinitions>
-        <ListView Name="lsvTickers" 
-                  Grid.Column="0" Grid.Row="0" Height="auto" 
+        <ScrollViewer Grid.Column="0" Grid.Row="0" VerticalScrollBarVisibility="Auto">
+            <ListView Name="lsvTickers"
+                      Height="Auto"
                   ItemsSource="{Binding Tickers}" 
                   SelectedItem="{Binding SelectedTicker, Mode=TwoWay}" 
                   VerticalAlignment="Stretch" 
                   Margin="5 10 5 0">
-            <ListView.View>
-                <GridView>
-                    <GridViewColumn Header="Tickers" />
-                </GridView>
-            </ListView.View>
-        </ListView>
-        <ListView Name="lsvTimeframes" Grid.Column="0" Grid.Row="1" Height="auto" ItemsSource="{Binding Timeframes}" VerticalAlignment="Stretch" Margin="5 10 5 0">
+                <ListView.View>
+                    <GridView>
+                        <GridViewColumn Header="Tickers" />
+                    </GridView>
+                </ListView.View>
+            </ListView>
+        </ScrollViewer>
+        <ListView Name="lsvTimeframes" 
+                  Grid.Column="0" Grid.Row="1" Height="auto" 
+                  ItemsSource="{Binding Timeframes}" 
+                  SelectedItem="{Binding SelectedTimeframe, Mode=TwoWay}"
+                  VerticalAlignment="Stretch" 
+                  Margin="5 10 5 0">
             <ListView.View>
                 <GridView>
                     <GridViewColumn Header="Timeframes" />

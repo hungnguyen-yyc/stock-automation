@@ -75,5 +75,13 @@ namespace Stock.Shared.Extensions
 
             return new Line(new Point(index, bottomRange.Low), new Point(index, bottomRange.High));
         }
+
+        public static NumericRange GetHighLowOfPriceList(this List<Price> list)
+        {
+            var high = list.Max(x => x.High);
+            var low = list.Min(x => x.Low);
+
+            return new NumericRange(low, high);
+        }
     }
 }
