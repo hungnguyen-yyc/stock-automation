@@ -229,22 +229,8 @@ namespace Stock.UI.Components
                                 var swingPointStrategyParameter = GetSwingPointStrategyParameter(ticker, timeframe);
 
                                 var prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddMonths(-6), DateTime.Now);
-                                var task = Task.Run(() =>
-                                {
-                                    _strategy.CheckForBreakBelowUpTrendLine(ticker, prices.ToList(), swingPointStrategyParameter);
-                                });
+                                _strategy.CheckForTopBottomTouch(ticker, prices.ToList(), swingPointStrategyParameter);
 
-                                var task2 = Task.Run(() =>
-                                {
-                                    _strategy.CheckForBreakAboveDownTrendLine(ticker, prices.ToList(), swingPointStrategyParameter);
-                                });
-
-                                var task3 = Task.Run(() =>
-                                {
-                                    _strategy.CheckForTopBottomTouch(ticker, prices.ToList(), swingPointStrategyParameter);
-                                });
-
-                                await Task.WhenAll(task, task2, task3);
                                 await Task.Delay(TimeSpan.FromSeconds(5.0));
                             });
                         });
@@ -302,19 +288,19 @@ namespace Stock.UI.Components
                         NumberOfCandlesBetweenCurrentPriceAndLastLineEndPoint = 390,
                         Timeframe = timeframe,
                         NumberOfCandlesticksBeforeCurrentPriceToLookBack = 5,
-                        NumberOfCandlesticksIntersectForTopsAndBottoms = 3,
+                        NumberOfCandlesticksIntersectForTopsAndBottoms = 5,
                     };
                 default:
                     return new SwingPointStrategyParameter
                     {
                         NumberOfSwingPointsToLookBack = 7,
-                        NumberOfCandlesticksToLookBack = 14,
+                        NumberOfCandlesticksToLookBack = 30,
                         NumberOfCandlesticksToSkipAfterSwingPoint = 2,
                         NumberOfTouchesToDrawTrendLine = 2,
                         NumberOfCandlesBetweenCurrentPriceAndLastLineEndPoint = 390,
                         Timeframe = timeframe,
                         NumberOfCandlesticksBeforeCurrentPriceToLookBack = 5,
-                        NumberOfCandlesticksIntersectForTopsAndBottoms = 2,
+                        NumberOfCandlesticksIntersectForTopsAndBottoms = 5,
                     };
             }
         }

@@ -52,8 +52,7 @@ namespace Stock.Strategies
                     && secondLastPrice.High > level.CenterPoint.High
                     && price.Close > secondLastPrice.Close
                     && priceIntersectSecondLastPrice
-                    && priceNotIntersectCenterLevelPoint
-                    && pvoCheck)
+                    && priceNotIntersectCenterLevelPoint)
                 {
                     alert = new Alert
                     {
@@ -72,8 +71,7 @@ namespace Stock.Strategies
                     && secondLastPrice.Low < level.CenterPoint.Low
                     && price.Close < secondLastPrice.Close
                     && priceIntersectSecondLastPrice
-                    && priceNotIntersectCenterLevelPoint
-                    && pvoCheck)
+                    && priceNotIntersectCenterLevelPoint)
                 {
                     alert = new Alert
                     {

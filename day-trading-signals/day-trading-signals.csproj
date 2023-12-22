@@ -16,6 +16,5 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Stock.Indicators\src\Indicators.csproj" />
-    <ProjectReference Include="..\StockSignalScanner\StockSignalScanner.csproj" />
   </ItemGroup>
 </Project>
