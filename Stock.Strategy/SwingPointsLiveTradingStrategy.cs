@@ -20,15 +20,13 @@ namespace Stock.Strategies
             var parameter = (SwingPointStrategyParameter)strategyParameter;
             var numberOfCandlesticksToLookBack = parameter.NumberOfCandlesticksToLookBack;
             var numberOfCandlesticksToLookBackBeforeCurrentPrice = parameter.NumberOfCandlesticksBeforeCurrentPriceToLookBack;
-            var nTops = SwingPointAnalyzer.GetNTops(ascSortedByDatePrice, parameter.NumberOfCandlesticksToLookBack).Where(x => x.Value.Count > parameter.NumberOfCandlesticksIntersectForTopsAndBottoms).ToList();
-            var nBottoms = SwingPointAnalyzer.GetNBottoms(ascSortedByDatePrice, parameter.NumberOfCandlesticksToLookBack).Where(x => x.Value.Count > parameter.NumberOfCandlesticksIntersectForTopsAndBottoms).ToList();
-            var levels = nTops.ToArray().Concat(nBottoms.ToArray()).OrderBy(x => x.Key.Date).ToList();
+            var levels = SwingPointAnalyzer.GetLevels(ascSortedByDatePrice, parameter.NumberOfCandlesticksToLookBack).Where(x => x.Value.Count > parameter.NumberOfCandlesticksIntersectForTopsAndBottoms).ToList();
 
             var secondLastPrice = ascSortedByDatePrice[ascSortedByDatePrice.Count - 2];
             var price = ascSortedByDatePrice.Last();
 
             var pvo = ascSortedByDatePrice.GetPvo(12, 26, 9);
-            var pvoCheck = pvo.Last().Pvo > 0 && pvo.Last().Pvo > pvo.Last().Signal && Math.Ceiling(pvo.Last().Histogram ?? 0) >= 10;
+            var pvoCheck = pvo.Last().Pvo > 0 && pvo.Last().Pvo > pvo.Last().Signal;
 
             /*
              * The idea of this strategy is to look back a number of candlesticks before current price and check if any of the levels
@@ -37,42 +35,31 @@ namespace Stock.Strategies
              */
             var priceRangeBeforeSecondLastPrice = ascSortedByDatePrice.GetRange(ascSortedByDatePrice.Count - 1 - numberOfCandlesticksToLookBackBeforeCurrentPrice, numberOfCandlesticksToLookBackBeforeCurrentPrice);
 
-            var priceRangeBeforeCurrentPriceTouchAnyOfTheLevels = priceRangeBeforeSecondLastPrice.Any(x => levels.Any(y => x.CandleRange.Intersect(y.Key.CandleRange)));
+            var levelPriceRangeBeforeSecondLastPriceTouched = levels.Where(x => secondLastPrice.CandleRange.Intersect(x.Key.CandleRange)).ToList();
 
             Alert? alert = null;
 
-            if (priceRangeBeforeCurrentPriceTouchAnyOfTheLevels) 
+            if (levelPriceRangeBeforeSecondLastPriceTouched.Any()) 
             {
-                var levelPriceRangeBeforeSecondLastPriceTouched = levels.Where(x => priceRangeBeforeSecondLastPrice.Any(y => y.CandleRange.Intersect(x.Key.CandleRange))).ToList();
+                var level = levelPriceRangeBeforeSecondLastPriceTouched.OrderByDescending(x => x.Key.Date).First().Key;
 
-                var highestLevelPriceFromLevel = levelPriceRangeBeforeSecondLastPriceTouched.OrderByDescending(x => x.Key.High).First().Key;
-                var highestLevelPriceRangeBeforeSecondLastPriceTouched = highestLevelPriceFromLevel.High;
-
-
-                var lowestLevelPriceFromLevel = levelPriceRangeBeforeSecondLastPriceTouched.OrderBy(x => x.Key.Low).First().Key;
-                var lowestLevelPriceRangeBeforeSecondLastPriceTouched = lowestLevelPriceFromLevel.Low;
-
-
-                // should disregard the level and just to check for the touch on levels
                 var priceIntersectSecondLastPrice = price.CandleRange.Intersect(secondLastPrice.CandleRange);
-                var secondLastPriceIntersectHighestLevelPrice = secondLastPrice.CandleRange.Intersect(highestLevelPriceFromLevel.CandleRange);
-                var secondLastPriceIntersectLowestLevelPrice = secondLastPrice.CandleRange.Intersect(lowestLevelPriceFromLevel.CandleRange);
-                var priceNotIntersectHighestLevelPrice = !price.CandleRange.Intersect(highestLevelPriceFromLevel.CandleRange);
-                var priceNotIntersectLowestLevelPrice = !price.CandleRange.Intersect(lowestLevelPriceFromLevel.CandleRange);
+                var secondLastPriceIntersectCenterLevelPoint = secondLastPrice.CandleRange.Intersect(level.CenterPoint);
+                var priceNotIntersectCenterLevelPoint = !price.CandleRange.Intersect(level.CenterPoint);
 
                 if (price.IsGreenCandle
-                    && (secondLastPriceIntersectHighestLevelPrice || secondLastPriceIntersectLowestLevelPrice)
-                    && secondLastPrice.High > highestLevelPriceRangeBeforeSecondLastPriceTouched
+                    && secondLastPrice.IsGreenCandle
+                    && secondLastPriceIntersectCenterLevelPoint
+                    && secondLastPrice.High > level.CenterPoint.High
                     && price.Close > secondLastPrice.Close
-                    && price.Close > highestLevelPriceRangeBeforeSecondLastPriceTouched
                     && priceIntersectSecondLastPrice
-                    && (priceNotIntersectHighestLevelPrice || priceNotIntersectLowestLevelPrice)
+                    && priceNotIntersectCenterLevelPoint
                     && pvoCheck)
                 {
                     alert = new Alert
                     {
                         Ticker = ticker,
-                        Message = $"Price {price.Close} ({price.Date:s}) is breaking above {highestLevelPriceRangeBeforeSecondLastPriceTouched} ({highestLevelPriceFromLevel.Date:s})",
+                        Message = $"Price {price.Close} ({price.Date:s}) is breaking above {level.CenterPoint.High} ({level.Low} - {level.High} on {level.Date:s})",
                         CreatedAt = price.Date,
                         Strategy = "SwingPointsLiveTradingStrategy",
                         OrderType = OrderType.Long,
@@ -81,18 +68,18 @@ namespace Stock.Strategies
                     };
                 }
                 else if (price.IsRedCandle
-                    && (secondLastPriceIntersectHighestLevelPrice || secondLastPriceIntersectLowestLevelPrice)
-                    && secondLastPrice.Low < lowestLevelPriceRangeBeforeSecondLastPriceTouched
+                    && secondLastPrice.IsRedCandle
+                    && secondLastPriceIntersectCenterLevelPoint
+                    && secondLastPrice.Low < level.CenterPoint.Low
                     && price.Close < secondLastPrice.Close
-                    && price.Close < lowestLevelPriceRangeBeforeSecondLastPriceTouched
                     && priceIntersectSecondLastPrice
-                    && (priceNotIntersectHighestLevelPrice || priceNotIntersectLowestLevelPrice)
+                    && priceNotIntersectCenterLevelPoint
                     && pvoCheck)
                 {
                     alert = new Alert
                     {
                         Ticker = ticker,
-                        Message = $"Price {price.Close} ({price.Date:s}) is breaking below {lowestLevelPriceRangeBeforeSecondLastPriceTouched} ({lowestLevelPriceFromLevel.Date:s})",
+                        Message = $"Price {price.Close} ({price.Date:s}) is breaking below {level.CenterPoint.Low} ({level.Low} - {level.High} on {level.Date:s})",
                         CreatedAt = price.Date,
                         Strategy = "SwingPointsLiveTradingStrategy",
                         OrderType = OrderType.Short,

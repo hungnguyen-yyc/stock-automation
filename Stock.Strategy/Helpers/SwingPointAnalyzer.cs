@@ -7,10 +7,47 @@ namespace Stock.Strategies.Helpers
 {
     internal class SwingPointAnalyzer
     {
+        public static IReadOnlyDictionary<Price, HashSet<Price>> GetLevels(List<Price> prices, int numberOfCandlesToLookBack)
+        {
+            var tops = GetNTops(prices, numberOfCandlesToLookBack);
+            var bottoms = GetNBottoms(prices, numberOfCandlesToLookBack);
+            var combined = new Dictionary<Price, HashSet<Price>>();
+
+            var flattenedTops = tops.SelectMany(x => x.Value).Concat(tops.Keys).ToList();
+            var flattenedBottoms = bottoms.SelectMany(x => x.Value).Concat(bottoms.Keys).ToList();
+            var flattened = flattenedTops.Concat(flattenedBottoms).ToList();
+
+            for ( var i = 0; i < flattened.Count; i++)
+            {
+                for (var j = i + 1; j < flattened.Count; j++)
+                {
+                    var current = flattened[i];
+                    var next = flattened[j];
+
+                    if (current.CandleRange.Intersect(next.CandleRange))
+                    {
+                        var hasKey = combined.Keys.Any(x => x.CandleRange.Intersect(current.CandleRange));
+
+                        if (hasKey)
+                        {
+                            var key = combined.Keys.First(x => x.CandleRange.Intersect(current.CandleRange));
+                            combined[key].Add(next);
+                        }
+                        else
+                        {
+                            combined.Add(current, new HashSet<Price>() { next });
+                        }
+                    }
+                }
+            }
+
+            return combined;
+        }
+
         /**
-         * returns a map of first swing low as key and the next n swing lows that intersect with the key one as value,
-         * it can be double bottom or triple bottom or more, but we don't check for 2 or 3 consecutive swing lows
-         */
+            * returns a map of first swing low as key and the next n swing lows that intersect with the key one as value,
+            * it can be double bottom or triple bottom or more, but we don't check for 2 or 3 consecutive swing lows
+            */
         public static IReadOnlyDictionary<Price, HashSet<Price>> GetNBottoms(List<Price> prices, int numberOfCandlesToLookBack)
         {
             var swingLows = FindSwingLows(prices, numberOfCandlesToLookBack);

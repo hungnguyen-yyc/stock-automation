@@ -58,6 +58,8 @@ namespace Stock.Shared.Models
 
         public NumericRange CandleRange => new NumericRange(Low, High);
 
+        public NumericRange CenterPoint => new NumericRange((High + Low) / 2, (High + Low) / 2);
+
         public override bool Equals(object? obj)
         {
             if (obj is Price price)

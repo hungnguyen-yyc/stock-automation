@@ -182,7 +182,7 @@ namespace Stock.UI.Components
                             var prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddMonths(-6), DateTime.Now);
 
 #if DEBUG
-                            for (int i = 3137; i < prices.Count; i++)
+                            for (int i = 1000; i < prices.Count; i++)
                             {
                                 var task3 = Task.Run(() =>
                                 {
@@ -257,7 +257,7 @@ namespace Stock.UI.Components
                             var prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddMonths(-3), DateTime.Now);
 
 #if DEBUG
-                            for (int i = 200; i < prices.Count; i++)
+                            for (int i = 3141; i < prices.Count; i++)
                             {
                                 var task3 = Task.Run(() =>
                                 {
@@ -297,13 +297,13 @@ namespace Stock.UI.Components
                     return new SwingPointStrategyParameter
                     {
                         NumberOfSwingPointsToLookBack = 10,
-                        NumberOfCandlesticksToLookBack = 14,
+                        NumberOfCandlesticksToLookBack = 30,
                         NumberOfCandlesticksToSkipAfterSwingPoint = 2,
                         NumberOfTouchesToDrawTrendLine = 2,
                         NumberOfCandlesBetweenCurrentPriceAndLastLineEndPoint = 390, // 390 candles means 15 days in 15 minute timeframe,
                         Timeframe = timeframe,
                         NumberOfCandlesticksBeforeCurrentPriceToLookBack = 5,
-                        NumberOfCandlesticksIntersectForTopsAndBottoms = 2,
+                        NumberOfCandlesticksIntersectForTopsAndBottoms = 5,
                     };
                 case "AMD":
                     return new SwingPointStrategyParameter
