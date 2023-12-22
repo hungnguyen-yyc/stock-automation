@@ -8,7 +8,6 @@ namespace Stock.Strategies
 {
     public class SwingPointsLiveTradingStrategy
     {
-        private Price? _waitForConfimation = null;
         public event AlertEventHandler AlertCreated;
 
         public string Description => "This strategy looks back a number of candles (specified in parameters) and calculates swing highs and lows. \n"

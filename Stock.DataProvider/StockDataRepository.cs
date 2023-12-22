@@ -9,10 +9,56 @@ namespace Stock.Data
     {
         private const string _dbPath = @"C:\Users\hnguyen\Documents\stock-back-test\stock-historical-data.db";
 
+        // log delegate
+        public event LogEventHander LogCreated;
+
         private void Log(string message)
         {
             Debug.WriteLine(message);
             Console.WriteLine(message);
+            LogCreated?.Invoke(new EventArgs.LogEventArg(message));
+        }
+
+        public async Task FillLatestDataForTheDay(string ticker, Timeframe timeframe, DateTime from, DateTime to)
+        {
+            // delete today's data in case it's not complete in data
+            using var conn = new SqliteConnection($"Data Source={_dbPath}");
+            conn.Open();
+            try
+            {
+                var table = string.Empty;
+                switch (timeframe)
+                {
+                    case Timeframe.Daily:
+                        table = "daily_price";
+                        break;
+                    case Timeframe.Hour1:
+                        table = "one_hour_price";
+                        break;
+                    case Timeframe.Minute15:
+                        table = "fifteen_minute_price";
+                        break;
+                    case Timeframe.Minute30:
+                        table = "thirty_minute_price";
+                        break;
+                    default:
+                        throw new Exception("Timeframe not supported");
+                }
+
+                var cmd = conn.CreateCommand();
+                cmd.CommandText = $"DELETE FROM {table} WHERE ticker_id = (SELECT ticker_id FROM ticker WHERE name = '{ticker}') AND Date >= '{from:yyyy-MM-dd} 00:00:00' AND Date <= '{to:yyyy-MM-dd HH:mm:ss}'";
+                cmd.ExecuteNonQuery();
+
+                await FillDbWithTickerPrice(ticker, timeframe, from);
+            }
+            catch (Exception ex)
+            {
+                Log(ex.Message);
+            }
+            finally
+            {
+                conn.Close();
+            }
         }
 
         public async Task<IReadOnlyCollection<Price>> GetStockData(string ticker, Timeframe timeframe, DateTime from, DateTime to)
@@ -73,7 +119,6 @@ namespace Stock.Data
             catch (Exception ex)
             {
                 Log(ex.ToString());
-                throw new Exception($"Error when getting data for ticker {ticker} and timeframe {timeframe}", ex);
             }
             finally
             {
@@ -98,7 +143,6 @@ namespace Stock.Data
             }
             finally
             {
-                Log($"Finished inserting alert {alert}");
                 conn.Close();
             }
         }
@@ -169,7 +213,6 @@ namespace Stock.Data
             }
             finally
             {
-                Debug.WriteLine($"Finished filling database with ticker {ticker} and timeframe {timeframe}");
                 conn.Close();
             }
         }

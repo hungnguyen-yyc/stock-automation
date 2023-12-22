@@ -12,8 +12,8 @@
     <Grid Margin="0,0,0,0">
 
         <Grid.RowDefinitions>
-            <RowDefinition Height="70*"/>
-            <RowDefinition Height="30*"/>
+            <RowDefinition Height="80*"/>
+            <RowDefinition Height="20*"/>
         </Grid.RowDefinitions>
 
         <Grid.ColumnDefinitions>
@@ -46,7 +46,7 @@
                 </GridView>
             </ListView.View>
         </ListView>
-        <ListView Name="lsvAlerts" Grid.Column="1" Grid.Row="0" Grid.RowSpan="2" Height="auto" Width="auto" ItemsSource="{Binding Alerts}" VerticalAlignment="Stretch" Margin="5 10 5 0">
+        <ListView Name="lsvAlerts" Grid.Column="1" Grid.Row="0" Height="auto" Width="auto" ItemsSource="{Binding Alerts}" VerticalAlignment="Stretch" Margin="5 10 5 0">
             <ListView.View>
                 <GridView>
                     <!-- Define columns with headers -->
@@ -78,6 +78,26 @@
                     <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding CreatedAt}" >
                         <GridViewColumn.Header>
                             <GridViewColumnHeader Tag="CreatedAt" Click="lsvAlertsColumnHeader_Click">CreatedAt</GridViewColumnHeader>
+                        </GridViewColumn.Header>
+                    </GridViewColumn>
+                </GridView>
+            </ListView.View>
+        </ListView>
+        <ListView Name="lsvLogs" 
+          Grid.Column="1" Grid.Row="1" Height="auto" 
+          ItemsSource="{Binding Logs}" 
+          VerticalAlignment="Stretch" 
+          Margin="5 10 5 0">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Time}">
+                        <GridViewColumn.Header>
+                            <GridViewColumnHeader Tag="Time" Click="lsvLogsColumnHeader_Click">Time</GridViewColumnHeader>
+                        </GridViewColumn.Header>
+                    </GridViewColumn>
+                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Message}">
+                        <GridViewColumn.Header>
+                            <GridViewColumnHeader Tag="Message" Click="lsvLogsColumnHeader_Click">Message</GridViewColumnHeader>
                         </GridViewColumn.Header>
                     </GridViewColumn>
                 </GridView>

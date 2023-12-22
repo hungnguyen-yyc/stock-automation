@@ -1,4 +1,5 @@
 ﻿using Stock.Data;
+using Stock.Data.EventArgs;
 using Stock.Shared;
 using Stock.Shared.Models;
 using Stock.Strategies;
@@ -33,6 +34,14 @@ namespace Stock.UI.Components
             _allAlerts = new ObservableCollection<Alert>();
             _filteredAlerts = new ObservableCollection<Alert>();
             BindingOperations.EnableCollectionSynchronization(_filteredAlerts, _lock);
+
+            Logs = new ObservableCollection<LogEventArg>();
+            BindingOperations.EnableCollectionSynchronization(Logs, _lock);
+
+            _repo.LogCreated += (message) =>
+            {
+                Logs.Add(message);
+            };
 
             Tickers = new ObservableCollection<string>
             {
@@ -71,6 +80,8 @@ namespace Stock.UI.Components
 
         public ObservableCollection<string> Tickers { get; }
 
+        public ObservableCollection<LogEventArg> Logs { get; }
+
         public string SelectedTimeframe
         {
             get { return _selectedTimeframe; }
@@ -105,7 +116,6 @@ namespace Stock.UI.Components
 
         public ObservableCollection<Alert> Alerts => _filteredAlerts;
 
-        // Implement INotifyPropertyChanged to notify the View of property changes
         public event PropertyChangedEventHandler? PropertyChanged;
 
         private void UpdateFilteredAlerts()
@@ -157,12 +167,7 @@ namespace Stock.UI.Components
             while (true)
             {
                 var tickerBatch = new[] { TickersToTrade.POPULAR_TICKERS };
-#if DEBUG
-                var timeframes = new[] { Timeframe.Minute15, Timeframe.Minute30, Timeframe.Hour1, Timeframe.Daily };
-#else
-                var timeframes = new[] { Timeframe.Minute15, Timeframe.Minute30, Timeframe.Hour1, Timeframe.Daily };
-                var numberOfCandlesticksToLookBacks = new[] {  15, 30  };
-#endif
+                var timeframes = new[] { Timeframe.Minute15 };
 
                 var dateAtRun = DateTime.Now.ToString("yyyy-MM-dd");
                 var timeAtRun = DateTime.Now.ToString("HH-mm");
@@ -181,7 +186,6 @@ namespace Stock.UI.Components
 
                             var prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddMonths(-6), DateTime.Now);
 
-#if DEBUG
                             for (int i = 1000; i < prices.Count; i++)
                             {
                                 var task3 = Task.Run(() =>
@@ -191,9 +195,40 @@ namespace Stock.UI.Components
 
                                 await Task.WhenAll(task3);
                             }
-#else
-                            for (int i = 200; i < prices.Count; i++)
+                        });
+                    });
+                });
+                Debug.WriteLine($"Finished running strategy at {DateTime.Now}");
+            }
+        }
+        private async Task RunInRelease()
+        {
+            while (true)
+            {
+                try
+                {
+                    Logs.Add(new LogEventArg($"Started running strategy at {DateTime.Now}"));
+
+                    var tickerBatch = new[] { TickersToTrade.POPULAR_TICKERS };
+                    var timeframes = new[] { Timeframe.Minute15, Timeframe.Minute30, Timeframe.Hour1, Timeframe.Daily };
+
+                    var dateAtRun = DateTime.Now.ToString("yyyy-MM-dd");
+                    var timeAtRun = DateTime.Now.ToString("HH-mm");
+                    ParallelOptions parallelOptions = new()
+                    {
+                        MaxDegreeOfParallelism = Environment.ProcessorCount
+                    };
+
+                    await Parallel.ForEachAsync(tickerBatch, parallelOptions, async (tickers, token) =>
+                    {
+                        await Parallel.ForEachAsync(timeframes, parallelOptions, async (timeframe, token) =>
+                        {
+                            await Parallel.ForEachAsync(tickers, parallelOptions, async (ticker, token) =>
                             {
+                                await _repo.FillLatestDataForTheDay(ticker, timeframe, DateTime.Now, DateTime.Now);
+                                var swingPointStrategyParameter = GetSwingPointStrategyParameter(ticker, timeframe);
+
+                                var prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddMonths(-6), DateTime.Now);
                                 var task = Task.Run(() =>
                                 {
                                     _strategy.CheckForBreakBelowUpTrendLine(ticker, prices.ToList(), swingPointStrategyParameter);
@@ -204,13 +239,22 @@ namespace Stock.UI.Components
                                     _strategy.CheckForBreakAboveDownTrendLine(ticker, prices.ToList(), swingPointStrategyParameter);
                                 });
 
-                                await Task.WhenAll(task, task2);
-                            }
-#endif
+                                var task3 = Task.Run(() =>
+                                {
+                                    _strategy.CheckForTopBottomTouch(ticker, prices.ToList(), swingPointStrategyParameter);
+                                });
+
+                                await Task.WhenAll(task, task2, task3);
+                                await Task.Delay(TimeSpan.FromSeconds(5.0));
+                            });
                         });
                     });
-                });
-                Debug.WriteLine($"Finished running strategy at {DateTime.Now}");
+                    await Task.Delay(TimeSpan.FromMinutes(15.0));
+                }
+                catch (Exception ex)
+                {
+                    Logs.Add(new LogEventArg(ex.Message));
+                }
             }
         }
 
@@ -229,63 +273,6 @@ namespace Stock.UI.Components
                     _allAlerts.Add(alert);
                     UpdateFilteredAlerts();
                 }
-            }
-        }
-
-        private async Task RunInRelease()
-        {
-            while (true)
-            {
-                var tickerBatch = new[] { TickersToTrade.POPULAR_TICKERS };
-                var timeframes = new[] { Timeframe.Minute15, Timeframe.Minute30, Timeframe.Hour1, Timeframe.Daily };
-
-                var dateAtRun = DateTime.Now.ToString("yyyy-MM-dd");
-                var timeAtRun = DateTime.Now.ToString("HH-mm");
-                ParallelOptions parallelOptions = new()
-                {
-                    MaxDegreeOfParallelism = Environment.ProcessorCount
-                };
-
-                await Parallel.ForEachAsync(tickerBatch, parallelOptions, async (tickers, token) =>
-                {
-                    await Parallel.ForEachAsync(timeframes, parallelOptions, async (timeframe, token) =>
-                    {
-                        await Parallel.ForEachAsync(tickers, parallelOptions, async (ticker, token) =>
-                        {
-                            var swingPointStrategyParameter = GetSwingPointStrategyParameter(ticker, timeframe);
-
-                            var prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddMonths(-3), DateTime.Now);
-
-#if DEBUG
-                            for (int i = 3141; i < prices.Count; i++)
-                            {
-                                var task3 = Task.Run(() =>
-                                {
-                                    _strategy.CheckForTopBottomTouch(ticker, prices.Take(i).ToList(), swingPointStrategyParameter);
-                                });
-
-                                await Task.WhenAll(task3);
-                            }
-#else
-                            for (int i = 200; i < prices.Count; i++)
-                            {
-                                var task = Task.Run(() =>
-                                {
-                                    _strategy.CheckForBreakBelowUpTrendLine(ticker, prices.ToList(), swingPointStrategyParameter);
-                                });
-
-                                var task2 = Task.Run(() =>
-                                {
-                                    _strategy.CheckForBreakAboveDownTrendLine(ticker, prices.ToList(), swingPointStrategyParameter);
-                                });
-
-                                await Task.WhenAll(task, task2);
-                            }
-#endif
-                        });
-                    });
-                });
-                Debug.WriteLine($"Finished running strategy at {DateTime.Now}");
             }
         }
 
