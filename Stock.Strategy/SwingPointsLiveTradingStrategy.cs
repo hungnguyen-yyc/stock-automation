@@ -26,6 +26,11 @@ namespace Stock.Strategies
 
             var pvo = ascSortedByDatePrice.GetPvo(12, 26, 9);
             var pvoCheck = pvo.Last().Pvo > 0 && pvo.Last().Pvo > pvo.Last().Signal;
+            var hmVolumes = ascSortedByDatePrice.GetHeatmapVolume(610, 610, 4, 2.5, 1, -0.5);
+            var hmVolume = hmVolumes.Last().Volume;
+            var hmvThresholdStatus = hmVolumes.Last().ThresholdStatus;
+            var hmVolumeCheck = hmvThresholdStatus != HeatmapVolumeThresholdStatus.Low 
+                && hmvThresholdStatus != HeatmapVolumeThresholdStatus.Normal;
 
             /*
              * The idea of this strategy is to look back a number of candlesticks before current price and check if any of the levels
@@ -52,12 +57,13 @@ namespace Stock.Strategies
                     && secondLastPrice.High > level.CenterPoint.High
                     && price.Close > secondLastPrice.Close
                     && priceIntersectSecondLastPrice
-                    && priceNotIntersectCenterLevelPoint)
+                    && priceNotIntersectCenterLevelPoint
+                    && hmVolumeCheck)
                 {
                     alert = new Alert
                     {
                         Ticker = ticker,
-                        Message = $"Price {price.Close} ({price.Date:s}) is breaking above {level.CenterPoint.High} ({level.Low} - {level.High} on {level.Date:s})",
+                        Message = $"Price {price.Close} ({price.Date:s}) is breaking above {level.CenterPoint.High} ({level.Low} - {level.High} at {hmVolume} {hmvThresholdStatus})",
                         CreatedAt = price.Date,
                         Strategy = "SwingPointsLiveTradingStrategy",
                         OrderType = OrderType.Long,
@@ -71,12 +77,13 @@ namespace Stock.Strategies
                     && secondLastPrice.Low < level.CenterPoint.Low
                     && price.Close < secondLastPrice.Close
                     && priceIntersectSecondLastPrice
-                    && priceNotIntersectCenterLevelPoint)
+                    && priceNotIntersectCenterLevelPoint
+                    && hmVolumeCheck)
                 {
                     alert = new Alert
                     {
                         Ticker = ticker,
-                        Message = $"Price {price.Close} ({price.Date:s}) is breaking below {level.CenterPoint.Low} ({level.Low} - {level.High} on {level.Date:s})",
+                        Message = $"Price {price.Close} ({price.Date:s}) is breaking below {level.CenterPoint.Low} ({level.Low} - {level.High} at {hmVolume} {hmvThresholdStatus})",
                         CreatedAt = price.Date,
                         Strategy = "SwingPointsLiveTradingStrategy",
                         OrderType = OrderType.Short,
