@@ -16,21 +16,31 @@ namespace Stock.Strategies
 
         public void CheckForTopBottomTouch(string ticker, List<Price> ascSortedByDatePrice, IStrategyParameter strategyParameter)
         {
-            var parameter = (SwingPointStrategyParameter)strategyParameter;
-            var numberOfCandlesticksToLookBack = parameter.NumberOfCandlesticksToLookBack;
-            var numberOfCandlesticksToLookBackBeforeCurrentPrice = parameter.NumberOfCandlesticksBeforeCurrentPriceToLookBack;
-            var levels = SwingPointAnalyzer.GetLevels(ascSortedByDatePrice, parameter.NumberOfCandlesticksToLookBack).Where(x => x.Value.Count > parameter.NumberOfCandlesticksIntersectForTopsAndBottoms).ToList();
-
             var secondLastPrice = ascSortedByDatePrice[ascSortedByDatePrice.Count - 2];
             var price = ascSortedByDatePrice.Last();
 
-            var pvo = ascSortedByDatePrice.GetPvo(12, 26, 9);
-            var pvoCheck = pvo.Last().Pvo > 0 && pvo.Last().Pvo > pvo.Last().Signal;
-            var hmVolumes = ascSortedByDatePrice.GetHeatmapVolume(610, 610, 4, 2.5, 1, -0.5);
+            var parameter = (SwingPointStrategyParameter)strategyParameter;
+            var numberOfCandlesticksToLookBack = parameter.NumberOfCandlesticksToLookBack;
+            var numberOfCandlesticksToLookBackBeforeCurrentPrice = parameter.NumberOfCandlesticksBeforeCurrentPriceToLookBack;
+            var levels = SwingPointAnalyzer.GetLevels(ascSortedByDatePrice, parameter.NumberOfCandlesticksToLookBack)
+                .Where(x => x.Value.Count > parameter.NumberOfCandlesticksIntersectForTopsAndBottoms)
+                .ToList();
+
+            var hmVolumes = ascSortedByDatePrice.GetHeatmapVolume();
             var hmVolume = hmVolumes.Last().Volume;
             var hmvThresholdStatus = hmVolumes.Last().ThresholdStatus;
             var hmVolumeCheck = hmvThresholdStatus != HeatmapVolumeThresholdStatus.Low 
                 && hmvThresholdStatus != HeatmapVolumeThresholdStatus.Normal;
+
+            var hmvThresholdStatusForSecondLastPrice = hmVolumes[hmVolumes.Count - 2].ThresholdStatus;
+            var hmVolumeCheckForSecondLastPrice = hmvThresholdStatusForSecondLastPrice != HeatmapVolumeThresholdStatus.Low
+                && hmvThresholdStatusForSecondLastPrice != HeatmapVolumeThresholdStatus.Normal;
+
+            var wma9 = ascSortedByDatePrice.GetWma(9);
+            var wma21 = ascSortedByDatePrice.GetWma(21);
+
+            var volumeCheckForLong = wma9.Last().Wma > wma21.Last().Wma && (hmVolumeCheck || hmVolumeCheckForSecondLastPrice);
+            var volumeCheckForShort = wma9.Last().Wma < wma21.Last().Wma && (hmVolumeCheck || hmVolumeCheckForSecondLastPrice);
 
             /*
              * The idea of this strategy is to look back a number of candlesticks before current price and check if any of the levels
@@ -39,31 +49,37 @@ namespace Stock.Strategies
              */
             var priceRangeBeforeSecondLastPrice = ascSortedByDatePrice.GetRange(ascSortedByDatePrice.Count - 1 - numberOfCandlesticksToLookBackBeforeCurrentPrice, numberOfCandlesticksToLookBackBeforeCurrentPrice);
 
-            var levelPriceRangeBeforeSecondLastPriceTouched = levels.Where(x => secondLastPrice.CandleRange.Intersect(x.Key.CandleRange)).ToList();
+            var levelPriceRangeBeforeSecondLastPriceTouched = levels
+                .Where(x => secondLastPrice.CandleRange.Intersect(x.Key.CandleRange))
+                .Where(x => !x.Key.Equals(price))
+                .ToList();
 
             Alert? alert = null;
 
             if (levelPriceRangeBeforeSecondLastPriceTouched.Any()) 
             {
-                var level = levelPriceRangeBeforeSecondLastPriceTouched.OrderByDescending(x => x.Key.Date).First().Key;
+                var levelLow = levelPriceRangeBeforeSecondLastPriceTouched.Select(x => x.Key.Low).Min();
+                var levelHigh = levelPriceRangeBeforeSecondLastPriceTouched.Select(x => x.Key.High).Max();
+                var center = (levelLow + levelHigh) / 2;
+                var centerPoint = new NumericRange(center, center);
 
                 var priceIntersectSecondLastPrice = price.CandleRange.Intersect(secondLastPrice.CandleRange);
-                var secondLastPriceIntersectCenterLevelPoint = secondLastPrice.CandleRange.Intersect(level.CenterPoint);
-                var priceNotIntersectCenterLevelPoint = !price.CandleRange.Intersect(level.CenterPoint);
+                var secondLastPriceIntersectCenterLevelPoint = secondLastPrice.CandleRange.Intersect(centerPoint);
+                var priceNotIntersectCenterLevelPoint = !price.CandleRange.Intersect(centerPoint);
 
                 if (price.IsGreenCandle
                     && secondLastPrice.IsGreenCandle
                     && secondLastPriceIntersectCenterLevelPoint
-                    && secondLastPrice.High > level.CenterPoint.High
+                    && secondLastPrice.High > centerPoint.High
                     && price.Close > secondLastPrice.Close
                     && priceIntersectSecondLastPrice
                     && priceNotIntersectCenterLevelPoint
-                    && hmVolumeCheck)
+                    && (hmVolumeCheck || hmVolumeCheckForSecondLastPrice))
                 {
                     alert = new Alert
                     {
                         Ticker = ticker,
-                        Message = $"Price {price.Close} ({price.Date:s}) is breaking above {level.CenterPoint.High} ({level.Low} - {level.High} at {hmVolume} {hmvThresholdStatus})",
+                        Message = $"Price {price.Close} ({price.Date:s}) is breaking above {centerPoint.High} ({levelLow} - {levelHigh})",
                         CreatedAt = price.Date,
                         Strategy = "SwingPointsLiveTradingStrategy",
                         OrderType = OrderType.Long,
@@ -74,16 +90,16 @@ namespace Stock.Strategies
                 else if (price.IsRedCandle
                     && secondLastPrice.IsRedCandle
                     && secondLastPriceIntersectCenterLevelPoint
-                    && secondLastPrice.Low < level.CenterPoint.Low
+                    && secondLastPrice.Low < centerPoint.Low
                     && price.Close < secondLastPrice.Close
                     && priceIntersectSecondLastPrice
                     && priceNotIntersectCenterLevelPoint
-                    && hmVolumeCheck)
+                    && (hmVolumeCheck || hmVolumeCheckForSecondLastPrice))
                 {
                     alert = new Alert
                     {
                         Ticker = ticker,
-                        Message = $"Price {price.Close} ({price.Date:s}) is breaking below {level.CenterPoint.Low} ({level.Low} - {level.High} at {hmVolume} {hmvThresholdStatus})",
+                        Message = $"Price {price.Close} ({price.Date:s}) is breaking below {centerPoint.Low} ({levelLow} - {levelHigh})",
                         CreatedAt = price.Date,
                         Strategy = "SwingPointsLiveTradingStrategy",
                         OrderType = OrderType.Short,

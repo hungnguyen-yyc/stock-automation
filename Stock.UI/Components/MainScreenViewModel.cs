@@ -269,38 +269,36 @@ namespace Stock.UI.Components
                 case "TSLA":
                     return new SwingPointStrategyParameter
                     {
-                        NumberOfSwingPointsToLookBack = 10,
-                        NumberOfCandlesticksToLookBack = 30,
-                        NumberOfCandlesticksToSkipAfterSwingPoint = 2,
-                        NumberOfTouchesToDrawTrendLine = 2,
-                        NumberOfCandlesBetweenCurrentPriceAndLastLineEndPoint = 390, // 390 candles means 15 days in 15 minute timeframe,
+                        NumberOfCandlesticksToLookBack = 21,
+                        NumberOfCandlesticksIntersectForTopsAndBottoms = 4,
                         Timeframe = timeframe,
-                        NumberOfCandlesticksBeforeCurrentPriceToLookBack = 5,
-                        NumberOfCandlesticksIntersectForTopsAndBottoms = 5,
                     };
                 case "AMD":
                     return new SwingPointStrategyParameter
                     {
-                        NumberOfSwingPointsToLookBack = 7,
-                        NumberOfCandlesticksToLookBack = 14,
-                        NumberOfCandlesticksToSkipAfterSwingPoint = 2,
-                        NumberOfTouchesToDrawTrendLine = 2,
-                        NumberOfCandlesBetweenCurrentPriceAndLastLineEndPoint = 390,
+                        NumberOfCandlesticksToLookBack = 21,
+                        NumberOfCandlesticksIntersectForTopsAndBottoms = 4,
                         Timeframe = timeframe,
-                        NumberOfCandlesticksBeforeCurrentPriceToLookBack = 5,
-                        NumberOfCandlesticksIntersectForTopsAndBottoms = 5,
+                    };
+                case "QQQ":
+                    return new SwingPointStrategyParameter
+                    {
+                        NumberOfCandlesticksToLookBack = 21,
+                        NumberOfCandlesticksIntersectForTopsAndBottoms = 4,
+                        Timeframe = timeframe,
                     };
                 default:
                     return new SwingPointStrategyParameter
                     {
+                        NumberOfCandlesticksToLookBack = 21,
+                        Timeframe = timeframe,
+                        NumberOfCandlesticksIntersectForTopsAndBottoms = 4,
+
                         NumberOfSwingPointsToLookBack = 7,
-                        NumberOfCandlesticksToLookBack = 30,
                         NumberOfCandlesticksToSkipAfterSwingPoint = 2,
                         NumberOfTouchesToDrawTrendLine = 2,
                         NumberOfCandlesBetweenCurrentPriceAndLastLineEndPoint = 390,
-                        Timeframe = timeframe,
-                        NumberOfCandlesticksBeforeCurrentPriceToLookBack = 5,
-                        NumberOfCandlesticksIntersectForTopsAndBottoms = 5,
+                        NumberOfCandlesticksBeforeCurrentPriceToLookBack = 7,
                     };
             }
         }
