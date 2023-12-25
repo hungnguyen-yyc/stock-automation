@@ -62,10 +62,25 @@ namespace Stock.Strategies
                 var levelHigh = levelPriceRangeBeforeSecondLastPriceTouched.Select(x => x.Key.High).Max();
                 var center = (levelLow + levelHigh) / 2;
                 var centerPoint = new NumericRange(center, center);
+                var averageSwingPointIntersected = levelPriceRangeBeforeSecondLastPriceTouched.Select(x => x.Value.Count).Average();
 
                 var priceIntersectSecondLastPrice = price.CandleRange.Intersect(secondLastPrice.CandleRange);
                 var secondLastPriceIntersectCenterLevelPoint = secondLastPrice.CandleRange.Intersect(centerPoint);
                 var priceNotIntersectCenterLevelPoint = !price.CandleRange.Intersect(centerPoint);
+
+
+                var priceIntersectAnyLevelPoint = false;
+                var priceIntersectLevels = levels.Where(x => price.CandleRange.Intersect(x.Key.CandleRange));
+                decimal pricePointCenter = 0;
+                if (priceIntersectLevels.Any())
+                {
+                    var pricePointInterectHigh = priceIntersectLevels.Select(x => x.Key.High).Max();
+                    var pricePointInterectLow = priceIntersectLevels.Select(x => x.Key.Low).Min();
+                    pricePointCenter = (pricePointInterectHigh + pricePointInterectLow) / 2;
+
+                    var pricePointInterect = new NumericRange(pricePointCenter, pricePointCenter);
+                    priceIntersectAnyLevelPoint = price.CandleRange.Intersect(pricePointInterect);
+                }
 
                 if (price.IsGreenCandle
                     && secondLastPrice.IsGreenCandle
@@ -76,10 +91,13 @@ namespace Stock.Strategies
                     && priceNotIntersectCenterLevelPoint
                     && (hmVolumeCheck || hmVolumeCheckForSecondLastPrice))
                 {
+                    var message = priceIntersectAnyLevelPoint
+                        ? $"Price {price.Close} ({price.Date:s}) > {centerPoint.High} ({levelLow} - {levelHigh}), points touched: {averageSwingPointIntersected}, *level touch*: {pricePointCenter}"
+                        : $"Price {price.Close} ({price.Date:s}) > {centerPoint.High} ({levelLow} - {levelHigh}), points touched: {averageSwingPointIntersected}";
                     alert = new Alert
                     {
                         Ticker = ticker,
-                        Message = $"Price {price.Close} ({price.Date:s}) is breaking above {centerPoint.High} ({levelLow} - {levelHigh})",
+                        Message = message,
                         CreatedAt = price.Date,
                         Strategy = "SwingPointsLiveTradingStrategy",
                         OrderType = OrderType.Long,
@@ -96,10 +114,13 @@ namespace Stock.Strategies
                     && priceNotIntersectCenterLevelPoint
                     && (hmVolumeCheck || hmVolumeCheckForSecondLastPrice))
                 {
+                    var message = priceIntersectAnyLevelPoint
+                        ? $"Price {price.Close} ({price.Date:s}) < {centerPoint.Low} ({levelLow} - {levelHigh}), points touched: {averageSwingPointIntersected}, *level touch*: {pricePointCenter}"
+                        : $"Price {price.Close} ({price.Date:s}) < {centerPoint.Low} ({levelLow} - {levelHigh}), points touched: {averageSwingPointIntersected}";
                     alert = new Alert
                     {
                         Ticker = ticker,
-                        Message = $"Price {price.Close} ({price.Date:s}) is breaking below {centerPoint.Low} ({levelLow} - {levelHigh})",
+                        Message = message,
                         CreatedAt = price.Date,
                         Strategy = "SwingPointsLiveTradingStrategy",
                         OrderType = OrderType.Short,

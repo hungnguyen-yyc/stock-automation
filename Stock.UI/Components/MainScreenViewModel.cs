@@ -270,21 +270,21 @@ namespace Stock.UI.Components
                     return new SwingPointStrategyParameter
                     {
                         NumberOfCandlesticksToLookBack = 21,
-                        NumberOfCandlesticksIntersectForTopsAndBottoms = 4,
+                        NumberOfCandlesticksIntersectForTopsAndBottoms = 7,
                         Timeframe = timeframe,
                     };
                 case "AMD":
                     return new SwingPointStrategyParameter
                     {
                         NumberOfCandlesticksToLookBack = 21,
-                        NumberOfCandlesticksIntersectForTopsAndBottoms = 4,
+                        NumberOfCandlesticksIntersectForTopsAndBottoms = 7,
                         Timeframe = timeframe,
                     };
                 case "QQQ":
                     return new SwingPointStrategyParameter
                     {
                         NumberOfCandlesticksToLookBack = 21,
-                        NumberOfCandlesticksIntersectForTopsAndBottoms = 4,
+                        NumberOfCandlesticksIntersectForTopsAndBottoms = 7,
                         Timeframe = timeframe,
                     };
                 default:
@@ -292,7 +292,7 @@ namespace Stock.UI.Components
                     {
                         NumberOfCandlesticksToLookBack = 21,
                         Timeframe = timeframe,
-                        NumberOfCandlesticksIntersectForTopsAndBottoms = 4,
+                        NumberOfCandlesticksIntersectForTopsAndBottoms = 7,
 
                         NumberOfSwingPointsToLookBack = 7,
                         NumberOfCandlesticksToSkipAfterSwingPoint = 2,
