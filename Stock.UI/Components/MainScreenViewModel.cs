@@ -140,7 +140,9 @@ namespace Stock.UI.Components
 
             _optionChain.Clear();
 
-            var allOptions = optionChain.Expired.Concat(optionChain.Active).ToList();
+            var expiredOptions = optionChain.Expired ?? Array.Empty<string>();
+            var activeOptions = optionChain.Active ?? Array.Empty<string>();
+            var allOptions = expiredOptions.Concat(activeOptions).ToList();
 
             foreach (var option in allOptions)
             {
@@ -218,7 +220,7 @@ namespace Stock.UI.Components
             while (true)
             {
                 var tickerBatch = new[] { TickersToTrade.POPULAR_TICKERS };
-                var timeframes = new[] { Timeframe.Minute15 };
+                var timeframes = new[] { Timeframe.Minute15, Timeframe.Minute30, Timeframe.Hour1, Timeframe.Daily };
 
                 var dateAtRun = DateTime.Now.ToString("yyyy-MM-dd");
                 var timeAtRun = DateTime.Now.ToString("HH-mm");
@@ -233,11 +235,20 @@ namespace Stock.UI.Components
                     {
                         await Parallel.ForEachAsync(tickers, parallelOptions, async (ticker, token) =>
                         {
+                            try
+                            {
+                                await _repo.FillLatestDataForTheDay(ticker, timeframe, DateTime.Now, DateTime.Now);
+                            }
+                            catch (Exception ex)
+                            {
+                                Logs.Add(new LogEventArg(ex.Message));
+                            }
+
                             var swingPointStrategyParameter = GetSwingPointStrategyParameter(ticker, timeframe);
 
                             var prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddMonths(-6), DateTime.Now);
 
-                            for (int i = 1000; i < prices.Count; i++)
+                            for (int i = 3000; i < prices.Count; i++)
                             {
                                 var task3 = Task.Run(() =>
                                 {

@@ -61,9 +61,8 @@ namespace Stock.Data
             try
             {
                 using var httpClient = new HttpClient();
-                var url = "https://instruments-excel.aws.barchart.com/instruments/{0}/options?expired={1}&symbols=true&start={2}&end={3}";
-                var expired = toDate < DateTime.Now.Date;
-                var formattedUrl = string.Format(url, ticker, expired.ToString().ToLower(), fromDate.ToString("yyyy-MM-dd"), toDate.ToString("yyyy-MM-dd"));
+                var url = "https://instruments-excel.aws.barchart.com/instruments/{0}/options?expired=true&symbols=true&start={1}&end={2}";
+                var formattedUrl = string.Format(url, ticker, fromDate.ToString("yyyy-MM-dd"), toDate.ToString("yyyy-MM-dd"));
                 var response = await httpClient.GetAsync(formattedUrl);
                 Options? options = null;
 
@@ -91,8 +90,13 @@ namespace Stock.Data
             }
         }
 
-        public async Task FillLatestDataForTheDay(string ticker, Timeframe timeframe, DateTime from, DateTime to)
+        public async Task FillLatestDataForTheDay(string ticker, Timeframe timeframe, DateTime from, DateTime to, int retries = 5)
         {
+            if (retries == 0)
+            {
+                return;
+            }
+
             // delete today's data in case it's not complete in data
             using var conn = new SqliteConnection($"Data Source={_dbPath}");
             conn.Open();
@@ -126,6 +130,8 @@ namespace Stock.Data
             catch (Exception ex)
             {
                 Log(ex.Message);
+                await FillLatestDataForTheDay(ticker, timeframe, from, to, retries - 1);
+                await Task.Delay(TimeSpan.FromSeconds(15));
             }
             finally
             {

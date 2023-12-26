@@ -54,7 +54,7 @@ namespace Stock.DataProvider
                         prices.AddRange(priceByDateRange);
                     }
 
-                    if (prices.Last().Date.Date == to.Date || !prices.Any())
+                    if (!prices.Any() || prices.Last().Date.Date == to.Date)
                     {
                         break;
                     }

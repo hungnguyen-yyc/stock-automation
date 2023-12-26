@@ -16,124 +16,132 @@ namespace Stock.Strategies
 
         public void CheckForTopBottomTouch(string ticker, List<Price> ascSortedByDatePrice, IStrategyParameter strategyParameter)
         {
-            var secondLastPrice = ascSortedByDatePrice[ascSortedByDatePrice.Count - 2];
-            var price = ascSortedByDatePrice.Last();
-
             var parameter = (SwingPointStrategyParameter)strategyParameter;
-            var numberOfCandlesticksToLookBack = parameter.NumberOfCandlesticksToLookBack;
-            var numberOfCandlesticksToLookBackBeforeCurrentPrice = parameter.NumberOfCandlesticksBeforeCurrentPriceToLookBack;
-            var levels = SwingPointAnalyzer.GetLevels(ascSortedByDatePrice, parameter.NumberOfCandlesticksToLookBack)
-                .Where(x => x.Value.Count > parameter.NumberOfCandlesticksIntersectForTopsAndBottoms)
-                .ToList();
-
-            var hmVolumes = ascSortedByDatePrice.GetHeatmapVolume();
-            var hmVolume = hmVolumes.Last().Volume;
-            var hmvThresholdStatus = hmVolumes.Last().ThresholdStatus;
-            var hmVolumeCheck = hmvThresholdStatus != HeatmapVolumeThresholdStatus.Low 
-                && hmvThresholdStatus != HeatmapVolumeThresholdStatus.Normal;
-
-            var hmvThresholdStatusForSecondLastPrice = hmVolumes[hmVolumes.Count - 2].ThresholdStatus;
-            var hmVolumeCheckForSecondLastPrice = hmvThresholdStatusForSecondLastPrice != HeatmapVolumeThresholdStatus.Low
-                && hmvThresholdStatusForSecondLastPrice != HeatmapVolumeThresholdStatus.Normal;
-
-            var wma9 = ascSortedByDatePrice.GetWma(9);
-            var wma21 = ascSortedByDatePrice.GetWma(21);
-
-            var volumeCheckForLong = wma9.Last().Wma > wma21.Last().Wma && (hmVolumeCheck || hmVolumeCheckForSecondLastPrice);
-            var volumeCheckForShort = wma9.Last().Wma < wma21.Last().Wma && (hmVolumeCheck || hmVolumeCheckForSecondLastPrice);
-
-            /*
-             * The idea of this strategy is to look back a number of candlesticks before current price and check if any of the levels
-             * first we take the prices that happened before the range of candlesticks that touch the level to determine where the price was before the level was touched
-             * then we want to see if that range of candlesticks touch any of the levels so that means the current price is probably the new price direction
-             */
-            var priceRangeBeforeSecondLastPrice = ascSortedByDatePrice.GetRange(ascSortedByDatePrice.Count - 1 - numberOfCandlesticksToLookBackBeforeCurrentPrice, numberOfCandlesticksToLookBackBeforeCurrentPrice);
-
-            var levelPriceRangeBeforeSecondLastPriceTouched = levels
-                .Where(x => secondLastPrice.CandleRange.Intersect(x.Key.CandleRange))
-                .Where(x => !x.Key.Equals(price))
-                .ToList();
-
-            Alert? alert = null;
-
-            if (levelPriceRangeBeforeSecondLastPriceTouched.Any()) 
+            try
             {
-                var levelLow = levelPriceRangeBeforeSecondLastPriceTouched.Select(x => x.Key.Low).Min();
-                var levelHigh = levelPriceRangeBeforeSecondLastPriceTouched.Select(x => x.Key.High).Max();
-                var center = (levelLow + levelHigh) / 2;
-                var centerPoint = new NumericRange(center, center);
-                var averageSwingPointIntersected = levelPriceRangeBeforeSecondLastPriceTouched.Select(x => x.Value.Count).Average();
+                var secondLastPrice = ascSortedByDatePrice[ascSortedByDatePrice.Count - 2];
+                var price = ascSortedByDatePrice.Last();
 
-                var priceIntersectSecondLastPrice = price.CandleRange.Intersect(secondLastPrice.CandleRange);
-                var secondLastPriceIntersectCenterLevelPoint = secondLastPrice.CandleRange.Intersect(centerPoint);
-                var priceNotIntersectCenterLevelPoint = !price.CandleRange.Intersect(centerPoint);
+                var numberOfCandlesticksToLookBack = parameter.NumberOfCandlesticksToLookBack;
+                var numberOfCandlesticksToLookBackBeforeCurrentPrice = parameter.NumberOfCandlesticksBeforeCurrentPriceToLookBack;
+                var levels = SwingPointAnalyzer.GetLevels(ascSortedByDatePrice, parameter.NumberOfCandlesticksToLookBack)
+                    .Where(x => x.Value.Count > parameter.NumberOfCandlesticksIntersectForTopsAndBottoms)
+                    .ToList();
 
+                var hmVolumes = ascSortedByDatePrice.GetHeatmapVolume();
+                var hmVolume = hmVolumes.Last().Volume;
+                var hmvThresholdStatus = hmVolumes.Last().ThresholdStatus;
+                var hmVolumeCheck = hmvThresholdStatus != HeatmapVolumeThresholdStatus.Low
+                    && hmvThresholdStatus != HeatmapVolumeThresholdStatus.Normal;
 
-                var priceIntersectAnyLevelPoint = false;
-                var priceIntersectLevels = levels.Where(x => price.CandleRange.Intersect(x.Key.CandleRange));
-                decimal pricePointCenter = 0;
-                if (priceIntersectLevels.Any())
+                var hmvThresholdStatusForSecondLastPrice = hmVolumes[hmVolumes.Count - 2].ThresholdStatus;
+                var hmVolumeCheckForSecondLastPrice = hmvThresholdStatusForSecondLastPrice != HeatmapVolumeThresholdStatus.Low
+                    && hmvThresholdStatusForSecondLastPrice != HeatmapVolumeThresholdStatus.Normal;
+
+                var wma9 = ascSortedByDatePrice.GetWma(9);
+                var wma21 = ascSortedByDatePrice.GetWma(21);
+
+                var volumeCheckForLong = wma9.Last().Wma > wma21.Last().Wma && (hmVolumeCheck || hmVolumeCheckForSecondLastPrice);
+                var volumeCheckForShort = wma9.Last().Wma < wma21.Last().Wma && (hmVolumeCheck || hmVolumeCheckForSecondLastPrice);
+
+                /*
+                 * The idea of this strategy is to look back a number of candlesticks before current price and check if any of the levels
+                 * first we take the prices that happened before the range of candlesticks that touch the level to determine where the price was before the level was touched
+                 * then we want to see if that range of candlesticks touch any of the levels so that means the current price is probably the new price direction
+                 */
+                var priceRangeBeforeSecondLastPrice = ascSortedByDatePrice.GetRange(ascSortedByDatePrice.Count - 1 - numberOfCandlesticksToLookBackBeforeCurrentPrice, numberOfCandlesticksToLookBackBeforeCurrentPrice);
+
+                var levelPriceRangeBeforeSecondLastPriceTouched = levels
+                    .Where(x => secondLastPrice.CandleRange.Intersect(x.Key.CandleRange))
+                    .Where(x => !x.Key.Equals(price))
+                    .ToList();
+
+                Alert? alert = null;
+
+                if (levelPriceRangeBeforeSecondLastPriceTouched.Any())
                 {
-                    var pricePointInterectHigh = priceIntersectLevels.Select(x => x.Key.High).Max();
-                    var pricePointInterectLow = priceIntersectLevels.Select(x => x.Key.Low).Min();
-                    pricePointCenter = (pricePointInterectHigh + pricePointInterectLow) / 2;
+                    var levelLow = levelPriceRangeBeforeSecondLastPriceTouched.Select(x => x.Key.Low).Min();
+                    var levelHigh = levelPriceRangeBeforeSecondLastPriceTouched.Select(x => x.Key.High).Max();
+                    var center = (levelLow + levelHigh) / 2;
+                    var centerPoint = new NumericRange(center, center);
+                    var averageSwingPointIntersected = levelPriceRangeBeforeSecondLastPriceTouched.Select(x => x.Value.Count).Average();
 
-                    var pricePointInterect = new NumericRange(pricePointCenter, pricePointCenter);
-                    priceIntersectAnyLevelPoint = price.CandleRange.Intersect(pricePointInterect);
+                    var priceIntersectSecondLastPrice = price.CandleRange.Intersect(secondLastPrice.CandleRange);
+                    var secondLastPriceIntersectCenterLevelPoint = secondLastPrice.CandleRange.Intersect(centerPoint);
+                    var priceNotIntersectCenterLevelPoint = !price.CandleRange.Intersect(centerPoint);
+
+
+                    var priceIntersectAnyLevelPoint = false;
+                    var priceIntersectLevels = levels.Where(x => price.CandleRange.Intersect(x.Key.CandleRange));
+                    decimal pricePointCenter = 0;
+                    if (priceIntersectLevels.Any())
+                    {
+                        var pricePointInterectHigh = priceIntersectLevels.Select(x => x.Key.High).Max();
+                        var pricePointInterectLow = priceIntersectLevels.Select(x => x.Key.Low).Min();
+                        pricePointCenter = (pricePointInterectHigh + pricePointInterectLow) / 2;
+
+                        var pricePointInterect = new NumericRange(pricePointCenter, pricePointCenter);
+                        priceIntersectAnyLevelPoint = price.CandleRange.Intersect(pricePointInterect);
+                    }
+
+                    if (price.IsGreenCandle
+                        && secondLastPrice.IsGreenCandle
+                        && secondLastPriceIntersectCenterLevelPoint
+                        && secondLastPrice.High > centerPoint.High
+                        && price.Close > secondLastPrice.Close
+                        && priceIntersectSecondLastPrice
+                        && priceNotIntersectCenterLevelPoint
+                        && (hmVolumeCheck || hmVolumeCheckForSecondLastPrice))
+                    {
+                        var message = priceIntersectAnyLevelPoint
+                            ? $"Price {price.Close} ({price.Date:s}) > {centerPoint.High} ({levelLow} - {levelHigh}), points touched: {averageSwingPointIntersected}, *level touch*: {pricePointCenter}"
+                            : $"Price {price.Close} ({price.Date:s}) > {centerPoint.High} ({levelLow} - {levelHigh}), points touched: {averageSwingPointIntersected}";
+                        alert = new Alert
+                        {
+                            Ticker = ticker,
+                            Message = message,
+                            CreatedAt = price.Date,
+                            Strategy = "SwingPointsLiveTradingStrategy",
+                            OrderType = OrderType.Long,
+                            OrderAction = OrderAction.Open,
+                            Timeframe = parameter.Timeframe
+                        };
+                    }
+                    else if (price.IsRedCandle
+                        && secondLastPrice.IsRedCandle
+                        && secondLastPriceIntersectCenterLevelPoint
+                        && secondLastPrice.Low < centerPoint.Low
+                        && price.Close < secondLastPrice.Close
+                        && priceIntersectSecondLastPrice
+                        && priceNotIntersectCenterLevelPoint
+                        && (hmVolumeCheck || hmVolumeCheckForSecondLastPrice))
+                    {
+                        var message = priceIntersectAnyLevelPoint
+                            ? $"Price {price.Close} ({price.Date:s}) < {centerPoint.Low} ({levelLow} - {levelHigh}), points touched: {averageSwingPointIntersected}, *level touch*: {pricePointCenter}"
+                            : $"Price {price.Close} ({price.Date:s}) < {centerPoint.Low} ({levelLow} - {levelHigh}), points touched: {averageSwingPointIntersected}";
+                        alert = new Alert
+                        {
+                            Ticker = ticker,
+                            Message = message,
+                            CreatedAt = price.Date,
+                            Strategy = "SwingPointsLiveTradingStrategy",
+                            OrderType = OrderType.Short,
+                            OrderAction = OrderAction.Open,
+                            Timeframe = parameter.Timeframe
+                        };
+                    }
                 }
 
-                if (price.IsGreenCandle
-                    && secondLastPrice.IsGreenCandle
-                    && secondLastPriceIntersectCenterLevelPoint
-                    && secondLastPrice.High > centerPoint.High
-                    && price.Close > secondLastPrice.Close
-                    && priceIntersectSecondLastPrice
-                    && priceNotIntersectCenterLevelPoint
-                    && (hmVolumeCheck || hmVolumeCheckForSecondLastPrice))
+                if (alert != null)
                 {
-                    var message = priceIntersectAnyLevelPoint
-                        ? $"Price {price.Close} ({price.Date:s}) > {centerPoint.High} ({levelLow} - {levelHigh}), points touched: {averageSwingPointIntersected}, *level touch*: {pricePointCenter}"
-                        : $"Price {price.Close} ({price.Date:s}) > {centerPoint.High} ({levelLow} - {levelHigh}), points touched: {averageSwingPointIntersected}";
-                    alert = new Alert
-                    {
-                        Ticker = ticker,
-                        Message = message,
-                        CreatedAt = price.Date,
-                        Strategy = "SwingPointsLiveTradingStrategy",
-                        OrderType = OrderType.Long,
-                        OrderAction = OrderAction.Open,
-                        Timeframe = parameter.Timeframe
-                    };
-                }
-                else if (price.IsRedCandle
-                    && secondLastPrice.IsRedCandle
-                    && secondLastPriceIntersectCenterLevelPoint
-                    && secondLastPrice.Low < centerPoint.Low
-                    && price.Close < secondLastPrice.Close
-                    && priceIntersectSecondLastPrice
-                    && priceNotIntersectCenterLevelPoint
-                    && (hmVolumeCheck || hmVolumeCheckForSecondLastPrice))
-                {
-                    var message = priceIntersectAnyLevelPoint
-                        ? $"Price {price.Close} ({price.Date:s}) < {centerPoint.Low} ({levelLow} - {levelHigh}), points touched: {averageSwingPointIntersected}, *level touch*: {pricePointCenter}"
-                        : $"Price {price.Close} ({price.Date:s}) < {centerPoint.Low} ({levelLow} - {levelHigh}), points touched: {averageSwingPointIntersected}";
-                    alert = new Alert
-                    {
-                        Ticker = ticker,
-                        Message = message,
-                        CreatedAt = price.Date,
-                        Strategy = "SwingPointsLiveTradingStrategy",
-                        OrderType = OrderType.Short,
-                        OrderAction = OrderAction.Open,
-                        Timeframe = parameter.Timeframe
-                    };
+                    OnAlertCreated(new AlertEventArgs(alert));
                 }
             }
-
-            if (alert != null)
+            catch (Exception ex)
             {
-                OnAlertCreated(new AlertEventArgs(alert));
+                throw new Exception($"Error checking for top bottom touch for {ticker} at {parameter.Timeframe}: " + ex.Message, ex);
             }
+            
         }
 
         public void CheckForBreakAboveDownTrendLine(string ticker, List<Price> ascSortedByDatePrice, IStrategyParameter strategyParameter)
