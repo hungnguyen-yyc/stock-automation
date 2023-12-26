@@ -1,7 +1,9 @@
 ﻿using Microsoft.Data.Sqlite;
+using Newtonsoft.Json;
 using Stock.DataProvider;
 using Stock.Shared.Models;
 using System.Diagnostics;
+using System.Net.Http;
 
 namespace Stock.Data
 {
@@ -17,6 +19,76 @@ namespace Stock.Data
             Debug.WriteLine(message);
             Console.WriteLine(message);
             LogCreated?.Invoke(new EventArgs.LogEventArg(message));
+        }
+
+        public async Task<string[]?> GetOptionPriceAsync(string optionDetailByBarChart)
+        {
+            try
+            {
+                using var httpClient = new HttpClient();
+                var optionDetail = optionDetailByBarChart.Split('|');
+                var url = "https://webapp-proxy.aws.barchart.com/v1/ondemand/getEquityOptionsHistory.json?symbol={0}%7C{1}%7C{2}&fields=volatility,theoretical,delta,gamma,theta,vega,rho";
+                var formattedUrl = string.Format(url, optionDetail[0], optionDetail[1], optionDetail[2]);
+                var response = await httpClient.GetAsync(formattedUrl);
+                string[]? options = null;
+
+                if (response.IsSuccessStatusCode)
+                {
+                    string content = await response.Content.ReadAsStringAsync();
+                    var optionPrice = OptionPriceResponse.FromJson(content);
+
+                    if (optionPrice == null)
+                    {
+                        return null;
+                    }
+                    else
+                    {
+                        options = optionPrice.OptionPrice.Select(x => x.ToString()).ToArray();
+                    }
+                }
+
+                return options;
+            }
+            catch (Exception ex)
+            {
+                Log(ex.Message);
+                return null;
+            }
+        }
+
+        public async Task<Options?> GetOptionsAsync(string ticker, DateTime fromDate, DateTime toDate)
+        {
+            try
+            {
+                using var httpClient = new HttpClient();
+                var url = "https://instruments-excel.aws.barchart.com/instruments/{0}/options?expired={1}&symbols=true&start={2}&end={3}";
+                var expired = toDate < DateTime.Now.Date;
+                var formattedUrl = string.Format(url, ticker, expired.ToString().ToLower(), fromDate.ToString("yyyy-MM-dd"), toDate.ToString("yyyy-MM-dd"));
+                var response = await httpClient.GetAsync(formattedUrl);
+                Options? options = null;
+
+                if (response.IsSuccessStatusCode)
+                {
+                    string content = await response.Content.ReadAsStringAsync();
+                    var optionChains = OptionChain.FromJson(content);
+
+                    if (optionChains == null)
+                    {
+                        return null;
+                    }
+                    else
+                    {
+                        options = optionChains.Options;
+                    }
+                }
+
+                return options;
+            }
+            catch (Exception ex)
+            {
+                Log(ex.Message);
+                return null;
+            }
         }
 
         public async Task FillLatestDataForTheDay(string ticker, Timeframe timeframe, DateTime from, DateTime to)

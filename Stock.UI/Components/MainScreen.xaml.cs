@@ -3,11 +3,14 @@ using Stock.Shared.Models;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
+using System.Printing;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
@@ -23,11 +26,13 @@ namespace Stock.UI.Components
     /// </summary>
     public partial class MainScreen : Page
     {
+        private MainScreenViewModel viewModel;
+
         public MainScreen()
         {
             InitializeComponent();
 
-            var viewModel = new MainScreenViewModel(new Data.StockDataRepository(), new Strategies.SwingPointsLiveTradingStrategy());
+            viewModel = new MainScreenViewModel(new Data.StockDataRepository(), new Strategies.SwingPointsLiveTradingStrategy());
             DataContext = viewModel;
         }
 
@@ -82,6 +87,27 @@ namespace Stock.UI.Components
                     view.SortDescriptions.Clear();
                     view.SortDescriptions.Add(new SortDescription(propertyName, direction));
                 }
+            }
+        }
+
+        private void lsvAlerts_DoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            var alert = ((FrameworkElement)e.OriginalSource).DataContext as Alert;
+            if (alert != null)
+            {
+                var ticker = alert.Ticker;
+                var date = alert.CreatedAt;
+                var fridayNextWeek = date.AddDays((int)DayOfWeek.Friday - (int)date.DayOfWeek + 7);
+                viewModel.GetOptionChain(ticker, date, fridayNextWeek);
+            }
+        }
+
+        private void lsvOptionChain_DoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            var alert = ((FrameworkElement)e.OriginalSource).DataContext as string;
+            if (alert != null)
+            {
+                viewModel.GetOptionPrice(alert);
             }
         }
     }

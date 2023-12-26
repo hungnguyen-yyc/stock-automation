@@ -22,6 +22,8 @@ namespace Stock.UI.Components
         private string _selectedTicker;
         private ObservableCollection<Alert> _allAlerts;
         private ObservableCollection<Alert> _filteredAlerts;
+        private ObservableCollection<string> _optionChain;
+        private ObservableCollection<string> _optionPrice;
         private readonly object _lock = new();
 
         public MainScreenViewModel(StockDataRepository repo, SwingPointsLiveTradingStrategy strategy)
@@ -37,6 +39,11 @@ namespace Stock.UI.Components
 
             Logs = new ObservableCollection<LogEventArg>();
             BindingOperations.EnableCollectionSynchronization(Logs, _lock);
+
+            _optionChain = new ObservableCollection<string>();
+            _optionPrice = new ObservableCollection<string>();
+            BindingOperations.EnableCollectionSynchronization(_optionChain, _lock);
+            BindingOperations.EnableCollectionSynchronization(_optionPrice, _lock);
 
             _repo.LogCreated += (message) =>
             {
@@ -75,6 +82,10 @@ namespace Stock.UI.Components
                 OnPropertyChanged(nameof(Prices));
             }
         }
+
+        public ObservableCollection<string> OptionChain => _optionChain;
+
+        public ObservableCollection<string> OptionPrice => _optionPrice;
 
         public ObservableCollection<string> Timeframes { get; }
 
@@ -117,6 +128,46 @@ namespace Stock.UI.Components
         public ObservableCollection<Alert> Alerts => _filteredAlerts;
 
         public event PropertyChangedEventHandler? PropertyChanged;
+
+        public async Task GetOptionChain(string ticker, DateTime fromDate, DateTime toDate)
+        {
+            var optionChain = await _repo.GetOptionsAsync(ticker, fromDate, toDate);
+
+            if (optionChain == null)
+            {
+                return;
+            }
+
+            _optionChain.Clear();
+
+            var allOptions = optionChain.Expired.Concat(optionChain.Active).ToList();
+
+            foreach (var option in allOptions)
+            {
+                _optionChain.Add(option);
+            }
+
+            OnPropertyChanged(nameof(OptionChain));
+        }
+
+        public async Task GetOptionPrice(string optionDetailByBarChart)
+        {
+            var optionPrice = await _repo.GetOptionPriceAsync(optionDetailByBarChart);
+
+            if (optionPrice == null)
+            {
+                return;
+            }
+
+            _optionPrice.Clear();
+
+            foreach (var option in optionPrice)
+            {
+                _optionPrice.Add(option);
+            }
+
+            OnPropertyChanged(nameof(OptionPrice));
+        }
 
         private void UpdateFilteredAlerts()
         {
