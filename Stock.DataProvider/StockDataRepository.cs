@@ -121,8 +121,9 @@ namespace Stock.Data
                         throw new Exception("Timeframe not supported");
                 }
 
+                var easternTo = GetEasternTime(to);
                 var cmd = conn.CreateCommand();
-                cmd.CommandText = $"DELETE FROM {table} WHERE ticker_id = (SELECT ticker_id FROM ticker WHERE name = '{ticker}') AND Date >= '{from:yyyy-MM-dd} 00:00:00' AND Date <= '{to:yyyy-MM-dd HH:mm:ss}'";
+                cmd.CommandText = $"DELETE FROM {table} WHERE ticker_id = (SELECT ticker_id FROM ticker WHERE name = '{ticker}') AND Date >= '{from:yyyy-MM-dd} 00:00:00' AND Date <= '{easternTo:yyyy-MM-dd HH:mm:ss}'";
                 cmd.ExecuteNonQuery();
 
                 await FillDbWithTickerPrice(ticker, timeframe, from);
@@ -176,7 +177,8 @@ namespace Stock.Data
 
             try
             {
-                cmd.CommandText = $"SELECT * FROM {table} WHERE ticker_id = {tickerId} AND Date >= '{from:yyyy-MM-dd HH:mm:ss}' AND Date <= '{to:yyyy-MM-dd HH:mm:ss}' ORDER BY Date ASC;";
+                var easternTo = GetEasternTime(to);
+                cmd.CommandText = $"SELECT * FROM {table} WHERE ticker_id = {tickerId} AND Date >= '{from:yyyy-MM-dd HH:mm:ss}' AND Date <= '{easternTo:yyyy-MM-dd HH:mm:ss}' ORDER BY Date ASC;";
                 var reader = await cmd.ExecuteReaderAsync();
 
                 while (reader.Read())
@@ -274,8 +276,8 @@ namespace Stock.Data
                 }
 
                 Log($"Collecting data for ticker {ticker} at timeframe {timeframe}");
-                var easternZone = TimeZoneInfo.FindSystemTimeZoneById("Eastern Standard Time");
-                var prices = await collector.CollectData(ticker, timeframe, lastDate, TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, easternZone));
+                var eaternTime = GetEasternTime(DateTime.Now);
+                var prices = await collector.CollectData(ticker, timeframe, lastDate, eaternTime);
                 if (prices == null || prices.Count == 0)
                 {
                     return;
@@ -323,6 +325,13 @@ namespace Stock.Data
                 transaction.Rollback();
                 Debug.WriteLine(ex.Message);
             }
+        }
+
+        private DateTime GetEasternTime(DateTime time)
+        {
+            var easternZone = TimeZoneInfo.FindSystemTimeZoneById("Eastern Standard Time");
+            var easternTime = TimeZoneInfo.ConvertTime(time, easternZone);
+            return easternTime;
         }
     }
 }

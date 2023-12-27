@@ -43,12 +43,9 @@ namespace Stock.Strategies
 
                 var volumeCheckForLong = wma9.Last().Wma > wma21.Last().Wma && (hmVolumeCheck || hmVolumeCheckForSecondLastPrice);
                 var volumeCheckForShort = wma9.Last().Wma < wma21.Last().Wma && (hmVolumeCheck || hmVolumeCheckForSecondLastPrice);
+                var isValidCandleForLong = price.IsGreenCandle && price.IsContentCandle;
+                var isValidCandleForShort = price.IsRedCandle && price.IsContentCandle;
 
-                /*
-                 * The idea of this strategy is to look back a number of candlesticks before current price and check if any of the levels
-                 * first we take the prices that happened before the range of candlesticks that touch the level to determine where the price was before the level was touched
-                 * then we want to see if that range of candlesticks touch any of the levels so that means the current price is probably the new price direction
-                 */
                 var priceRangeBeforeSecondLastPrice = ascSortedByDatePrice.GetRange(ascSortedByDatePrice.Count - 1 - numberOfCandlesticksToLookBackBeforeCurrentPrice, numberOfCandlesticksToLookBackBeforeCurrentPrice);
 
                 var levelPriceRangeBeforeSecondLastPriceTouched = levels
@@ -90,12 +87,11 @@ namespace Stock.Strategies
                         && secondLastPrice.High > centerPoint.High
                         && price.Close > secondLastPrice.Close
                         && priceIntersectSecondLastPrice
-                        && priceNotIntersectCenterLevelPoint
-                        && (hmVolumeCheck || hmVolumeCheckForSecondLastPrice))
+                        && priceNotIntersectCenterLevelPoint)
                     {
                         var message = priceIntersectAnyLevelPoint
-                            ? $"Price {price.Close} ({price.Date:s}) > {centerPoint.High} ({levelLow} - {levelHigh}), points touched: {averageSwingPointIntersected}, *level touch*: {pricePointCenter}"
-                            : $"Price {price.Close} ({price.Date:s}) > {centerPoint.High} ({levelLow} - {levelHigh}), points touched: {averageSwingPointIntersected}";
+                            ? $"Price {price.Close} > {centerPoint.High} ({levelLow} - {levelHigh}), points: {averageSwingPointIntersected}, big body candle: {price.IsContentCandle}, *level touch*: {pricePointCenter}"
+                            : $"Price {price.Close} > {centerPoint.High} ({levelLow} - {levelHigh}), points: {averageSwingPointIntersected}, big body candle: {price.IsContentCandle}";
                         alert = new Alert
                         {
                             Ticker = ticker,
@@ -113,12 +109,11 @@ namespace Stock.Strategies
                         && secondLastPrice.Low < centerPoint.Low
                         && price.Close < secondLastPrice.Close
                         && priceIntersectSecondLastPrice
-                        && priceNotIntersectCenterLevelPoint
-                        && (hmVolumeCheck || hmVolumeCheckForSecondLastPrice))
+                        && priceNotIntersectCenterLevelPoint)
                     {
                         var message = priceIntersectAnyLevelPoint
-                            ? $"Price {price.Close} ({price.Date:s}) < {centerPoint.Low} ({levelLow} - {levelHigh}), points touched: {averageSwingPointIntersected}, *level touch*: {pricePointCenter}"
-                            : $"Price {price.Close} ({price.Date:s}) < {centerPoint.Low} ({levelLow} - {levelHigh}), points touched: {averageSwingPointIntersected}";
+                            ? $"Price {price.Close} ({price.Date:s}) < {centerPoint.Low} ({levelLow} - {levelHigh}), points: {averageSwingPointIntersected}, big body candle: {price.IsContentCandle}, *level touch*: {pricePointCenter}"
+                            : $"Price {price.Close} ({price.Date:s}) < {centerPoint.Low} ({levelLow} - {levelHigh}), points: {averageSwingPointIntersected}, big body candle: {price.IsContentCandle}";
                         alert = new Alert
                         {
                             Ticker = ticker,

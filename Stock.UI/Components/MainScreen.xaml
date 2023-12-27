@@ -59,10 +59,14 @@
             MouseDoubleClick="lsvAlerts_DoubleClick">
             <ListView.View>
                 <GridView>
-                    <!-- Define columns with headers -->
                     <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Ticker}">
                         <GridViewColumn.Header>
                             <GridViewColumnHeader Tag="Ticker" Click="lsvAlertsColumnHeader_Click">Ticker</GridViewColumnHeader>
+                        </GridViewColumn.Header>
+                    </GridViewColumn>
+                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding CreatedAt}" >
+                        <GridViewColumn.Header>
+                            <GridViewColumnHeader Tag="CreatedAt" Click="lsvAlertsColumnHeader_Click">Time</GridViewColumnHeader>
                         </GridViewColumn.Header>
                     </GridViewColumn>
                     <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Timeframe}">
@@ -75,19 +79,9 @@
                             <GridViewColumnHeader Tag="OrderType" Click="lsvAlertsColumnHeader_Click">Order Type</GridViewColumnHeader>
                         </GridViewColumn.Header>
                     </GridViewColumn>
-                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding OrderAction}">
-                        <GridViewColumn.Header>
-                            <GridViewColumnHeader Tag="OrderAction" Click="lsvAlertsColumnHeader_Click">Order Action</GridViewColumnHeader>
-                        </GridViewColumn.Header>
-                    </GridViewColumn>
                     <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Message}">
                         <GridViewColumn.Header>
                             <GridViewColumnHeader Tag="Message" Click="lsvAlertsColumnHeader_Click">Message</GridViewColumnHeader>
-                        </GridViewColumn.Header>
-                    </GridViewColumn>
-                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding CreatedAt}" >
-                        <GridViewColumn.Header>
-                            <GridViewColumnHeader Tag="CreatedAt" Click="lsvAlertsColumnHeader_Click">CreatedAt</GridViewColumnHeader>
                         </GridViewColumn.Header>
                     </GridViewColumn>
                 </GridView>

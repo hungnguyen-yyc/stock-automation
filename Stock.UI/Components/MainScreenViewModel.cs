@@ -217,11 +217,11 @@ namespace Stock.UI.Components
 
         private async Task RunInDebug()
         {
+            var tickers = TickersToTrade.POPULAR_TICKERS;
+            var timeframes = new[] { Timeframe.Minute15 };
+
             while (true)
             {
-                var tickers = TickersToTrade.POPULAR_TICKERS;
-                var timeframes = new[] { Timeframe.Minute15, Timeframe.Minute30, Timeframe.Hour1, Timeframe.Daily };
-
                 foreach (var timeframe in timeframes)
                 {
                     foreach (var ticker in tickers)
@@ -231,13 +231,15 @@ namespace Stock.UI.Components
 
                         var prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddMonths(-12), DateTime.Now);
 
-                        for (int i = 3000; i < prices.Count; i++)
+                        for (int i = 6500; i < prices.Count; i++)
                         {
                             await Task.Run(() => _strategy.CheckForTopBottomTouch(ticker, prices.Take(i).ToList(), swingPointStrategyParameter));
                         }
                     }
                 }
-                Debug.WriteLine($"Finished running strategy at {DateTime.Now}");
+
+                await Task.Delay(TimeSpan.FromMinutes(15.0));
+                Logs.Add(new LogEventArg($"Finished running strategy at {DateTime.Now}"));
             }
         }
         private async Task RunInRelease()
@@ -258,7 +260,7 @@ namespace Stock.UI.Components
                             await _repo.FillLatestDataForTheDay(ticker, timeframe, DateTime.Now, DateTime.Now);
                             var swingPointStrategyParameter = GetSwingPointStrategyParameter(ticker, timeframe);
 
-                            var prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddMonths(-6), DateTime.Now);
+                            var prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddMonths(-12), DateTime.Now);
 
                             await Task.Run(() => _strategy.CheckForTopBottomTouch(ticker, prices.ToList(), swingPointStrategyParameter));
                         }
@@ -295,12 +297,26 @@ namespace Stock.UI.Components
         {
             switch (ticker)
             {
+                case "AAPL":
+                    return new SwingPointStrategyParameter
+                    {
+                        NumberOfCandlesticksToLookBack = 21,
+                        Timeframe = timeframe,
+                        NumberOfCandlesticksIntersectForTopsAndBottoms = 5,
+                    };
+                case "QQQ":
+                    return new SwingPointStrategyParameter
+                    {
+                        NumberOfCandlesticksToLookBack = 14,
+                        Timeframe = timeframe,
+                        NumberOfCandlesticksIntersectForTopsAndBottoms = 5,
+                    };
                 default:
                     return new SwingPointStrategyParameter
                     {
                         NumberOfCandlesticksToLookBack = 21,
                         Timeframe = timeframe,
-                        NumberOfCandlesticksIntersectForTopsAndBottoms = 10,
+                        NumberOfCandlesticksIntersectForTopsAndBottoms = 5,
 
                         NumberOfSwingPointsToLookBack = 7,
                         NumberOfCandlesticksToSkipAfterSwingPoint = 2,

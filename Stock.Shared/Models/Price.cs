@@ -52,6 +52,8 @@ namespace Stock.Shared.Models
 
         public bool IsDojiCandle => Close == Open;
 
+        public bool IsContentCandle => Math.Abs(Close - Open) / Math.Abs(High - Low) > 0.6m;
+
         public NumericRange TopHalfOfCandle => new NumericRange((High + Low) / 2, High);
 
         public NumericRange BottomHalfOfCandle => new NumericRange(Low, (High + Low) / 2);
