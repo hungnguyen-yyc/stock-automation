@@ -219,47 +219,24 @@ namespace Stock.UI.Components
         {
             while (true)
             {
-                var tickerBatch = new[] { TickersToTrade.POPULAR_TICKERS };
+                var tickers = TickersToTrade.POPULAR_TICKERS;
                 var timeframes = new[] { Timeframe.Minute15, Timeframe.Minute30, Timeframe.Hour1, Timeframe.Daily };
 
-                var dateAtRun = DateTime.Now.ToString("yyyy-MM-dd");
-                var timeAtRun = DateTime.Now.ToString("HH-mm");
-                ParallelOptions parallelOptions = new()
+                foreach (var timeframe in timeframes)
                 {
-                    MaxDegreeOfParallelism = Environment.ProcessorCount
-                };
-
-                await Parallel.ForEachAsync(tickerBatch, parallelOptions, async (tickers, token) =>
-                {
-                    await Parallel.ForEachAsync(timeframes, parallelOptions, async (timeframe, token) =>
+                    foreach (var ticker in tickers)
                     {
-                        await Parallel.ForEachAsync(tickers, parallelOptions, async (ticker, token) =>
+                        await _repo.FillLatestDataForTheDay(ticker, timeframe, DateTime.Now, DateTime.Now);
+                        var swingPointStrategyParameter = GetSwingPointStrategyParameter(ticker, timeframe);
+
+                        var prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddMonths(-6), DateTime.Now);
+
+                        for (int i = 3000; i < prices.Count; i++)
                         {
-                            try
-                            {
-                                await _repo.FillLatestDataForTheDay(ticker, timeframe, DateTime.Now, DateTime.Now);
-                            }
-                            catch (Exception ex)
-                            {
-                                Logs.Add(new LogEventArg(ex.Message));
-                            }
-
-                            var swingPointStrategyParameter = GetSwingPointStrategyParameter(ticker, timeframe);
-
-                            var prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddMonths(-6), DateTime.Now);
-
-                            for (int i = 3000; i < prices.Count; i++)
-                            {
-                                var task3 = Task.Run(() =>
-                                {
-                                    _strategy.CheckForTopBottomTouch(ticker, prices.Take(i).ToList(), swingPointStrategyParameter);
-                                });
-
-                                await Task.WhenAll(task3);
-                            }
-                        });
-                    });
-                });
+                            _strategy.CheckForTopBottomTouch(ticker, prices.Take(i).ToList(), swingPointStrategyParameter);
+                        }
+                    }
+                }
                 Debug.WriteLine($"Finished running strategy at {DateTime.Now}");
             }
         }
@@ -271,32 +248,21 @@ namespace Stock.UI.Components
                 {
                     Logs.Add(new LogEventArg($"Started running strategy at {DateTime.Now}"));
 
-                    var tickerBatch = new[] { TickersToTrade.POPULAR_TICKERS };
+                    var tickers = TickersToTrade.POPULAR_TICKERS;
                     var timeframes = new[] { Timeframe.Minute15, Timeframe.Minute30, Timeframe.Hour1, Timeframe.Daily };
 
-                    var dateAtRun = DateTime.Now.ToString("yyyy-MM-dd");
-                    var timeAtRun = DateTime.Now.ToString("HH-mm");
-                    ParallelOptions parallelOptions = new()
+                    foreach (var timeframe in timeframes)
                     {
-                        MaxDegreeOfParallelism = Environment.ProcessorCount
-                    };
-
-                    await Parallel.ForEachAsync(tickerBatch, parallelOptions, async (tickers, token) =>
-                    {
-                        await Parallel.ForEachAsync(timeframes, parallelOptions, async (timeframe, token) =>
+                        foreach (var ticker in tickers)
                         {
-                            await Parallel.ForEachAsync(tickers, parallelOptions, async (ticker, token) =>
-                            {
-                                await _repo.FillLatestDataForTheDay(ticker, timeframe, DateTime.Now, DateTime.Now);
-                                var swingPointStrategyParameter = GetSwingPointStrategyParameter(ticker, timeframe);
+                            await _repo.FillLatestDataForTheDay(ticker, timeframe, DateTime.Now, DateTime.Now);
+                            var swingPointStrategyParameter = GetSwingPointStrategyParameter(ticker, timeframe);
 
-                                var prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddMonths(-6), DateTime.Now);
-                                _strategy.CheckForTopBottomTouch(ticker, prices.ToList(), swingPointStrategyParameter);
+                            var prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddMonths(-6), DateTime.Now);
+                            _strategy.CheckForTopBottomTouch(ticker, prices.ToList(), swingPointStrategyParameter);
+                        }
+                    }
 
-                                await Task.Delay(TimeSpan.FromSeconds(5.0));
-                            });
-                        });
-                    });
                     await Task.Delay(TimeSpan.FromMinutes(15.0));
                 }
                 catch (Exception ex)
