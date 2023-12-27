@@ -229,11 +229,11 @@ namespace Stock.UI.Components
                         await _repo.FillLatestDataForTheDay(ticker, timeframe, DateTime.Now, DateTime.Now);
                         var swingPointStrategyParameter = GetSwingPointStrategyParameter(ticker, timeframe);
 
-                        var prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddMonths(-6), DateTime.Now);
+                        var prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddMonths(-12), DateTime.Now);
 
                         for (int i = 3000; i < prices.Count; i++)
                         {
-                            _strategy.CheckForTopBottomTouch(ticker, prices.Take(i).ToList(), swingPointStrategyParameter);
+                            await Task.Run(() => _strategy.CheckForTopBottomTouch(ticker, prices.Take(i).ToList(), swingPointStrategyParameter));
                         }
                     }
                 }
@@ -259,7 +259,8 @@ namespace Stock.UI.Components
                             var swingPointStrategyParameter = GetSwingPointStrategyParameter(ticker, timeframe);
 
                             var prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddMonths(-6), DateTime.Now);
-                            _strategy.CheckForTopBottomTouch(ticker, prices.ToList(), swingPointStrategyParameter);
+
+                            await Task.Run(() => _strategy.CheckForTopBottomTouch(ticker, prices.ToList(), swingPointStrategyParameter));
                         }
                     }
 
@@ -294,33 +295,12 @@ namespace Stock.UI.Components
         {
             switch (ticker)
             {
-                case "TSLA":
-                    return new SwingPointStrategyParameter
-                    {
-                        NumberOfCandlesticksToLookBack = 21,
-                        NumberOfCandlesticksIntersectForTopsAndBottoms = 7,
-                        Timeframe = timeframe,
-                    };
-                case "AMD":
-                    return new SwingPointStrategyParameter
-                    {
-                        NumberOfCandlesticksToLookBack = 21,
-                        NumberOfCandlesticksIntersectForTopsAndBottoms = 7,
-                        Timeframe = timeframe,
-                    };
-                case "QQQ":
-                    return new SwingPointStrategyParameter
-                    {
-                        NumberOfCandlesticksToLookBack = 21,
-                        NumberOfCandlesticksIntersectForTopsAndBottoms = 7,
-                        Timeframe = timeframe,
-                    };
                 default:
                     return new SwingPointStrategyParameter
                     {
                         NumberOfCandlesticksToLookBack = 21,
                         Timeframe = timeframe,
-                        NumberOfCandlesticksIntersectForTopsAndBottoms = 7,
+                        NumberOfCandlesticksIntersectForTopsAndBottoms = 10,
 
                         NumberOfSwingPointsToLookBack = 7,
                         NumberOfCandlesticksToSkipAfterSwingPoint = 2,
