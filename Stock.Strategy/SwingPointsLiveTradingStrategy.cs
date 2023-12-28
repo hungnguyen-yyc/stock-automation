@@ -28,7 +28,7 @@ namespace Stock.Strategies
                     .Where(x => x.Value.Count > parameter.NumberOfCandlesticksIntersectForTopsAndBottoms)
                     .ToList();
 
-                var hmVolumes = ascSortedByDatePrice.GetHeatmapVolume();
+                var hmVolumes = ascSortedByDatePrice.GetHeatmapVolume(21, 21);
                 var hmVolume = hmVolumes.Last().Volume;
                 var hmvThresholdStatus = hmVolumes.Last().ThresholdStatus;
                 var hmVolumeCheck = hmvThresholdStatus != HeatmapVolumeThresholdStatus.Low
@@ -81,8 +81,7 @@ namespace Stock.Strategies
                         priceIntersectAnyLevelPoint = price.CandleRange.Intersect(pricePointInterect);
                     }
 
-                    if (price.IsGreenCandle
-                        && secondLastPrice.IsGreenCandle
+                    if (secondLastPrice.IsGreenCandle
                         && secondLastPriceIntersectCenterLevelPoint
                         && secondLastPrice.High > centerPoint.High
                         && price.Close > secondLastPrice.Close
@@ -103,8 +102,7 @@ namespace Stock.Strategies
                             Timeframe = parameter.Timeframe
                         };
                     }
-                    else if (price.IsRedCandle
-                        && secondLastPrice.IsRedCandle
+                    else if (secondLastPrice.IsRedCandle
                         && secondLastPriceIntersectCenterLevelPoint
                         && secondLastPrice.Low < centerPoint.Low
                         && price.Close < secondLastPrice.Close
