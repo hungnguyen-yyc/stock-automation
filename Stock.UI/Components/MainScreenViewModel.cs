@@ -544,13 +544,13 @@ namespace Stock.UI.Components
                 if (!_allAlerts.Contains(alert))
                 {
                     _allAlerts.Add(alert);
-                    CreateBuyOrder(alert).Wait();
+                    CreateTopNBottomBuyOrder(alert).Wait();
                     UpdateFilteredAlerts();
                 }
             }
         }
 
-        private async Task CreateBuyOrder(Alert alert)
+        private async Task CreateTopNBottomBuyOrder(Alert alert)
         {
             if (alert is not TopNBottomStrategyAlert)
             {
@@ -617,7 +617,11 @@ namespace Stock.UI.Components
                 LastTradeDateOrContractMonth = option.ExpiryDate.ToString("yyyyMMdd"),
             };
 
+#if DEBUG
+            Logs.Add(new LogEventArg($"Placing order for {swingPointAlert.Ticker} {optionType} {option.StrikePrice} {option.ExpiryDate}"));
+#else
             _orderManager.PlaceOrder(contract, order);
+#endif
         }
 
         private SwingPointStrategyParameter GetSwingPointStrategyParameter(string ticker, Timeframe timeframe)

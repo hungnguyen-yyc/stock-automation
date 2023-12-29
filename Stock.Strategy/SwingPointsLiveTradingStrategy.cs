@@ -69,7 +69,6 @@ namespace Stock.Strategies
                     var secondLastPriceIntersectCenterLevelPoint = secondLastPrice.CandleRange.Intersect(centerPoint);
                     var priceNotIntersectCenterLevelPoint = !price.CandleRange.Intersect(centerPoint);
 
-
                     var priceIntersectAnyLevelPoint = false;
                     var priceIntersectLevels = levels.Where(x => price.CandleRange.Intersect(x.Key.CandleRange));
                     decimal pricePointCenter = 0;
@@ -93,22 +92,40 @@ namespace Stock.Strategies
                         var message = priceIntersectAnyLevelPoint
                             ? $"Price {price.Close} ({price.Date:s}) > {centerPoint.High} ({levelLow} - {levelHigh}), points: {averageSwingPointIntersected}, big body candle: {price.IsContentCandle}, *level touch*: {pricePointCenter}"
                             : $"Price {price.Close} ({price.Date:s}) > {centerPoint.High} ({levelLow} - {levelHigh}), points: {averageSwingPointIntersected}, big body candle: {price.IsContentCandle}";
-                        alert = new TopNBottomStrategyAlert
+
+                        if (hmVolumeCheck && isValidCandleForLong)
                         {
-                            Ticker = ticker,
-                            Message = message,
-                            CreatedAt = price.Date,
-                            Strategy = "SwingPointsLiveTradingStrategy",
-                            OrderPosition = OrderPosition.Long,
-                            PositionAction = PositionAction.Open,
-                            Timeframe = parameter.Timeframe,
-                            High = levelHigh,
-                            Low = levelLow,
-                            PriceClosed = price.Close,
-                            ATR = (decimal)atr.Last().Atr,
-                            IsVolumeCheck = volumeCheckForShort,
-                            IsCandleBodyCheck = isValidCandleForShort
-                        };
+                            alert = new TopNBottomStrategyAlert
+                            {
+                                Ticker = ticker,
+                                Message = message,
+                                CreatedAt = price.Date,
+                                Strategy = "SwingPointsLiveTradingStrategy",
+                                OrderPosition = OrderPosition.Long,
+                                PositionAction = PositionAction.Open,
+                                Timeframe = parameter.Timeframe,
+                                High = levelHigh,
+                                Low = levelLow,
+                                PriceClosed = price.Close,
+                                ATR = (decimal)atr.Last().Atr,
+                                IsVolumeCheck = volumeCheckForShort,
+                                IsCandleBodyCheck = isValidCandleForShort
+                            };
+                        }
+                        else
+                        {
+                            alert = new Alert
+                            {
+                                Ticker = ticker,
+                                Message = message,
+                                CreatedAt = price.Date,
+                                Strategy = "SwingPointsLiveTradingStrategy",
+                                OrderPosition = OrderPosition.Long,
+                                PositionAction = PositionAction.Open,
+                                Timeframe = parameter.Timeframe
+                            };
+                        }
+                        
                     }
                     else if (secondLastPrice.IsRedCandle
                         && secondLastPriceIntersectCenterLevelPoint
@@ -120,22 +137,39 @@ namespace Stock.Strategies
                         var message = priceIntersectAnyLevelPoint
                             ? $"Price {price.Close} ({price.Date:s}) < {centerPoint.Low} ({levelLow} - {levelHigh}), points: {averageSwingPointIntersected}, big body candle: {price.IsContentCandle}, *level touch*: {pricePointCenter}"
                             : $"Price {price.Close} ({price.Date:s}) < {centerPoint.Low} ({levelLow} - {levelHigh}), points: {averageSwingPointIntersected}, big body candle: {price.IsContentCandle}";
-                        alert = new TopNBottomStrategyAlert
+
+                        if (hmVolumeCheck && isValidCandleForShort)
                         {
-                            Ticker = ticker,
-                            Message = message,
-                            CreatedAt = price.Date,
-                            Strategy = "SwingPointsLiveTradingStrategy",
-                            OrderPosition = OrderPosition.Short,
-                            PositionAction = PositionAction.Open,
-                            Timeframe = parameter.Timeframe,
-                            High = levelHigh,
-                            Low = levelLow,
-                            PriceClosed = price.Close,
-                            ATR = (decimal)atr.Last().Atr,
-                            IsVolumeCheck = volumeCheckForShort,
-                            IsCandleBodyCheck = isValidCandleForShort
-                        };
+                            alert = new TopNBottomStrategyAlert
+                            {
+                                Ticker = ticker,
+                                Message = message,
+                                CreatedAt = price.Date,
+                                Strategy = "SwingPointsLiveTradingStrategy",
+                                OrderPosition = OrderPosition.Short,
+                                PositionAction = PositionAction.Open,
+                                Timeframe = parameter.Timeframe,
+                                High = levelHigh,
+                                Low = levelLow,
+                                PriceClosed = price.Close,
+                                ATR = (decimal)atr.Last().Atr,
+                                IsVolumeCheck = volumeCheckForShort,
+                                IsCandleBodyCheck = isValidCandleForShort
+                            };
+                        }
+                        else
+                        {
+                            alert = new Alert
+                            {
+                                Ticker = ticker,
+                                Message = message,
+                                CreatedAt = price.Date,
+                                Strategy = "SwingPointsLiveTradingStrategy",
+                                OrderPosition = OrderPosition.Short,
+                                PositionAction = PositionAction.Open,
+                                Timeframe = parameter.Timeframe
+                            };
+                        }
                     }
                 }
 
