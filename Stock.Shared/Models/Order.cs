@@ -2,9 +2,9 @@
 {
     public class Order
     {
-        public OrderType Type { get; set; }
+        public OrderPosition Type { get; set; }
         public DateTime Time { get; set; }
-        public OrderAction Action { get; set; }
+        public PositionAction Action { get; set; }
         public decimal Quantity { get; set; }
         public string Ticker { get; set; }
         public string Reason { get; set; }

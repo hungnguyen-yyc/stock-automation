@@ -55,6 +55,8 @@ namespace Stock.Strategies
 
                 Alert? alert = null;
 
+                var atr = ascSortedByDatePrice.GetAtr(14);
+
                 if (levelPriceRangeBeforeSecondLastPriceTouched.Any())
                 {
                     var levelLow = levelPriceRangeBeforeSecondLastPriceTouched.Select(x => x.Key.Low).Min();
@@ -91,15 +93,21 @@ namespace Stock.Strategies
                         var message = priceIntersectAnyLevelPoint
                             ? $"Price {price.Close} ({price.Date:s}) > {centerPoint.High} ({levelLow} - {levelHigh}), points: {averageSwingPointIntersected}, big body candle: {price.IsContentCandle}, *level touch*: {pricePointCenter}"
                             : $"Price {price.Close} ({price.Date:s}) > {centerPoint.High} ({levelLow} - {levelHigh}), points: {averageSwingPointIntersected}, big body candle: {price.IsContentCandle}";
-                        alert = new Alert
+                        alert = new TopNBottomStrategyAlert
                         {
                             Ticker = ticker,
                             Message = message,
                             CreatedAt = price.Date,
                             Strategy = "SwingPointsLiveTradingStrategy",
-                            OrderType = OrderType.Long,
-                            OrderAction = OrderAction.Open,
-                            Timeframe = parameter.Timeframe
+                            OrderPosition = OrderPosition.Long,
+                            PositionAction = PositionAction.Open,
+                            Timeframe = parameter.Timeframe,
+                            High = levelHigh,
+                            Low = levelLow,
+                            PriceClosed = price.Close,
+                            ATR = (decimal)atr.Last().Atr,
+                            IsVolumeCheck = volumeCheckForShort,
+                            IsCandleBodyCheck = isValidCandleForShort
                         };
                     }
                     else if (secondLastPrice.IsRedCandle
@@ -112,15 +120,21 @@ namespace Stock.Strategies
                         var message = priceIntersectAnyLevelPoint
                             ? $"Price {price.Close} ({price.Date:s}) < {centerPoint.Low} ({levelLow} - {levelHigh}), points: {averageSwingPointIntersected}, big body candle: {price.IsContentCandle}, *level touch*: {pricePointCenter}"
                             : $"Price {price.Close} ({price.Date:s}) < {centerPoint.Low} ({levelLow} - {levelHigh}), points: {averageSwingPointIntersected}, big body candle: {price.IsContentCandle}";
-                        alert = new Alert
+                        alert = new TopNBottomStrategyAlert
                         {
                             Ticker = ticker,
                             Message = message,
                             CreatedAt = price.Date,
                             Strategy = "SwingPointsLiveTradingStrategy",
-                            OrderType = OrderType.Short,
-                            OrderAction = OrderAction.Open,
-                            Timeframe = parameter.Timeframe
+                            OrderPosition = OrderPosition.Short,
+                            PositionAction = PositionAction.Open,
+                            Timeframe = parameter.Timeframe,
+                            High = levelHigh,
+                            Low = levelLow,
+                            PriceClosed = price.Close,
+                            ATR = (decimal)atr.Last().Atr,
+                            IsVolumeCheck = volumeCheckForShort,
+                            IsCandleBodyCheck = isValidCandleForShort
                         };
                     }
                 }
@@ -238,8 +252,8 @@ namespace Stock.Strategies
                         Message = $"Price {price.Close} ({price.Date:s}) is breaking above down trend line {lineStart.High} ({lineEnds.Item1.Date:s}) - {lineEnd.High} ({lineEnds.Item2.Date:s})",
                         CreatedAt = price.Date,
                         Strategy = "SwingPointsLiveTradingStrategy",
-                        OrderType = OrderType.Long,
-                        OrderAction = OrderAction.Open,
+                        OrderPosition = OrderPosition.Long,
+                        PositionAction = PositionAction.Open,
                         Timeframe = parameter.Timeframe
                     };
                 }
@@ -269,8 +283,8 @@ namespace Stock.Strategies
                             Message = $"Price {price.Close} ({price.Date:s}) is rebounding on down trend line {lineStart.High} ({lineEnds.Item1.Date:s}) - {lineEnd.High} ({lineEnds.Item2.Date:s})",
                             CreatedAt = price.Date,
                             Strategy = "SwingPointsLiveTradingStrategy",
-                            OrderType = OrderType.Long,
-                            OrderAction = OrderAction.Open,
+                            OrderPosition = OrderPosition.Long,
+                            PositionAction = PositionAction.Open,
                             Timeframe = parameter.Timeframe
                         };
                     }
@@ -393,8 +407,8 @@ namespace Stock.Strategies
                         Message = $"Price {price.Close} ({price.Date:s}) is breaking below up trend line {lineStart.Low} ({lineEnds.Item1.Date:s}) - {lineEnd.Low} ({lineEnds.Item2.Date:s})",
                         CreatedAt = price.Date,
                         Strategy = "SwingPointsLiveTradingStrategy",
-                        OrderType = OrderType.Short,
-                        OrderAction = OrderAction.Open,
+                        OrderPosition = OrderPosition.Short,
+                        PositionAction = PositionAction.Open,
                         Timeframe = parameter.Timeframe
                     };
                 }
@@ -424,8 +438,8 @@ namespace Stock.Strategies
                             Message = $"Price {price.Close} ({price.Date:s}) is touching from below up trend line {lineStart.Low} ({lineEnds.Item1.Date:s}) - {lineEnd.Low} ({lineEnds.Item2.Date:s})",
                             CreatedAt = price.Date,
                             Strategy = "SwingPointsLiveTradingStrategy",
-                            OrderType = OrderType.Short,
-                            OrderAction = OrderAction.Open,
+                            OrderPosition = OrderPosition.Short,
+                            PositionAction = PositionAction.Open,
                             Timeframe = parameter.Timeframe
                         };
                     }

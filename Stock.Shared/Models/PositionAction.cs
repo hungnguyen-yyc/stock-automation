@@ -1,6 +1,6 @@
 ﻿namespace Stock.Shared.Models
 {
-    public enum OrderAction
+    public enum PositionAction
     {
         Open,
         Close

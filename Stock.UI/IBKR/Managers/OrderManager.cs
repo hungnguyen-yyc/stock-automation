@@ -3,6 +3,7 @@ using Stock.UI.IBKR.Client;
 using Stock.UI.IBKR.Messages;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -77,7 +78,10 @@ namespace Stock.UI.IBKR.Managers
 
         public void handleCompletedOrder(CompletedOrderMessage completedOrder)
         {
-            var hasOrder = completedOrders.Any(x => x.Order.OrderId == completedOrder.Order.OrderId);
+            var hasOrder = completedOrders.Any(x => 
+                x.OrderState.CompletedStatus == completedOrder.OrderState.CompletedStatus
+                && x.OrderState.CompletedTime == completedOrder.OrderState.CompletedTime
+                && x.Contract.LocalSymbol == completedOrder.Contract.LocalSymbol);
             if (hasOrder)
             {
                 return;

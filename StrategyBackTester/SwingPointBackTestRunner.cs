@@ -170,7 +170,7 @@ namespace StrategyBackTester
 
                                     File.AppendAllText(filePath, $";{priceChange:C};{priceChangeInPercent:F}%; {days} days");
 
-                                    if (previousOrder.Type == OrderType.Long)
+                                    if (previousOrder.Type == OrderPosition.Long)
                                     {
                                         if (currentOrder.Price.Close > previousOrder.Price.Close)
                                         {

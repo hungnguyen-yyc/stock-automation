@@ -56,7 +56,7 @@ namespace Stock.Data
             }
         }
 
-        public async Task<Options?> GetOptionsAsync(string ticker, DateTime fromDate, DateTime toDate)
+        public async Task<Options?> GetOptionChainAsync(string ticker, DateTime fromDate, DateTime toDate)
         {
             try
             {

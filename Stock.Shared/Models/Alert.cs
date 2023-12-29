@@ -18,8 +18,9 @@ namespace Stock.Shared.Models
         public DateTime CreatedAt { get; set; }
         public string Message { get; set; }
         public string Strategy { get; set; }
-        public OrderType OrderType { get; set; }
-        public OrderAction OrderAction { get; set; }
+        public decimal PriceClosed { get; set; }
+        public OrderPosition OrderPosition { get; set; }
+        public PositionAction PositionAction { get; set; }
 
         public override bool Equals(object? obj)
         {
@@ -35,14 +36,23 @@ namespace Stock.Shared.Models
                     && CreatedAt == alert.CreatedAt
                     && Message == alert.Message
                     && Strategy == alert.Strategy
-                    && OrderType == alert.OrderType
-                    && OrderAction == alert.OrderAction;
+                    && OrderPosition == alert.OrderPosition
+                    && PositionAction == alert.PositionAction;
             }
         }
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Ticker, Timeframe, CreatedAt, Message, Strategy, OrderType, OrderAction);
+            return HashCode.Combine(Ticker, Timeframe, CreatedAt, Message, Strategy, OrderPosition, PositionAction);
         }
+    }
+
+    public class TopNBottomStrategyAlert : Alert
+    {
+        public decimal High { get; set; }
+        public decimal Low { get; set; }
+        public decimal ATR { get; set; }
+        public bool IsVolumeCheck { get; set; }
+        public bool IsCandleBodyCheck { get; set; }
     }
 }

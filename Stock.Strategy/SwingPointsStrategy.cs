@@ -46,10 +46,10 @@ namespace Stock.Strategies
                     var order = new Order
                     {
                         Ticker = ticker,
-                        Type = OrderType.Long,
+                        Type = OrderPosition.Long,
                         Price = rangeToCheck[0],
                         Quantity = 100,
-                        Action = OrderAction.Open,
+                        Action = PositionAction.Open,
                         Time = rangeToCheck[0].Date
                     };
                     orders.Add(order);
@@ -98,7 +98,7 @@ namespace Stock.Strategies
                 var daysAfterSwingLow = i - indexOfImmediateSwingLowBeforePrice;
                 var daysAfterSwingHigh = i - indexOfImmediateSwingHighBeforePrice;
 
-                if (lastorder == null || lastorder.Action == OrderAction.Close)
+                if (lastorder == null || lastorder.Action == PositionAction.Close)
                 {
                     var previousPrice = sortedPrices[i - 1];
                     var orderSize = 100;
@@ -124,10 +124,10 @@ namespace Stock.Strategies
                             var order = new Order
                             {
                                 Ticker = ticker,
-                                Type = OrderType.Long,
+                                Type = OrderPosition.Long,
                                 Price = price,
                                 Quantity = orderSize,
-                                Action = OrderAction.Open,
+                                Action = PositionAction.Open,
                                 Time = price.Date
                             };
                             orders.Add(order);
@@ -152,10 +152,10 @@ namespace Stock.Strategies
                             var order = new Order
                             {
                                 Ticker = ticker,
-                                Type = OrderType.Short,
+                                Type = OrderPosition.Short,
                                 Price = price,
                                 Quantity = orderSize,
-                                Action = OrderAction.Open,
+                                Action = PositionAction.Open,
                                 Time = price.Date
                             };
                             orders.Add(order);
@@ -168,9 +168,9 @@ namespace Stock.Strategies
                 }
 
                 // close order
-                if (lastorder != null && lastorder.Action == OrderAction.Open)
+                if (lastorder != null && lastorder.Action == PositionAction.Open)
                 {
-                    if (lastorder.Type == OrderType.Long)
+                    if (lastorder.Type == OrderPosition.Long)
                     {
                         var newSwingHigh = previousSwingHigh.Date != immediateSwingHighBeforePrice.Date;
 
@@ -180,10 +180,10 @@ namespace Stock.Strategies
                             orders.Add(new Order
                             {
                                 Ticker = ticker,
-                                Type = OrderType.Long,
+                                Type = OrderPosition.Long,
                                 Price = price,
                                 Quantity = lastorder.Quantity,
-                                Action = OrderAction.Close,
+                                Action = PositionAction.Close,
                                 Time = price.Date
                             });
 
@@ -194,10 +194,10 @@ namespace Stock.Strategies
                             orders.Add(new Order
                             {
                                 Ticker = ticker,
-                                Type = OrderType.Long,
+                                Type = OrderPosition.Long,
                                 Price = price,
                                 Quantity = lastorder.Quantity,
-                                Action = OrderAction.Close,
+                                Action = PositionAction.Close,
                                 Time = price.Date
                             });
 
@@ -214,10 +214,10 @@ namespace Stock.Strategies
                             orders.Add(new Order
                             {
                                 Ticker = ticker,
-                                Type = OrderType.Short,
+                                Type = OrderPosition.Short,
                                 Price = price,
                                 Quantity = lastorder.Quantity,
-                                Action = OrderAction.Close,
+                                Action = PositionAction.Close,
                                 Time = price.Date
                             });
 
@@ -228,10 +228,10 @@ namespace Stock.Strategies
                             orders.Add(new Order
                             {
                                 Ticker = ticker,
-                                Type = OrderType.Short,
+                                Type = OrderPosition.Short,
                                 Price = price,
                                 Quantity = lastorder.Quantity,
-                                Action = OrderAction.Close,
+                                Action = PositionAction.Close,
                                 Time = price.Date
                             });
 

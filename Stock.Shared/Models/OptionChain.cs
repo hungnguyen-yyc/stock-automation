@@ -36,6 +36,76 @@ namespace Stock.Shared.Models
 
         [JsonProperty("expired")]
         public string[] Expired { get; set; }
+
+        public IReadOnlyCollection<Option> ParsedActiveOptions
+        {
+            get
+            {
+                var result = new List<Option>();
+                if (Active == null)
+                {
+                    return result;
+                }
+
+                foreach (var optionString in Active)
+                {
+                    // the option string format is "Ticker|ExpiryDate|StrikePriceOptionType"
+                    string[] parts = optionString.Split('|');
+
+                    var strikePriceOptionType = parts[2];
+
+                    var strikePrice = decimal.Parse(strikePriceOptionType.Substring(0, strikePriceOptionType.Length - 1));
+                    var optionType = strikePriceOptionType.Substring(strikePriceOptionType.Length - 1);
+
+                    var option = new Option
+                    {
+                        Ticker = parts[0],
+                        ExpiryDate = DateTime.ParseExact(parts[1], "yyyyMMdd", null),
+                        StrikePrice = strikePrice,
+                        OptionType = optionType
+                    };
+
+                    result.Add(option);
+                }
+
+                return result;
+            }
+        }
+
+        public IReadOnlyCollection<Option> ParsedExpiredOptions
+        {
+            get
+            {
+                var result = new List<Option>();
+                if (Expired == null)
+                {
+                    return result;
+                }
+
+                foreach (var optionString in Expired)
+                {
+                    // the option string format is "Ticker|ExpiryDate|StrikePriceOptionType"
+                    string[] parts = optionString.Split('|');
+
+                    var strikePriceOptionType = parts[2];
+
+                    decimal strikePrice = decimal.Parse(strikePriceOptionType.Substring(0, strikePriceOptionType.Length - 1));
+                    var optionType = strikePriceOptionType.Substring(strikePriceOptionType.Length - 1);
+
+                    var option = new Option
+                    {
+                        Ticker = parts[0],
+                        ExpiryDate = DateTime.ParseExact(parts[1], "yyyyMMdd", null),
+                        StrikePrice = strikePrice,
+                        OptionType = optionType
+                    };
+
+                    result.Add(option);
+                }
+
+                return result;
+            }
+        }
     }
 
     public class Underlying
@@ -66,5 +136,19 @@ namespace Stock.Shared.Models
 
         [JsonProperty("hasOptions")]
         public bool HasOptions { get; set; }
+    }
+
+    public class Option
+    {
+        public string Ticker { get; set; }
+        public DateTime ExpiryDate { get; set; }
+        public decimal StrikePrice { get; set; }
+        public string OptionType { get; set; }
+    }
+
+    public enum OptionType
+    {
+        C,
+        P
     }
 }

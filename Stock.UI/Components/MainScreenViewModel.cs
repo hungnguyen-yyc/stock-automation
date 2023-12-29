@@ -8,11 +8,13 @@ using Stock.Strategies.Parameters;
 using Stock.UI.IBKR.Client;
 using Stock.UI.IBKR.Managers;
 using Stock.UI.IBKR.Messages;
+using Syncfusion.Windows.Shared;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Net;
 using System.Windows.Data;
+using Order = IBApi.Order;
 
 namespace Stock.UI.Components
 {
@@ -376,7 +378,7 @@ namespace Stock.UI.Components
 
         public async Task GetOptionChain(string ticker, DateTime fromDate, DateTime toDate)
         {
-            var optionChain = await _repo.GetOptionsAsync(ticker, fromDate, toDate);
+            var optionChain = await _repo.GetOptionChainAsync(ticker, fromDate, toDate);
 
             if (optionChain == null)
             {
@@ -464,8 +466,7 @@ namespace Stock.UI.Components
         {
             var tickers = TickersToTrade.POPULAR_TICKERS;
             var timeframes = new[] { Timeframe.Minute15 };
-
-            return;
+            Connect();
 
             while (true)
             {
@@ -478,7 +479,7 @@ namespace Stock.UI.Components
 
                         var prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddMonths(-12), DateTime.Now);
 
-                        for (int i = 6000; i < prices.Count; i++)
+                        for (int i = 6490; i < prices.Count; i++)
                         {
                             //var topsNBottoms = Task.Run(() => _strategy.CheckForTopBottomTouch(ticker, prices.Take(i).ToList(), swingPointStrategyParameter));
                             //var downTrendBreakout = Task.Run(() => _strategy.CheckForBreakAboveDownTrendLine(ticker, prices.Take(i).ToList(), swingPointStrategyParameter));
@@ -486,7 +487,7 @@ namespace Stock.UI.Components
 
                             //await Task.WhenAll(topsNBottoms, downTrendBreakout, upTrendBreakout);
 
-                            await Task.Run(() => _strategy.CheckForTopBottomTouch(ticker, prices.Take(i).ToList(), swingPointStrategyParameter));
+                            //await Task.Run(() => _strategy.CheckForTopBottomTouch(ticker, prices.Take(i).ToList(), swingPointStrategyParameter));
                         }
                     }
                 }
@@ -543,9 +544,80 @@ namespace Stock.UI.Components
                 if (!_allAlerts.Contains(alert))
                 {
                     _allAlerts.Add(alert);
+                    CreateBuyOrder(alert).Wait();
                     UpdateFilteredAlerts();
                 }
             }
+        }
+
+        private async Task CreateBuyOrder(Alert alert)
+        {
+            if (alert is not TopNBottomStrategyAlert)
+            {
+                return;
+            }
+
+            if (!IsConnected)
+            {
+                return;
+            }
+
+            var swingPointAlert = (TopNBottomStrategyAlert)alert;
+            var atr = swingPointAlert.ATR;
+            var today = DateTime.Now.Date;
+            int numberOfDaysToFriday = (int)DayOfWeek.Friday - (int)today.DayOfWeek;
+            var fridayThisWeek = DateTime.Now.AddDays(numberOfDaysToFriday);
+
+            var fridayNextWeek = today.AddDays(numberOfDaysToFriday + 7);
+            var availableContracts = await _repo.GetOptionChainAsync(swingPointAlert.Ticker, today, fridayNextWeek);
+
+            if (availableContracts == null || !availableContracts.Active.Any())
+            {
+                return;
+            }
+
+            var optionType = alert.OrderPosition == OrderPosition.Long ? OptionType.C.ToString() : OptionType.P.ToString();
+            var strike = alert.OrderPosition == OrderPosition.Long ? swingPointAlert.PriceClosed + atr * 3 : swingPointAlert.PriceClosed - atr * 3;
+            Option closestOption = null;
+            List<Option> optionsToPick = null;
+            if (numberOfDaysToFriday >= 3)
+            {
+                optionsToPick = availableContracts.ParsedActiveOptions.Where(x => x.ExpiryDate == fridayThisWeek).ToList();
+            }
+            else
+            {
+                optionsToPick = availableContracts.ParsedActiveOptions.Where(x => x.ExpiryDate == fridayNextWeek).ToList();
+            }
+
+            if (optionsToPick == null || !optionsToPick.Any())
+            {
+                return;
+            }
+
+            var option = optionsToPick.OrderBy(opt => Math.Abs(opt.StrikePrice - strike)).First();
+
+            var order = new Order
+            {
+                OrderId = 0,
+                Action = OrderAction.BUY.ToString(),
+                OrderType = OrderType.MKT.ToString(),
+                TotalQuantity = 10,
+                Transmit = true,
+                Account = _accountId,
+            };
+            var contract = new Contract
+            {
+                Symbol = swingPointAlert.Ticker,
+                SecType = SecType.OPT.ToString(),
+                Currency = Currency.USD.ToString(),
+                Exchange = "SMART",
+                Strike = (double)option.StrikePrice,
+                Right = optionType,
+                Multiplier = "100",
+                LastTradeDateOrContractMonth = option.ExpiryDate.ToString("yyyyMMdd"),
+            };
+
+            _orderManager.PlaceOrder(contract, order);
         }
 
         private SwingPointStrategyParameter GetSwingPointStrategyParameter(string ticker, Timeframe timeframe)
