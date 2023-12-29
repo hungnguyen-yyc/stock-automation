@@ -11,6 +11,7 @@
     <PackageReference Include="Syncfusion.Licensing" Version="23.2.4" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\..\..\..\TWS API\source\CSharpClient\client\CSharpAPI.csproj" />
     <ProjectReference Include="..\Stock.DataProvider\Stock.Data.csproj" />
     <ProjectReference Include="..\Stock.Shared\Stock.Shared.csproj" />
     <ProjectReference Include="..\Stock.Strategy\Stock.Strategies.csproj" />

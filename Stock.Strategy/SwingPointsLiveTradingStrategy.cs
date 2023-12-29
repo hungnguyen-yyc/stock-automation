@@ -89,8 +89,8 @@ namespace Stock.Strategies
                         && priceNotIntersectCenterLevelPoint)
                     {
                         var message = priceIntersectAnyLevelPoint
-                            ? $"Price {price.Close} > {centerPoint.High} ({levelLow} - {levelHigh}), points: {averageSwingPointIntersected}, big body candle: {price.IsContentCandle}, *level touch*: {pricePointCenter}"
-                            : $"Price {price.Close} > {centerPoint.High} ({levelLow} - {levelHigh}), points: {averageSwingPointIntersected}, big body candle: {price.IsContentCandle}";
+                            ? $"Price {price.Close} ({price.Date:s}) > {centerPoint.High} ({levelLow} - {levelHigh}), points: {averageSwingPointIntersected}, big body candle: {price.IsContentCandle}, *level touch*: {pricePointCenter}"
+                            : $"Price {price.Close} ({price.Date:s}) > {centerPoint.High} ({levelLow} - {levelHigh}), points: {averageSwingPointIntersected}, big body candle: {price.IsContentCandle}";
                         alert = new Alert
                         {
                             Ticker = ticker,

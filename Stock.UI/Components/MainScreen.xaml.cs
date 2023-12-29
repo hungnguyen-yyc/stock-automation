@@ -5,7 +5,9 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Net;
 using System.Printing;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -33,6 +35,7 @@ namespace Stock.UI.Components
             InitializeComponent();
 
             viewModel = new MainScreenViewModel(new Data.StockDataRepository(), new Strategies.SwingPointsLiveTradingStrategy());
+            viewModel.IBKRConnected += OnIBKRConnected;
             DataContext = viewModel;
         }
 
@@ -108,6 +111,23 @@ namespace Stock.UI.Components
             if (alert != null)
             {
                 viewModel.GetOptionPrice(alert);
+            }
+        }
+
+        private void BtnConnect_Click(object sender, RoutedEventArgs e)
+        {
+            viewModel.Connect();
+        }
+
+        private void OnIBKRConnected(bool isConnected)
+        {
+            if (isConnected)
+            {
+                btnConnect.Content = "Disconnect";
+            }
+            else
+            {
+                btnConnect.Content = "Connect";
             }
         }
     }
