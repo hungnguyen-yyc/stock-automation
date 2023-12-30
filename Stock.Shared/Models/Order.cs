@@ -1,6 +1,6 @@
 ﻿namespace Stock.Shared.Models
 {
-    public class Order
+    public class AutomateOrder
     {
         public OrderPosition Type { get; set; }
         public DateTime Time { get; set; }

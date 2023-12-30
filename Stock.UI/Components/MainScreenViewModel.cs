@@ -3,16 +3,14 @@ using Stock.Data;
 using Stock.Data.EventArgs;
 using Stock.Shared;
 using Stock.Shared.Models;
+using Stock.Shared.Models.IBKR.Messages;
 using Stock.Strategies;
 using Stock.Strategies.Parameters;
 using Stock.UI.IBKR.Client;
 using Stock.UI.IBKR.Managers;
 using Stock.UI.IBKR.Messages;
-using Syncfusion.Windows.Shared;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Diagnostics;
-using System.Net;
 using System.Windows.Data;
 using Order = IBApi.Order;
 
@@ -147,7 +145,7 @@ namespace Stock.UI.Components
         private void OnPnLReceived(int reqId, double dailyPnL, double unrealizedPnL, double realizedPnL)
         {
             Logs.Add(new LogEventArg("PnL received."));
-            PnL = $"Daily PnL: {dailyPnL}, Unrealized PnL: {unrealizedPnL}, Realized PnL: {realizedPnL}";
+            PnL = $"Daily PnL: {dailyPnL}\nUnrealized PnL: {unrealizedPnL}\nRealized PnL: {realizedPnL}";
         }
 
         private void OnPositionReceived(PositionMessage positionMessage)
@@ -192,7 +190,7 @@ namespace Stock.UI.Components
             if (!hasAccount)
             {
                 AccountSummary.Add(new Tuple<string, string>(ACCOUNT, accountSummary.Account));
-                _accountId = accountSummary.Account;
+                AccountId = accountSummary.Account;
             }
             else
             {
@@ -466,7 +464,6 @@ namespace Stock.UI.Components
         {
             var tickers = TickersToTrade.POPULAR_TICKERS;
             var timeframes = new[] { Timeframe.Minute15 };
-            Connect();
 
             while (true)
             {
@@ -487,7 +484,7 @@ namespace Stock.UI.Components
 
                             //await Task.WhenAll(topsNBottoms, downTrendBreakout, upTrendBreakout);
 
-                            //await Task.Run(() => _strategy.CheckForTopBottomTouch(ticker, prices.Take(i).ToList(), swingPointStrategyParameter));
+                            await Task.Run(() => _strategy.CheckForTopBottomTouch(ticker, prices.Take(i).ToList(), swingPointStrategyParameter));
                         }
                     }
                 }
@@ -502,10 +499,18 @@ namespace Stock.UI.Components
             {
                 try
                 {
+                    var minuteModule = DateTime.Now.Minute % 15;
+
+                    // this is to make sure we run the strategy every 15 minutes
+                    if (minuteModule != 0)
+                    {
+                        continue;
+                    }
+
                     Logs.Add(new LogEventArg($"Started running strategy at {DateTime.Now}"));
 
                     var tickers = TickersToTrade.POPULAR_TICKERS;
-                    var timeframes = new[] { Timeframe.Minute15, Timeframe.Minute30, Timeframe.Hour1 };
+                    var timeframes = new[] { Timeframe.Minute15 };
 
                     foreach (var timeframe in timeframes)
                     {
@@ -526,7 +531,7 @@ namespace Stock.UI.Components
                 }
                 finally
                 {
-                    await Task.Delay(TimeSpan.FromMinutes(15.0));
+                    await Task.Delay(TimeSpan.FromMinutes(1));
                 }
             }
         }
@@ -553,11 +558,6 @@ namespace Stock.UI.Components
         private async Task CreateTopNBottomBuyOrder(Alert alert)
         {
             if (alert is not TopNBottomStrategyAlert)
-            {
-                return;
-            }
-
-            if (!IsConnected)
             {
                 return;
             }
@@ -620,6 +620,10 @@ namespace Stock.UI.Components
 #if DEBUG
             Logs.Add(new LogEventArg($"Placing order for {swingPointAlert.Ticker} {optionType} {option.StrikePrice} {option.ExpiryDate}"));
 #else
+            if (!IsConnected)
+            {
+                return;
+            }
             _orderManager.PlaceOrder(contract, order);
 #endif
         }

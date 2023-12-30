@@ -1,8 +1,7 @@
 ﻿using System.Collections.Generic;
 using Stock.UI.IBKR.Client;
 using Stock.UI.IBKR.Messages;
-using Stock.UI.IBKR.Utilities;
-using static IBApi.Util;
+using Stock.Shared.Models.IBKR.Messages;
 
 namespace Stock.UI.IBKR.Managers
 {

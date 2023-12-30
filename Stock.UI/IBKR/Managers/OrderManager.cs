@@ -1,6 +1,6 @@
 ﻿using IBApi;
 using Stock.UI.IBKR.Client;
-using Stock.UI.IBKR.Messages;
+using Stock.Shared.Models.IBKR.Messages;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

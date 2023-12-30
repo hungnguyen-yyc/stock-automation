@@ -10,6 +10,6 @@ namespace Stock.Strategy
 
         public event OrderEventHandler OrderCreated;
 
-        IList<Order> Run(string ticker, List<Price> ascSortedByDatePrice, IStrategyParameter strategyParameter);
+        IList<AutomateOrder> Run(string ticker, List<Price> ascSortedByDatePrice, IStrategyParameter strategyParameter);
     }
 }

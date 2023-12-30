@@ -4,9 +4,9 @@ namespace Stock.Strategies
 {
     public class OrderEventArgs : EventArgs
     {
-        public Order Order { get; set; }
+        public AutomateOrder Order { get; set; }
 
-        public OrderEventArgs(Order order)
+        public OrderEventArgs(AutomateOrder order)
         {
             Order = order;
         }

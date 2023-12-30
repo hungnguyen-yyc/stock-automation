@@ -11,6 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\..\..\..\TWS API\source\CSharpClient\client\CSharpAPI.csproj" />
     <ProjectReference Include="..\..\Stock.Indicators\src\Indicators.csproj" />
   </ItemGroup>
 

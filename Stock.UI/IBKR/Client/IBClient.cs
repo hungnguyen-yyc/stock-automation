@@ -8,6 +8,8 @@ using IBApi;
 using System.Threading;
 using System.Threading.Tasks;
 using Stock.UI.IBKR.Messages;
+using Stock.Shared.Models.IBKR.Messages;
+using IBKROrder = IBApi.Order;
 
 namespace Stock.UI.IBKR.Client
 {
@@ -945,7 +947,7 @@ namespace Stock.UI.IBKR.Client
 
         public event Action<CompletedOrderMessage> CompletedOrder;
 
-        void EWrapper.completedOrder(Contract contract, Order order, OrderState orderState)
+        void EWrapper.completedOrder(Contract contract, IBKROrder order, OrderState orderState)
         {
             var tmp = CompletedOrder;
 

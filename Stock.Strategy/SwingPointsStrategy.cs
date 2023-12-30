@@ -15,12 +15,12 @@ namespace Stock.Strategies
             + "The order then will be created at 2 candles after most recent swing lows or highs found. \n"
             + "The problem now is how to eliminate loss as soon as posible.";
 
-        public IList<Order> Run(string ticker, List<Price> ascSortedByDatePrice, IStrategyParameter strategyParameter)
+        public IList<AutomateOrder> Run(string ticker, List<Price> ascSortedByDatePrice, IStrategyParameter strategyParameter)
         {
             var parameter = (SwingPointStrategyParameter)strategyParameter;
             var numberOfSwingPointsToLookBack = parameter.NumberOfSwingPointsToLookBack;
             var numberOfCandlesticksToLookBack = parameter.NumberOfCandlesticksToLookBack;
-            var orders = new List<Order>();
+            var orders = new List<AutomateOrder>();
 
             if (ascSortedByDatePrice == null || ascSortedByDatePrice.Count < 155)
             {
@@ -43,7 +43,7 @@ namespace Stock.Strategies
                 var channel = SwingPointAnalyzer.CheckRunningCandlesFormingChannel(rangeToCheck, 14, 3);
                 if (channel != null)
                 {
-                    var order = new Order
+                    var order = new AutomateOrder
                     {
                         Ticker = ticker,
                         Type = OrderPosition.Long,
@@ -121,7 +121,7 @@ namespace Stock.Strategies
 
                         if (daysAfterSwingLow == parameter.NumberOfCandlesticksToSkipAfterSwingPoint && confirmedSwingLowByPreviousPrice && isValidTrend)
                         {
-                            var order = new Order
+                            var order = new AutomateOrder
                             {
                                 Ticker = ticker,
                                 Type = OrderPosition.Long,
@@ -149,7 +149,7 @@ namespace Stock.Strategies
 
                         if (daysAfterSwingHigh == parameter.NumberOfCandlesticksToSkipAfterSwingPoint && confirmedSwingHighByPreviousPrice && isValidTrend)
                         {
-                            var order = new Order
+                            var order = new AutomateOrder
                             {
                                 Ticker = ticker,
                                 Type = OrderPosition.Short,
@@ -177,7 +177,7 @@ namespace Stock.Strategies
                         // close when current price is lower than immediate swing low before price
                         if (price.Low < immediateSwingLowBeforePrice.Low)
                         {
-                            orders.Add(new Order
+                            orders.Add(new AutomateOrder
                             {
                                 Ticker = ticker,
                                 Type = OrderPosition.Long,
@@ -191,7 +191,7 @@ namespace Stock.Strategies
                         }
                         else if (newSwingHigh)
                         {
-                            orders.Add(new Order
+                            orders.Add(new AutomateOrder
                             {
                                 Ticker = ticker,
                                 Type = OrderPosition.Long,
@@ -211,7 +211,7 @@ namespace Stock.Strategies
                         // close when current price is higher than immediate swing high before price
                         if (price.High > immediateSwingHighBeforePrice.High)
                         {
-                            orders.Add(new Order
+                            orders.Add(new AutomateOrder
                             {
                                 Ticker = ticker,
                                 Type = OrderPosition.Short,
@@ -225,7 +225,7 @@ namespace Stock.Strategies
                         }
                         else if (newSwingLow)
                         {
-                            orders.Add(new Order
+                            orders.Add(new AutomateOrder
                             {
                                 Ticker = ticker,
                                 Type = OrderPosition.Short,

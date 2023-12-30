@@ -77,7 +77,7 @@
                             <GridViewColumnHeader Tag="Timeframe" Click="lsvAlertsColumnHeader_Click">Timeframe</GridViewColumnHeader>
                         </GridViewColumn.Header>
                     </GridViewColumn>
-                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding OrderType}">
+                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding OrderPosition}">
                         <GridViewColumn.Header>
                             <GridViewColumnHeader Tag="OrderType" Click="lsvAlertsColumnHeader_Click">Order Type</GridViewColumnHeader>
                         </GridViewColumn.Header>
@@ -168,7 +168,7 @@
                 <RowDefinition Height="auto"/>
                 <RowDefinition Height="auto"/>
                 <RowDefinition Height="auto"/>
-                <RowDefinition Height="auto"/>
+                <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
             <Grid.ColumnDefinitions>
@@ -274,7 +274,7 @@
             
             <ListView Name="lsvLogs" 
                   Grid.Column="0" Grid.Row="5" 
-                  Grid.ColumnSpan="2" Height="auto" 
+                  Grid.ColumnSpan="2"
                   ItemsSource="{Binding Logs}" 
                   VerticalAlignment="Stretch" 
                   Margin="5 10 5 0">
