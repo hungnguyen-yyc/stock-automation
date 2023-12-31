@@ -22,5 +22,21 @@ namespace Stock.Shared.Models.IBKR.Messages
         public decimal Position { get; set; }
 
         public double AverageCost { get; set; }
+
+        public override bool Equals(object? obj)
+        {
+            if (obj == null || GetType() != obj.GetType())
+            {
+                return false;
+            } 
+            else
+            {
+                var position = (PositionMessage)obj;
+                return Account == position.Account
+                    && Contract.Equals(position.Contract)
+                    && Position == position.Position
+                    && AverageCost == position.AverageCost;
+            }
+        }
     }
 }

@@ -51,8 +51,7 @@ namespace Stock.Shared.Models
     {
         public decimal High { get; set; }
         public decimal Low { get; set; }
+        public decimal Center { get; set; }
         public decimal ATR { get; set; }
-        public bool IsVolumeCheck { get; set; }
-        public bool IsCandleBodyCheck { get; set; }
     }
 }

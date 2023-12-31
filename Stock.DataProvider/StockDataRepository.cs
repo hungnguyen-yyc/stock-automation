@@ -1,9 +1,11 @@
-﻿using Microsoft.Data.Sqlite;
+﻿using IBApi;
+using Microsoft.Data.Sqlite;
 using Newtonsoft.Json;
 using Stock.DataProvider;
 using Stock.Shared.Models;
+using Stock.Shared.Models.IBKR.Messages;
+using System.Collections.Specialized;
 using System.Diagnostics;
-using System.Net.Http;
 
 namespace Stock.Data
 {
@@ -48,6 +50,23 @@ namespace Stock.Data
                 }
 
                 return options;
+            }
+            catch (Exception ex)
+            {
+                Log(ex.Message);
+                return null;
+            }
+        }
+
+        public async Task<string[]?> GetOptionPriceAsync(string ticker, DateTime expiredDate, decimal strike, char optionRight)
+        {
+            try
+            {
+                using var httpClient = new HttpClient();
+                var expiredDateStr = expiredDate.ToString("yyyyMMdd");
+                var strikeStr = strike.ToString("0.00");
+                strikeStr += optionRight;
+                return await GetOptionPriceAsync($"{ticker}|{expiredDateStr}|{strikeStr}");
             }
             catch (Exception ex)
             {
@@ -209,17 +228,284 @@ namespace Stock.Data
             return list;
         }
 
-        public async Task InsertAlerts(Alert alert)
+        public async Task SaveSwingPointOptionPosition(PositionMessage position)
         {
             using var conn = new SqliteConnection($"Data Source={_dbPath}");
             try
-            {
+            {              
+                conn.Open();
 
+                var contractId = await GetContractId(position.Contract);
+
+                var cmd = conn.CreateCommand();
+
+                cmd.CommandText = "INSERT INTO swing_point_option_position (option_contract_id, quantity, ave_price, account_id, is_closed) " +
+                    "VALUES (@OptionContractId, @Quantity, @AvgPrice, @AccountId, @IsClosed)";
+            
+                cmd.Parameters.AddWithValue("@OptionContractId", contractId);
+                cmd.Parameters.AddWithValue("@Quantity", position.Position);
+                cmd.Parameters.AddWithValue("@AvgPrice", position.AverageCost);
+                cmd.Parameters.AddWithValue("@AccountId", position.Account);
+                cmd.Parameters.AddWithValue("@IsClosed", 0);
+            
+                await cmd.ExecuteNonQueryAsync();
+
+                Log($"Created swing point option order for ticker {position.Contract.Symbol} with strike {position.Contract.Strike}{position.Contract.Right} expired on {position.Contract.LastTradeDateOrContractMonth}");
             }
             catch (Exception ex)
             {
                 Log(ex.ToString());
-                throw new Exception($"Error when inserting alert {alert}", ex);
+                throw new Exception($"Error when creating swing point option order for ticker {position.Contract.Symbol}", ex);
+            }
+            finally
+            {
+                conn.Close();
+            }
+        }
+
+        public async Task CloseSwingPointOptionPosition(SwingPointOptionPosition position)
+        {
+            using var conn = new SqliteConnection($"Data Source={_dbPath}");
+            try
+            {
+                conn.Open();
+                var cmd = conn.CreateCommand();
+                cmd.CommandText = "UPDATE swing_point_option_position SET is_closed = 1 WHERE swing_point_order_id = @OrderId";
+                cmd.Parameters.AddWithValue("@OrderId", position.Id);
+                await cmd.ExecuteNonQueryAsync();
+            }
+            catch (Exception ex)
+            {
+                Log(ex.ToString());
+                throw new Exception($"Error when closing swing point option order", ex);
+            }
+            finally
+            {
+                conn.Close();
+            }
+        }
+
+        public async Task<IReadOnlyCollection<SwingPointOptionPosition>> GetSavedSwingPointOptionPositions()
+        {
+            var list = new List<SwingPointOptionPosition>();
+            using var conn = new SqliteConnection($"Data Source={_dbPath}");
+            conn.Open();
+
+            var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT spop.*, t.name FROM swing_point_option_position spop"
+                + "JOIN ticker t ON t.ticker_id = spop.ticker_id";
+            var reader = await cmd.ExecuteReaderAsync();
+
+            while (reader.Read())
+            {
+                var position = new SwingPointOptionPosition
+                {
+                    Id = Convert.ToInt32(reader["swing_point_order_id"]),
+                    TickerId = Convert.ToInt32(reader["ticker_id"]),
+                    Ticker = Convert.ToString(reader["name"]),
+                    Quantity = Convert.ToInt32(reader["quantity"]),
+                    Price = Convert.ToDecimal(reader["price"]),
+                    AccountId = Convert.ToString(reader["account_id"]),
+                    ExpiredOn = Convert.ToDateTime(reader["expired_on"]),
+                    Strike = Convert.ToDecimal(reader["strike"]),
+                    OptionRight = Convert.ToString(reader["option_right"]),
+                    LevelHigh = Convert.ToDecimal(reader["level_high"]),
+                    LevelLow = Convert.ToDecimal(reader["level_low"]),
+                    IsClosed = Convert.ToBoolean(reader["is_closed"])
+                };
+
+                list.Add(position);
+            }
+
+            conn.Close();
+
+            return list;
+        }
+
+        public async Task SaveContract(Contract contract)
+        {
+            using var conn = new SqliteConnection($"Data Source={_dbPath}");
+            try
+            {
+                conn.Open();
+                var tickerId = await GetTickerId(contract.Symbol);
+
+                var cmd = conn.CreateCommand();
+                cmd.CommandText = "INSERT INTO option_contract (ticker_id, expired_on, strike, option_right) VALUES (@TickerId, @ExpiredOn, @Strike, @OptionRight)";
+                cmd.Parameters.AddWithValue("@TickerId", tickerId);
+                cmd.Parameters.AddWithValue("@ExpiredOn", contract.LastTradeDateOrContractMonth);
+                cmd.Parameters.AddWithValue("@Strike", contract.Strike);
+                cmd.Parameters.AddWithValue("@OptionRight", contract.Right);
+                await cmd.ExecuteNonQueryAsync();
+            }
+            catch (Exception ex)
+            {
+                Log(ex.ToString());
+                throw new Exception($"Error when saving contract {JsonConvert.SerializeObject(contract)}", ex);
+            }
+            finally
+            {
+                conn.Close();
+            }
+        }
+
+        public async Task<int> GetContractId(Contract contract)
+        {
+            using var conn = new SqliteConnection($"Data Source={_dbPath}");
+            try
+            {
+                conn.Open();
+                var tickerId = await GetTickerId(contract.Symbol);
+
+                var cmd = conn.CreateCommand();
+                cmd.CommandText = "SELECT * FROM option_contract WHERE ticker_id = @TickerId AND expired_on = @ExpiredOn AND strike = @Strike AND option_right = @OptionRight";
+                cmd.Parameters.AddWithValue("@TickerId", tickerId);
+                cmd.Parameters.AddWithValue("@ExpiredOn", contract.LastTradeDateOrContractMonth);
+                cmd.Parameters.AddWithValue("@Strike", contract.Strike);
+                cmd.Parameters.AddWithValue("@OptionRight", contract.Right);
+                var reader = await cmd.ExecuteReaderAsync();
+
+                if (reader.Read())
+                {
+                    var contractId = Convert.ToInt32(reader["option_contract_id"]);
+                    return contractId;
+                }
+                else
+                {
+                    await SaveContract(contract);
+                    return await GetContractId(contract);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log(ex.ToString());
+                throw new Exception($"Error when getting contract {JsonConvert.SerializeObject(contract)}", ex);
+            }
+            finally
+            {
+                conn.Close();
+            }
+        }
+
+        public async Task SaveOptionContractWithTarget(Contract contract, TopNBottomStrategyAlert alert)
+        {
+            using var conn = new SqliteConnection($"Data Source={_dbPath}");
+            try
+            {
+                conn.Open();
+                var savedContractId = await GetContractId(contract);
+
+                var cmd = conn.CreateCommand();
+                cmd.CommandText = "INSERT INTO option_contract_high_low_target (option_contract_id, level_high, level_low, center) VALUES (@ContractId, @LevelHigh, @LevelLow, @Center)";
+                cmd.Parameters.AddWithValue("@ContractId", savedContractId);
+                cmd.Parameters.AddWithValue("@LevelHigh", alert.High);
+                cmd.Parameters.AddWithValue("@LevelLow", alert.Low);
+                cmd.Parameters.AddWithValue("@Center", alert.Center);
+                await cmd.ExecuteNonQueryAsync();
+            }
+            catch (Exception ex)
+            {
+                Log(ex.ToString());
+                throw new Exception($"Error when saving contract {JsonConvert.SerializeObject(contract)}", ex);
+            }
+            finally
+            {
+                conn.Close();
+            }
+        }
+
+        public async Task<decimal?> GetLowerTargetForContract(Contract contract)
+        {
+            using var conn = new SqliteConnection($"Data Source={_dbPath}");
+            try
+            {
+                conn.Open();
+                var savedContractId = await GetContractId(contract);
+
+                var cmd = conn.CreateCommand();
+                cmd.CommandText = "SELECT level_low FROM option_contract_high_low_target WHERE option_contract_id = @ContractId";
+                cmd.Parameters.AddWithValue("@ContractId", savedContractId);
+                var reader = await cmd.ExecuteReaderAsync();
+
+                if (reader.Read())
+                {
+                    var levelLow = Convert.ToDecimal(reader["level_low"]);
+                    return levelLow;
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log(ex.ToString());
+                throw new Exception($"Error when getting contract {JsonConvert.SerializeObject(contract)}", ex);
+            }
+            finally
+            {
+                conn.Close();
+            }
+        }
+
+        public async Task<decimal?> GetHigherTargetForContract(Contract contract)
+        {
+            using var conn = new SqliteConnection($"Data Source={_dbPath}");
+            try
+            {
+                conn.Open();
+                var savedContractId = await GetContractId(contract);
+
+                var cmd = conn.CreateCommand();
+                cmd.CommandText = "SELECT level_high FROM option_contract_high_low_target WHERE option_contract_id = @ContractId";
+                cmd.Parameters.AddWithValue("@ContractId", savedContractId);
+                var reader = await cmd.ExecuteReaderAsync();
+
+                if (reader.Read())
+                {
+                    var levelHigh = Convert.ToDecimal(reader["level_high"]);
+                    return levelHigh;
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log(ex.ToString());
+                throw new Exception($"Error when getting contract {JsonConvert.SerializeObject(contract)}", ex);
+            }
+            finally
+            {
+                conn.Close();
+            }
+        }
+
+        public async Task<int> GetTickerId(string ticker)
+        {
+            using var conn = new SqliteConnection($"Data Source={_dbPath}");
+            try
+            {
+                conn.Open();
+                var cmd = conn.CreateCommand();
+                cmd.CommandText = $"SELECT ticker_id FROM ticker WHERE name = '{ticker}'";
+                var result = await cmd.ExecuteScalarAsync();
+                var tickerId = Convert.ToInt32(result);
+
+                if (Convert.ToInt32(result) == 0)
+                {
+                    cmd.CommandText = "INSERT INTO Ticker (Name) VALUES (@Name); SELECT MAX(ticker_id) FROM Ticker;";
+                    cmd.Parameters.AddWithValue("@Name", ticker);
+                    tickerId = Convert.ToInt32(await cmd.ExecuteScalarAsync());
+                }
+
+                return tickerId;
+            }
+            catch (Exception ex)
+            {
+                Log(ex.ToString());
+                throw new Exception($"Error when getting ticker id for ticker {ticker}", ex);
             }
             finally
             {
@@ -254,21 +540,12 @@ namespace Stock.Data
                 }
                 conn.Open();
 
+                var tickerId = await GetTickerId(ticker);
+
                 var cmd = conn.CreateCommand();
-                cmd.CommandText = $"SELECT ticker_id FROM ticker WHERE name = '{ticker}'";
-                var result = cmd.ExecuteScalar();
-                var tickerId = Convert.ToInt32(result);
-
-                if (Convert.ToInt32(result) == 0)
-                {
-                    cmd.CommandText = "INSERT INTO Ticker (Name) VALUES (@Name); SELECT MAX(ticker_id) FROM Ticker;";
-                    cmd.Parameters.AddWithValue("@Name", ticker);
-                    tickerId = Convert.ToInt32(cmd.ExecuteScalar());
-                }
-
-                cmd = conn.CreateCommand();
                 cmd.CommandText = $"SELECT MAX(Date) FROM {table} WHERE ticker_id = {tickerId}";
-                result = cmd.ExecuteScalar();
+
+                var result = cmd.ExecuteScalar();
                 var lastDate = from;
                 if (result != null && result != DBNull.Value)
                 {

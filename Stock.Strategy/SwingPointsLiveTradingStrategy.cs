@@ -98,7 +98,7 @@ namespace Stock.Strategies
                             alert = new TopNBottomStrategyAlert
                             {
                                 Ticker = ticker,
-                                Message = message,
+                                Message = "(O)" + message,
                                 CreatedAt = price.Date,
                                 Strategy = "SwingPointsLiveTradingStrategy",
                                 OrderPosition = OrderPosition.Long,
@@ -106,10 +106,9 @@ namespace Stock.Strategies
                                 Timeframe = parameter.Timeframe,
                                 High = levelHigh,
                                 Low = levelLow,
+                                Center = center,
                                 PriceClosed = price.Close,
                                 ATR = (decimal)atr.Last().Atr,
-                                IsVolumeCheck = volumeCheckForShort,
-                                IsCandleBodyCheck = isValidCandleForShort
                             };
                         }
                         else
@@ -143,7 +142,7 @@ namespace Stock.Strategies
                             alert = new TopNBottomStrategyAlert
                             {
                                 Ticker = ticker,
-                                Message = message,
+                                Message = "(O)" + message,
                                 CreatedAt = price.Date,
                                 Strategy = "SwingPointsLiveTradingStrategy",
                                 OrderPosition = OrderPosition.Short,
@@ -151,10 +150,9 @@ namespace Stock.Strategies
                                 Timeframe = parameter.Timeframe,
                                 High = levelHigh,
                                 Low = levelLow,
+                                Center = center,
                                 PriceClosed = price.Close,
-                                ATR = (decimal)atr.Last().Atr,
-                                IsVolumeCheck = volumeCheckForShort,
-                                IsCandleBodyCheck = isValidCandleForShort
+                                ATR = (decimal)atr.Last().Atr
                             };
                         }
                         else

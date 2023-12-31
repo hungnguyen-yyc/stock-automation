@@ -11,7 +11,9 @@ using Stock.UI.IBKR.Managers;
 using Stock.UI.IBKR.Messages;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics.Contracts;
 using System.Windows.Data;
+using Contract = IBApi.Contract;
 using Order = IBApi.Order;
 
 namespace Stock.UI.Components
@@ -42,6 +44,7 @@ namespace Stock.UI.Components
         private ObservableCollection<Tuple<string, string>> _accountSummary;
         private ObservableCollection<PositionMessage> _accountPosition;
         private string _pnL;
+        private SwingPointPositionTrackingService _swingPointPositionTrackingService;
 
         public delegate void IBKRConnectedHandler(bool isConnected);
         public event IBKRConnectedHandler IBKRConnected;
@@ -85,6 +88,12 @@ namespace Stock.UI.Components
 
             _completedOrders = new ObservableCollection<CompletedOrderMessage>();
             BindingOperations.EnableCollectionSynchronization(_completedOrders, _lock);
+
+            _swingPointPositionTrackingService = new SwingPointPositionTrackingService(_repo);
+            _swingPointPositionTrackingService.ClosePositionAlert += (positionMessage) =>
+            {
+                _orderManager.ClosePosition(positionMessage);
+            };
 
             _repo.LogCreated += (message) =>
             {
@@ -165,6 +174,7 @@ namespace Stock.UI.Components
             }
 
             _accountPosition.Add(positionMessage);
+            _swingPointPositionTrackingService.UpdatePosition(positionMessage).Wait();
         }
 
         private string AccountId
@@ -476,7 +486,7 @@ namespace Stock.UI.Components
 
                         var prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddMonths(-12), DateTime.Now);
 
-                        for (int i = 6490; i < prices.Count; i++)
+                        for (int i = 5500; i < prices.Count; i++)
                         {
                             //var topsNBottoms = Task.Run(() => _strategy.CheckForTopBottomTouch(ticker, prices.Take(i).ToList(), swingPointStrategyParameter));
                             //var downTrendBreakout = Task.Run(() => _strategy.CheckForBreakAboveDownTrendLine(ticker, prices.Take(i).ToList(), swingPointStrategyParameter));
@@ -493,6 +503,7 @@ namespace Stock.UI.Components
                 Logs.Add(new LogEventArg($"Finished running strategy at {DateTime.Now}"));
             }
         }
+
         private async Task RunInRelease()
         {
             while (true)
@@ -617,14 +628,41 @@ namespace Stock.UI.Components
                 LastTradeDateOrContractMonth = option.ExpiryDate.ToString("yyyyMMdd"),
             };
 
-#if DEBUG
-            Logs.Add(new LogEventArg($"Placing order for {swingPointAlert.Ticker} {optionType} {option.StrikePrice} {option.ExpiryDate}"));
-#else
+#if !DEBUG
             if (!IsConnected)
             {
                 return;
             }
             _orderManager.PlaceOrder(contract, order);
+            await _repo.SaveContract(contract);
+            await _repo.SaveOptionContractWithTarget(contract, (TopNBottomStrategyAlert)alert);
+#endif
+            Logs.Add(new LogEventArg($"Order placed for {swingPointAlert.Ticker} {optionType} {option.StrikePrice} {option.ExpiryDate}"));
+        }
+
+        private void HandleClosePosition(PositionMessage positionMessage)
+        {
+            var order = new Order
+            {
+                OrderId = 0,
+                Action = OrderAction.SELL.ToString(),
+                OrderType = OrderType.MKT.ToString(),
+                TotalQuantity = positionMessage.Position,
+                Transmit = true,
+                Account = _accountId,
+            };
+            var contract = positionMessage.Contract;
+
+#if !DEBUG
+            if (!IsConnected)
+            {
+                return;
+            }
+            _orderManager.PlaceOrder(contract, order);
+            await _repo.SaveContract(contract);
+            await _repo.SaveOptionContractWithTarget(contract, (TopNBottomStrategyAlert)alert);
+#else
+            Logs.Add(new LogEventArg($"Closed position for {positionMessage.Contract.Symbol} {positionMessage.Contract.Right} {positionMessage.Contract.Strike} {positionMessage.Contract.LastTradeDateOrContractMonth}"));
 #endif
         }
 
