@@ -16,6 +16,17 @@ namespace Stock.Shared.Models
         public decimal Close { get; set; }
         public decimal Volume { get; set; }
 
+        public bool isValid
+        {
+            get
+            {
+                var allPricesGreaterThanZero = Open > 0 && High > 0 && Low > 0 && Close > 0;
+                var highGreaterThanOtherPrices = High >= Open && High >= Low && High >= Close;
+                var lowLessThanOtherPrices = Low <= Open && Low <= High && Low <= Close;
+                return allPricesGreaterThanZero && highGreaterThanOtherPrices && lowLessThanOtherPrices;
+            }
+        }
+
         public NumericRange RangeBetweenBodyAndHigh
         {
             get

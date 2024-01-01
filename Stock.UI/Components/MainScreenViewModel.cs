@@ -90,10 +90,7 @@ namespace Stock.UI.Components
             BindingOperations.EnableCollectionSynchronization(_completedOrders, _lock);
 
             _swingPointPositionTrackingService = new SwingPointPositionTrackingService(_repo);
-            _swingPointPositionTrackingService.ClosePositionAlert += (positionMessage) =>
-            {
-                _orderManager.ClosePosition(positionMessage);
-            };
+            _swingPointPositionTrackingService.ClosePositionAlert += HandleClosePosition;
 
             _repo.LogCreated += (message) =>
             {
@@ -473,35 +470,34 @@ namespace Stock.UI.Components
         private async Task RunInDebug()
         {
             var tickers = TickersToTrade.POPULAR_TICKERS;
-            var timeframes = new[] { Timeframe.Minute15 };
+            var timeframes = new[] { Timeframe.Minute15, Timeframe.Hour1 };
 
-            while (true)
+            foreach (var timeframe in timeframes)
             {
-                foreach (var timeframe in timeframes)
+                foreach (var ticker in tickers)
                 {
-                    foreach (var ticker in tickers)
+                    //await _repo.FillLatestDataForTheDay(ticker, timeframe, DateTime.Now, DateTime.Now);
+                    var swingPointStrategyParameter = GetSwingPointStrategyParameter(ticker, timeframe);
+
+                    var prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddMonths(-3), DateTime.Now);
+
+                    //for (int i = 1000; i < prices.Count; i++)
+                    //{
+                    //    var downTrendBreakout = Task.Run(() => _strategy.CheckForBreakAboveDownTrendLine(ticker, prices.Take(i).ToList(), swingPointStrategyParameter));
+                    //    var upTrendBreakout = Task.Run(() => _strategy.CheckForBreakBelowUpTrendLine(ticker, prices.Take(i).ToList(), swingPointStrategyParameter));
+
+                    //    await Task.WhenAll(downTrendBreakout, upTrendBreakout);
+                    //}
+
+                    prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddYears(-5), DateTime.Now);
+                    for (int i = prices.Count - 500; i < prices.Count; i++)
                     {
-                        await _repo.FillLatestDataForTheDay(ticker, timeframe, DateTime.Now, DateTime.Now);
-                        var swingPointStrategyParameter = GetSwingPointStrategyParameter(ticker, timeframe);
-
-                        var prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddMonths(-12), DateTime.Now);
-
-                        for (int i = 5500; i < prices.Count; i++)
-                        {
-                            //var topsNBottoms = Task.Run(() => _strategy.CheckForTopBottomTouch(ticker, prices.Take(i).ToList(), swingPointStrategyParameter));
-                            //var downTrendBreakout = Task.Run(() => _strategy.CheckForBreakAboveDownTrendLine(ticker, prices.Take(i).ToList(), swingPointStrategyParameter));
-                            //var upTrendBreakout = Task.Run(() => _strategy.CheckForBreakBelowUpTrendLine(ticker, prices.Take(i).ToList(), swingPointStrategyParameter));
-
-                            //await Task.WhenAll(topsNBottoms, downTrendBreakout, upTrendBreakout);
-
-                            await Task.Run(() => _strategy.CheckForTopBottomTouch(ticker, prices.Take(i).ToList(), swingPointStrategyParameter));
-                        }
+                        await Task.Run(() => _strategy.CheckForTopBottomTouch(ticker, prices.Take(i).ToList(), swingPointStrategyParameter));
                     }
                 }
-
-                await Task.Delay(TimeSpan.FromMinutes(15.0));
-                Logs.Add(new LogEventArg($"Finished running strategy at {DateTime.Now}"));
             }
+
+            Logs.Add(new LogEventArg($"Finished running strategy at {DateTime.Now}"));
         }
 
         private async Task RunInRelease()
@@ -510,27 +506,37 @@ namespace Stock.UI.Components
             {
                 try
                 {
-                    var minuteModule = DateTime.Now.Minute % 15;
-
-                    // this is to make sure we run the strategy every 15 minutes
-                    if (minuteModule != 0)
-                    {
-                        continue;
-                    }
 
                     Logs.Add(new LogEventArg($"Started running strategy at {DateTime.Now}"));
 
                     var tickers = TickersToTrade.POPULAR_TICKERS;
-                    var timeframes = new[] { Timeframe.Minute15 };
+                    var timeframes = new[] { Timeframe.Minute15, Timeframe.Hour1 };
 
                     foreach (var timeframe in timeframes)
                     {
+                        var minuteModule = DateTime.Now.Minute % 15;
+                        if (timeframe == Timeframe.Hour1)
+                        {
+                            minuteModule = DateTime.Now.Minute % 60;
+                        }
+
+                        // try to run 2 minutes before the candle finish
+                        if (timeframe == Timeframe.Minute15 && minuteModule != 13)
+                        {
+                            continue;
+                        }
+
+                        if (timeframe == Timeframe.Hour1 && minuteModule != 58)
+                        {
+                            continue;
+                        }
+
                         foreach (var ticker in tickers)
                         {
                             await _repo.FillLatestDataForTheDay(ticker, timeframe, DateTime.Now, DateTime.Now);
                             var swingPointStrategyParameter = GetSwingPointStrategyParameter(ticker, timeframe);
 
-                            var prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddMonths(-12), DateTime.Now);
+                            var prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddYears(-5), DateTime.Now);
 
                             await Task.Run(() => _strategy.CheckForTopBottomTouch(ticker, prices.ToList(), swingPointStrategyParameter));
                         }
@@ -668,22 +674,6 @@ namespace Stock.UI.Components
 
         private SwingPointStrategyParameter GetSwingPointStrategyParameter(string ticker, Timeframe timeframe)
         {
-            if (timeframe == Timeframe.Daily)
-            {
-                return new SwingPointStrategyParameter
-                {
-                    NumberOfCandlesticksToLookBack = 7,
-                    Timeframe = timeframe,
-                    NumberOfCandlesticksIntersectForTopsAndBottoms = 5,
-
-                    NumberOfSwingPointsToLookBack = 7,
-                    NumberOfCandlesticksToSkipAfterSwingPoint = 2,
-                    NumberOfTouchesToDrawTrendLine = 2,
-                    NumberOfCandlesBetweenCurrentPriceAndLastLineEndPoint = 390,
-                    NumberOfCandlesticksBeforeCurrentPriceToLookBack = 7,
-                };
-            }
-
             switch (ticker)
             {
                 case "AAPL":
@@ -698,7 +688,14 @@ namespace Stock.UI.Components
                     {
                         NumberOfCandlesticksToLookBack = 14,
                         Timeframe = timeframe,
-                        NumberOfCandlesticksIntersectForTopsAndBottoms = 5,
+                        NumberOfCandlesticksIntersectForTopsAndBottoms = 3,
+                    }.Merge(GetDefaultParameter(timeframe));
+                case "SPY":
+                    return new SwingPointStrategyParameter
+                    {
+                        NumberOfCandlesticksToLookBack = 14,
+                        Timeframe = timeframe,
+                        NumberOfCandlesticksIntersectForTopsAndBottoms = 3,
                     }.Merge(GetDefaultParameter(timeframe));
                 default:
                     return GetDefaultParameter(timeframe);

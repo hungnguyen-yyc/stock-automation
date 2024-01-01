@@ -274,9 +274,7 @@ namespace Stock.Strategies
                     && currentPointIsNotFarAwayFromLastEndPoint
                     && lastPriceIntersectSecondLastPrice
                     && bodyRangeNotIntersectTrendLine
-                    && priceNotIntersectAnyTops
-                    && wma9CrossBelowWma21 
-                    && pvoCheck)
+                    && priceNotIntersectAnyTops)
                 {
                     alert = new Alert
                     {
@@ -305,8 +303,6 @@ namespace Stock.Strategies
                         && crossSecondLastPrice
                         && bodyRangeNotIntersectTrendLine
                         && priceNotIntersectAnyTops
-                        && wma9CrossBelowWma21
-                        && pvoCheck
                         && priceGreaterThanProjectedPrice)
                     {
                         alert = new Alert
@@ -429,9 +425,7 @@ namespace Stock.Strategies
                     && lastPriceIntersectSecondLastPrice
                     && currentPointIsNotFarAwayFromLastEndPoint
                     && bodyRangeNotIntersectTrendLine
-                    && priceNotIntersectAnyBottoms
-                    && wma9CrossBelowWma21 
-                    && pvoCheck)
+                    && priceNotIntersectAnyBottoms)
                 {
                     alert = new Alert
                     {
@@ -460,8 +454,6 @@ namespace Stock.Strategies
                         && bodyRangeNotIntersectTrendLine
                         && priceNotIntersectAnyBottoms
                         && crossSecondLastPrice
-                        && wma9CrossBelowWma21
-                        && pvoCheck
                         && priceLowerThanProjectedPrice)
                     {
                         alert = new Alert
