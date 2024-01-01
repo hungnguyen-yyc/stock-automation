@@ -25,7 +25,7 @@ namespace Stock.Strategies
                 var numberOfCandlesticksToLookBack = parameter.NumberOfCandlesticksToLookBack;
                 var numberOfCandlesticksToLookBackBeforeCurrentPrice = parameter.NumberOfCandlesticksBeforeCurrentPriceToLookBack;
                 var levels = SwingPointAnalyzer.GetLevels(ascSortedByDatePrice, parameter.NumberOfCandlesticksToLookBack)
-                    .Where(x => x.Value.Count > parameter.NumberOfCandlesticksIntersectForTopsAndBottoms)
+                    .Where(x => x.Value.Count + 1 >= parameter.NumberOfCandlesticksIntersectForTopsAndBottoms) // + 1 because we need to include the key
                     .ToList();
 
                 var hmVolumes = ascSortedByDatePrice.GetHeatmapVolume(21, 21);
@@ -104,8 +104,7 @@ namespace Stock.Strategies
                                 OrderPosition = OrderPosition.Long,
                                 PositionAction = PositionAction.Open,
                                 Timeframe = parameter.Timeframe,
-                                High = levelHigh,
-                                Low = levelLow,
+                                High = secondLastPrice.Low,
                                 Center = center,
                                 PriceClosed = price.Close,
                                 ATR = (decimal)atr.Last().Atr,
@@ -148,8 +147,7 @@ namespace Stock.Strategies
                                 OrderPosition = OrderPosition.Short,
                                 PositionAction = PositionAction.Open,
                                 Timeframe = parameter.Timeframe,
-                                High = levelHigh,
-                                Low = levelLow,
+                                High = secondLastPrice.High,
                                 Center = center,
                                 PriceClosed = price.Close,
                                 ATR = (decimal)atr.Last().Atr
