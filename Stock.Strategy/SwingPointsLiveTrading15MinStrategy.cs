@@ -6,7 +6,16 @@ using Stock.Strategies.Parameters;
 
 namespace Stock.Strategies
 {
-    public class SwingPointsLiveTradingStrategy
+    public interface ISwingPointStrategy
+    {
+        event AlertEventHandler AlertCreated;
+
+        void CheckForTopBottomTouch(string ticker, List<Price> ascSortedByDatePrice, IStrategyParameter strategyParameter);
+        void CheckForBreakAboveDownTrendLine(string ticker, List<Price> ascSortedByDatePrice, IStrategyParameter strategyParameter);
+        void CheckForBreakBelowUpTrendLine(string ticker, List<Price> ascSortedByDatePrice, IStrategyParameter strategyParameter);
+    }
+
+    public class SwingPointsLiveTrading15MinStrategy: ISwingPointStrategy
     {
         public event AlertEventHandler AlertCreated;
 
@@ -27,6 +36,11 @@ namespace Stock.Strategies
                 var levels = SwingPointAnalyzer.GetLevels(ascSortedByDatePrice, parameter.NumberOfCandlesticksToLookBack)
                     .Where(x => x.Value.Count + 1 >= parameter.NumberOfCandlesticksIntersectForTopsAndBottoms) // + 1 because we need to include the key
                     .ToList();
+
+                var midLines = levels.Select(x => new { mid = (x.Value.Select(y => y.High).Max()) + (x.Value.Select(y => y.Low).Min()) / 2, count = x.Value.Count()})
+                    .OrderByDescending(x => x.mid)
+                    .ToList();
+
 
                 var hmVolumes = ascSortedByDatePrice.GetHeatmapVolume(21, 21);
                 var hmVolume = hmVolumes.Last().Volume;
@@ -49,7 +63,13 @@ namespace Stock.Strategies
                 var priceRangeBeforeSecondLastPrice = ascSortedByDatePrice.GetRange(ascSortedByDatePrice.Count - 1 - numberOfCandlesticksToLookBackBeforeCurrentPrice, numberOfCandlesticksToLookBackBeforeCurrentPrice);
 
                 var levelPriceRangeBeforeSecondLastPriceTouched = levels
-                    .Where(x => secondLastPrice.CandleRange.Intersect(x.Key.CandleRange))
+                    .Where(x =>
+                    {
+                        var center = (x.Key.Low + x.Key.High) / 2;
+                        var centerOffset = center * (decimal)0.005;
+                        var centerPoint = new NumericRange(center - centerOffset, center + centerOffset);
+                        return secondLastPrice.CandleRange.Intersect(centerPoint);
+                    })
                     .Where(x => !x.Key.Equals(price))
                     .ToList();
 
@@ -62,7 +82,8 @@ namespace Stock.Strategies
                     var levelLow = levelPriceRangeBeforeSecondLastPriceTouched.Select(x => x.Key.Low).Min();
                     var levelHigh = levelPriceRangeBeforeSecondLastPriceTouched.Select(x => x.Key.High).Max();
                     var center = (levelLow + levelHigh) / 2;
-                    var centerPoint = new NumericRange(center, center);
+                    var centerOffset = center * (decimal)0.005;
+                    var centerPoint = new NumericRange(center - centerOffset, center + centerOffset);
                     var averageSwingPointIntersected = levelPriceRangeBeforeSecondLastPriceTouched.Select(x => x.Value.Count).Average();
 
                     var priceIntersectSecondLastPrice = price.CandleRange.Intersect(secondLastPrice.CandleRange);
@@ -86,12 +107,13 @@ namespace Stock.Strategies
                         && secondLastPriceIntersectCenterLevelPoint
                         && secondLastPrice.High > centerPoint.High
                         && price.Close > secondLastPrice.Close
+                        && price.Close > centerPoint.High
                         && priceIntersectSecondLastPrice
                         && priceNotIntersectCenterLevelPoint)
                     {
                         var message = priceIntersectAnyLevelPoint
-                            ? $"Price {price.Close} ({price.Date:s}) > {centerPoint.High} ({levelLow} - {levelHigh}), points: {averageSwingPointIntersected}, big body candle: {price.IsContentCandle}, *level touch*: {pricePointCenter}"
-                            : $"Price {price.Close} ({price.Date:s}) > {centerPoint.High} ({levelLow} - {levelHigh}), points: {averageSwingPointIntersected}, big body candle: {price.IsContentCandle}";
+                            ? $"Price {price.Close} ({price.Date:s}) > {centerPoint.High} ({centerPoint.Low} - {centerPoint.High}), points: {averageSwingPointIntersected}, big body candle: {price.IsContentCandle}, *level touch*: {pricePointCenter}"
+                            : $"Price {price.Close} ({price.Date:s}) > {centerPoint.High} ({centerPoint.Low} - {centerPoint.High}), points: {averageSwingPointIntersected}, big body candle: {price.IsContentCandle}";
 
                         if (hmVolumeCheck && isValidCandleForLong)
                         {
@@ -129,12 +151,13 @@ namespace Stock.Strategies
                         && secondLastPriceIntersectCenterLevelPoint
                         && secondLastPrice.Low < centerPoint.Low
                         && price.Close < secondLastPrice.Close
+                        && price.Close < centerPoint.Low
                         && priceIntersectSecondLastPrice
                         && priceNotIntersectCenterLevelPoint)
                     {
                         var message = priceIntersectAnyLevelPoint
-                            ? $"Price {price.Close} ({price.Date:s}) < {centerPoint.Low} ({levelLow} - {levelHigh}), points: {averageSwingPointIntersected}, big body candle: {price.IsContentCandle}, *level touch*: {pricePointCenter}"
-                            : $"Price {price.Close} ({price.Date:s}) < {centerPoint.Low} ({levelLow} - {levelHigh}), points: {averageSwingPointIntersected}, big body candle: {price.IsContentCandle}";
+                            ? $"Price {price.Close} ({price.Date:s}) < {centerPoint.Low} ({centerPoint.Low} - {centerPoint.High}), points: {averageSwingPointIntersected}, big body candle: {price.IsContentCandle}, *level touch*: {pricePointCenter}"
+                            : $"Price {price.Close} ({price.Date:s}) < {centerPoint.Low} ({centerPoint.Low} - {centerPoint.High}), points: {averageSwingPointIntersected}, big body candle: {price.IsContentCandle}";
 
                         if (hmVolumeCheck && isValidCandleForShort)
                         {

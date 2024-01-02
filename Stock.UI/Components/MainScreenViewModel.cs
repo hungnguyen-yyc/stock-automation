@@ -9,6 +9,7 @@ using Stock.Strategies.Parameters;
 using Stock.UI.IBKR.Client;
 using Stock.UI.IBKR.Managers;
 using Stock.UI.IBKR.Messages;
+using Syncfusion.Data.Extensions;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics.Contracts;
@@ -28,7 +29,7 @@ namespace Stock.UI.Components
         private EReaderMonitorSignal _signal;
 
         private readonly StockDataRepository _repo;
-        private readonly SwingPointsLiveTradingStrategy _strategy;
+        private ISwingPointStrategy _strategy;
         private IReadOnlyCollection<Price> _prices;
         private string _selectedTimeframe;
         private string _selectedTicker;
@@ -49,12 +50,12 @@ namespace Stock.UI.Components
         public delegate void IBKRConnectedHandler(bool isConnected);
         public event IBKRConnectedHandler IBKRConnected;
 
-        public MainScreenViewModel(StockDataRepository repo, SwingPointsLiveTradingStrategy strategy)
+        public MainScreenViewModel(StockDataRepository repo, SwingPointsLiveTrading15MinStrategy strategy)
         {
             _repo = repo;
             _strategy = strategy;
             _prices = new List<Price>();
-            _selectedTimeframe = Timeframe.Minute15.ToString();
+            _selectedTimeframe = ALL;
             _selectedTicker = ALL;
             _allAlerts = new ObservableCollection<Alert>();
             _filteredAlerts = new ObservableCollection<Alert>();
@@ -470,29 +471,53 @@ namespace Stock.UI.Components
         private async Task RunInDebug()
         {
             var tickers = TickersToTrade.POPULAR_TICKERS;
-            var timeframes = new[] { Timeframe.Minute15, Timeframe.Hour1 };
-
+            var timeframes = new[] { Timeframe.Minute30 };
             foreach (var timeframe in timeframes)
             {
+                _strategy.AlertCreated -= Strategy_AlertCreated;
+
+                if (timeframe == Timeframe.Hour1)
+                {
+                    _strategy = new SwingPointsLiveTrading1HourStrategy();
+                }
+                else if (timeframe == Timeframe.Minute15 || timeframe == Timeframe.Minute30)
+                {
+                    _strategy = new SwingPointsLiveTrading15MinStrategy();
+                }
+                else
+                {
+                    continue;
+                }
+
+                _strategy.AlertCreated += Strategy_AlertCreated;
+
                 foreach (var ticker in tickers)
                 {
-                    //await _repo.FillLatestDataForTheDay(ticker, timeframe, DateTime.Now, DateTime.Now);
-                    var swingPointStrategyParameter = GetSwingPointStrategyParameter(ticker, timeframe);
-
-                    var prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddMonths(-3), DateTime.Now);
-
-                    //for (int i = 1000; i < prices.Count; i++)
-                    //{
-                    //    var downTrendBreakout = Task.Run(() => _strategy.CheckForBreakAboveDownTrendLine(ticker, prices.Take(i).ToList(), swingPointStrategyParameter));
-                    //    var upTrendBreakout = Task.Run(() => _strategy.CheckForBreakBelowUpTrendLine(ticker, prices.Take(i).ToList(), swingPointStrategyParameter));
-
-                    //    await Task.WhenAll(downTrendBreakout, upTrendBreakout);
-                    //}
-
-                    prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddYears(-5), DateTime.Now);
-                    for (int i = prices.Count - 500; i < prices.Count; i++)
+                    try
                     {
-                        await Task.Run(() => _strategy.CheckForTopBottomTouch(ticker, prices.Take(i).ToList(), swingPointStrategyParameter));
+                        //await _repo.FillLatestDataForTheDay(ticker, timeframe, DateTime.Now, DateTime.Now);
+                        var swingPointStrategyParameter = GetSwingPointStrategyParameter(ticker, timeframe);
+
+                        //for (int i = 1000; i < prices.Count; i++)
+                        //{
+                        //    var downTrendBreakout = Task.Run(() => _strategy.CheckForBreakAboveDownTrendLine(ticker, prices.Take(i).ToList(), swingPointStrategyParameter));
+                        //    var upTrendBreakout = Task.Run(() => _strategy.CheckForBreakBelowUpTrendLine(ticker, prices.Take(i).ToList(), swingPointStrategyParameter));
+
+                        //    await Task.WhenAll(downTrendBreakout, upTrendBreakout);
+                        //}
+
+                        var prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddYears(-5), DateTime.Now);
+                        var firstPrice3MonthAgo = prices.First(x => x.Date >= DateTime.Now.AddDays(-12));
+                        var index = prices.IndexOf(firstPrice3MonthAgo);
+                        for (int i = index; i < prices.Count; i++)
+                        {
+                            await Task.Run(() => _strategy.CheckForTopBottomTouch(ticker, prices.Take(i).ToList(), swingPointStrategyParameter));
+                        }
+                        Logs.Add(new LogEventArg($"Finished running strategy for {ticker} {timeframe} at {DateTime.Now}"));
+                    }
+                    catch (Exception ex)
+                    {
+                        Logs.Add(new LogEventArg(ex.Message));
                     }
                 }
             }
@@ -514,10 +539,29 @@ namespace Stock.UI.Components
 
                     foreach (var timeframe in timeframes)
                     {
+                        if (timeframe == Timeframe.Hour1)
+                        {
+                            _strategy = new SwingPointsLiveTrading1HourStrategy();
+                        }
+                        else if (timeframe == Timeframe.Minute15 || timeframe == Timeframe.Minute30)
+                        {
+                            _strategy = new SwingPointsLiveTrading15MinStrategy();
+                        }
+                        else
+                        {
+                            continue;
+                        }
+
+                        _strategy.AlertCreated += Strategy_AlertCreated;
+
                         var minuteModule = DateTime.Now.Minute % 15;
                         if (timeframe == Timeframe.Hour1)
                         {
                             minuteModule = DateTime.Now.Minute % 60;
+                        }
+                        else if (timeframe == Timeframe.Minute30)
+                        {
+                            minuteModule = DateTime.Now.Minute % 30;
                         }
 
                         // try to run 2 minutes before the candle finish
@@ -527,6 +571,11 @@ namespace Stock.UI.Components
                         }
 
                         if (timeframe == Timeframe.Hour1 && minuteModule != 58)
+                        {
+                            continue;
+                        }
+
+                        if (timeframe == Timeframe.Minute30 && minuteModule != 28)
                         {
                             continue;
                         }
@@ -665,8 +714,7 @@ namespace Stock.UI.Components
                 return;
             }
             _orderManager.PlaceOrder(contract, order);
-            await _repo.SaveContract(contract);
-            await _repo.SaveOptionContractWithTarget(contract, (TopNBottomStrategyAlert)alert);
+            _repo.SaveContract(contract);
 #else
             Logs.Add(new LogEventArg($"Closed position for {positionMessage.Contract.Symbol} {positionMessage.Contract.Right} {positionMessage.Contract.Strike} {positionMessage.Contract.LastTradeDateOrContractMonth}"));
 #endif

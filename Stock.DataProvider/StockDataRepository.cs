@@ -519,8 +519,8 @@ namespace Stock.Data
             using var conn = new SqliteConnection($"Data Source={_dbPath}");
             try
             {
-                var tablename = "fifteen_minute_price";
-                var interval = 15;
+                var tablename = "thirty_minute_price";
+                var interval = 30;
                 var url = "https://ds01.ddfplus.com/historical/queryminutes.ashx?symbol={0}&start=20180101&end=20231230&maxrecords=1048501&contractroll=combined&order=Descending&interval={1}&fromt=false&username=randacchub%40gmail.com&password=_placeholder_";
                 using var httpClient = new HttpClient();
                 var response = await httpClient.GetAsync(string.Format(url, ticker, interval));

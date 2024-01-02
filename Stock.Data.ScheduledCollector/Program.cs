@@ -19,28 +19,25 @@ namespace Stock.Data.ScheduledCollector
 
         static async Task Run()
         {
-            while (true)
+            var dbHandler = new StockDataRepository();
+            var tickers = TickersToTrade.POPULAR_TICKERS.ToList();
+            foreach (var ticker in tickers)
             {
-                var dbHandler = new StockDataRepository();
-                var tickers = TickersToTrade.POPULAR_TICKERS.ToList();
-                foreach (var ticker in tickers)
-                {
-                    Log($"Collecting data for {ticker} at {DateTime.Now:s}");
-                    await dbHandler.QuickFill(ticker);
-                    Log($"Finished collecting data for {ticker} at {DateTime.Now:s}");
-                    Log("+++++++++++++++++++++++++++++++++++++++++");
-                    await Task.Delay(TimeSpan.FromSeconds(15));
-                }
+                Log($"Collecting data for {ticker} at {DateTime.Now:s}");
+                await dbHandler.QuickFill(ticker);
+                Log($"Finished collecting data for {ticker} at {DateTime.Now:s}");
+                Log("+++++++++++++++++++++++++++++++++++++++++");
+                await Task.Delay(TimeSpan.FromSeconds(15));
+            }
 
-                Log("Finished collecting data for all tickers. Waiting for next trigger.");
-                await Task.Delay(TimeSpan.FromMinutes(15));
+            Log("Finished collecting data for all tickers. Waiting for next trigger.");
+            await Task.Delay(TimeSpan.FromMinutes(15));
 #if !DEBUG
                 if (DateTime.Now.Hour >= 14 && DateTime.Now.Minute >= 30)
                 {
                     break;
                 }
 #endif
-            }
         }
     }
 }

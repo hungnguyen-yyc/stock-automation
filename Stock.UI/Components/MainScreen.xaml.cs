@@ -34,7 +34,7 @@ namespace Stock.UI.Components
         {
             InitializeComponent();
 
-            viewModel = new MainScreenViewModel(new Data.StockDataRepository(), new Strategies.SwingPointsLiveTradingStrategy());
+            viewModel = new MainScreenViewModel(new Data.StockDataRepository(), new Strategies.SwingPointsLiveTrading15MinStrategy());
             viewModel.IBKRConnected += OnIBKRConnected;
             DataContext = viewModel;
         }
