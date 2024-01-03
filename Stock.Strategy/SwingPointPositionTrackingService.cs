@@ -39,6 +39,7 @@ namespace Stock.Strategies
 
         public async Task Track(Timeframe timeframe)
         {
+            Log("Start tracking position");
             while (true)
             {
                 var openPositions = _positions.Where(p => p.Position != 0).ToList();

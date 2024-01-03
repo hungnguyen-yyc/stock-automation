@@ -1,4 +1,5 @@
 ﻿using IBApi;
+using Microsoft.Toolkit.Uwp.Notifications;
 using Stock.Data;
 using Stock.Data.EventArgs;
 using Stock.Shared;
@@ -507,7 +508,7 @@ namespace Stock.UI.Components
                         //}
 
                         var prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddYears(-5), DateTime.Now);
-                        var firstPrice3MonthAgo = prices.First(x => x.Date >= DateTime.Now.AddDays(-12));
+                        var firstPrice3MonthAgo = prices.First(x => x.Date >= DateTime.Now.AddDays(-5));
                         var index = prices.IndexOf(firstPrice3MonthAgo);
                         for (int i = index; i < prices.Count; i++)
                         {
@@ -531,11 +532,8 @@ namespace Stock.UI.Components
             {
                 try
                 {
-
-                    Logs.Add(new LogEventArg($"Started running strategy at {DateTime.Now}"));
-
                     var tickers = TickersToTrade.POPULAR_TICKERS;
-                    var timeframes = new[] { Timeframe.Minute15, Timeframe.Hour1 };
+                    var timeframes = new[] { Timeframe.Minute15, Timeframe.Hour1, Timeframe.Minute30 };
 
                     foreach (var timeframe in timeframes)
                     {
@@ -580,6 +578,8 @@ namespace Stock.UI.Components
                             continue;
                         }
 
+                        Logs.Add(new LogEventArg($"Started running strategy at {DateTime.Now}"));
+
                         foreach (var ticker in tickers)
                         {
                             await _repo.FillLatestDataForTheDay(ticker, timeframe, DateTime.Now, DateTime.Now);
@@ -588,6 +588,7 @@ namespace Stock.UI.Components
                             var prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddYears(-5), DateTime.Now);
 
                             await Task.Run(() => _strategy.CheckForTopBottomTouch(ticker, prices.ToList(), swingPointStrategyParameter));
+
                         }
                     }
                 }
@@ -617,6 +618,12 @@ namespace Stock.UI.Components
                     _allAlerts.Add(alert);
                     CreateTopNBottomBuyOrder(alert).Wait();
                     UpdateFilteredAlerts();
+
+                    new ToastContentBuilder()
+                    .AddText($"{alert.Ticker} {alert.OrderPosition} {alert.CreatedAt:yyyy-MM-dd HH:mm}")
+                    .AddText(alert.Message)
+                    .Show();
+
                 }
             }
         }
