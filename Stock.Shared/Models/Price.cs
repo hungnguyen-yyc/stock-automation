@@ -2,11 +2,6 @@
 
 namespace Stock.Shared.Models
 {
-    public class PriceList : List<Price>
-    {
-
-    }
-
     public class Price : IPrice
     {
         public DateTime Date { get; set; }

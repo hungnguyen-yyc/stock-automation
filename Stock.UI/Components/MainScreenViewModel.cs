@@ -508,11 +508,11 @@ namespace Stock.UI.Components
                         //}
 
                         var prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddYears(-5), DateTime.Now);
-                        var firstPrice3MonthAgo = prices.First(x => x.Date >= DateTime.Now.AddDays(-5));
+                        var firstPrice3MonthAgo = prices.First(x => x.Date >= DateTime.Now.AddDays(-10));
                         var index = prices.IndexOf(firstPrice3MonthAgo);
                         for (int i = index; i < prices.Count; i++)
                         {
-                            await Task.Run(() => _strategy.CheckForTopBottomTouch(ticker, prices.Take(i).ToList(), swingPointStrategyParameter));
+                            await Task.Run(() => _strategy.CheckForTopBottomTouch(ticker, prices.Take(i).ToList(), swingPointStrategyParameter, true));
                         }
                         Logs.Add(new LogEventArg($"Finished running strategy for {ticker} {timeframe} at {DateTime.Now}"));
                     }
@@ -563,17 +563,17 @@ namespace Stock.UI.Components
                         }
 
                         // try to run 2 minutes before the candle finish
-                        if (timeframe == Timeframe.Minute15 && minuteModule != 13)
+                        if (timeframe == Timeframe.Minute15 && minuteModule != 1)
                         {
                             continue;
                         }
 
-                        if (timeframe == Timeframe.Hour1 && minuteModule != 58)
+                        if (timeframe == Timeframe.Hour1 && minuteModule != 7)
                         {
                             continue;
                         }
 
-                        if (timeframe == Timeframe.Minute30 && minuteModule != 28)
+                        if (timeframe == Timeframe.Minute30 && minuteModule != 15)
                         {
                             continue;
                         }
@@ -587,7 +587,7 @@ namespace Stock.UI.Components
 
                             var prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddYears(-5), DateTime.Now);
 
-                            await Task.Run(() => _strategy.CheckForTopBottomTouch(ticker, prices.ToList(), swingPointStrategyParameter));
+                            await Task.Run(() => _strategy.CheckForTopBottomTouch(ticker, prices.ToList(), swingPointStrategyParameter, false));
 
                         }
                     }
@@ -619,11 +619,12 @@ namespace Stock.UI.Components
                     CreateTopNBottomBuyOrder(alert).Wait();
                     UpdateFilteredAlerts();
 
+#if !DEBUG
                     new ToastContentBuilder()
                     .AddText($"{alert.Ticker} {alert.OrderPosition} {alert.CreatedAt:yyyy-MM-dd HH:mm}")
                     .AddText(alert.Message)
                     .Show();
-
+#endif
                 }
             }
         }
