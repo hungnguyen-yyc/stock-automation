@@ -119,7 +119,6 @@ namespace Stock.UI.Components
                 Timeframe.Daily.ToString()
             };
 
-            _strategy.AlertCreated += Strategy_AlertCreated;
             StartStrategy();
         }
 
@@ -473,23 +472,12 @@ namespace Stock.UI.Components
         private async Task RunInDebug()
         {
             var tickers = TickersToTrade.POPULAR_TICKERS;
-            var timeframes = new[] { Timeframe.Hour1 };
+            var timeframes = new[] { Timeframe.Hour1, Timeframe.Minute15 };
             foreach (var timeframe in timeframes)
             {
                 _strategy.AlertCreated -= Strategy_AlertCreated;
 
-                if (timeframe == Timeframe.Hour1)
-                {
-                    _strategy = new HeikinAshiSwingPointsLiveTradingStrategy();
-                }
-                else if (timeframe == Timeframe.Minute15 || timeframe == Timeframe.Minute30)
-                {
-                    _strategy = new HeikinAshiSwingPointsLiveTradingStrategy();
-                }
-                else
-                {
-                    continue;
-                }
+                _strategy = new HeikinAshiSwingPointsLiveTradingStrategy();
 
                 _strategy.AlertCreated += Strategy_AlertCreated;
 
@@ -509,7 +497,7 @@ namespace Stock.UI.Components
                         //}
 
                         var prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddYears(-5), DateTime.Now);
-                        var firstPrice3MonthAgo = prices.First(x => x.Date >= DateTime.Now.AddDays(-10));
+                        var firstPrice3MonthAgo = prices.First(x => x.Date >= DateTime.Now.AddDays(-30));
                         var index = prices.IndexOf(firstPrice3MonthAgo);
                         for (int i = index; i < prices.Count; i++)
                         {
@@ -734,14 +722,14 @@ namespace Stock.UI.Components
                     {
                         NumberOfCandlesticksToLookBack = 14,
                         Timeframe = timeframe,
-                        NumberOfCandlesticksIntersectForTopsAndBottoms = 3,
+                        NumberOfCandlesticksIntersectForTopsAndBottoms = 1,
                     }.Merge(GetDefaultParameter(timeframe));
                 case "SPY":
                     return new SwingPointStrategyParameter
                     {
                         NumberOfCandlesticksToLookBack = 14,
                         Timeframe = timeframe,
-                        NumberOfCandlesticksIntersectForTopsAndBottoms = 3,
+                        NumberOfCandlesticksIntersectForTopsAndBottoms = 1,
                     }.Merge(GetDefaultParameter(timeframe));
                 default:
                     return GetDefaultParameter(timeframe);

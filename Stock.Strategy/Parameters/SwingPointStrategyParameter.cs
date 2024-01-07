@@ -22,6 +22,7 @@ namespace Stock.Strategies.Parameters
 
             return new SwingPointStrategyParameter
             {
+                Timeframe = parameter.Timeframe,
                 NumberOfSwingPointsToLookBack = parameter.NumberOfSwingPointsToLookBack == 0 ? NumberOfSwingPointsToLookBack : parameter.NumberOfSwingPointsToLookBack,
                 NumberOfCandlesticksToLookBack = parameter.NumberOfCandlesticksToLookBack == 0 ? NumberOfCandlesticksToLookBack : parameter.NumberOfCandlesticksToLookBack,
                 NumberOfCandlesticksToSkipAfterSwingPoint = parameter.NumberOfCandlesticksToSkipAfterSwingPoint == 0 ? NumberOfCandlesticksToSkipAfterSwingPoint : parameter.NumberOfCandlesticksToSkipAfterSwingPoint,
