@@ -1,5 +1,6 @@
 ﻿using IBApi;
 using Microsoft.Toolkit.Uwp.Notifications;
+using Skender.Stock.Indicators;
 using Stock.Data;
 using Stock.Data.EventArgs;
 using Stock.Shared;
@@ -472,18 +473,18 @@ namespace Stock.UI.Components
         private async Task RunInDebug()
         {
             var tickers = TickersToTrade.POPULAR_TICKERS;
-            var timeframes = new[] { Timeframe.Minute30 };
+            var timeframes = new[] { Timeframe.Hour1 };
             foreach (var timeframe in timeframes)
             {
                 _strategy.AlertCreated -= Strategy_AlertCreated;
 
                 if (timeframe == Timeframe.Hour1)
                 {
-                    _strategy = new SwingPointsLiveTrading1HourStrategy();
+                    _strategy = new HeikinAshiSwingPointsLiveTradingStrategy();
                 }
                 else if (timeframe == Timeframe.Minute15 || timeframe == Timeframe.Minute30)
                 {
-                    _strategy = new SwingPointsLiveTrading15MinStrategy();
+                    _strategy = new HeikinAshiSwingPointsLiveTradingStrategy();
                 }
                 else
                 {
@@ -512,7 +513,7 @@ namespace Stock.UI.Components
                         var index = prices.IndexOf(firstPrice3MonthAgo);
                         for (int i = index; i < prices.Count; i++)
                         {
-                            await Task.Run(() => _strategy.CheckForTopBottomTouch(ticker, prices.Take(i).ToList(), swingPointStrategyParameter, true));
+                            await Task.Run(() => _strategy.CheckForTopBottomTouch(ticker, prices.Take(i).ToList(), swingPointStrategyParameter));
                         }
                         Logs.Add(new LogEventArg($"Finished running strategy for {ticker} {timeframe} at {DateTime.Now}"));
                     }
@@ -537,19 +538,8 @@ namespace Stock.UI.Components
 
                     foreach (var timeframe in timeframes)
                     {
-                        if (timeframe == Timeframe.Hour1)
-                        {
-                            _strategy = new SwingPointsLiveTrading1HourStrategy();
-                        }
-                        else if (timeframe == Timeframe.Minute15 || timeframe == Timeframe.Minute30)
-                        {
-                            _strategy = new SwingPointsLiveTrading15MinStrategy();
-                        }
-                        else
-                        {
-                            continue;
-                        }
-
+                        _strategy.AlertCreated -= Strategy_AlertCreated;
+                        _strategy = new HeikinAshiSwingPointsLiveTradingStrategy();
                         _strategy.AlertCreated += Strategy_AlertCreated;
 
                         var minuteModule = DateTime.Now.Minute % 15;
@@ -585,9 +575,9 @@ namespace Stock.UI.Components
                             await _repo.FillLatestDataForTheDay(ticker, timeframe, DateTime.Now, DateTime.Now);
                             var swingPointStrategyParameter = GetSwingPointStrategyParameter(ticker, timeframe);
 
-                            var prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddYears(-5), DateTime.Now);
+                            var prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddYears(-10), DateTime.Now);
 
-                            await Task.Run(() => _strategy.CheckForTopBottomTouch(ticker, prices.ToList(), swingPointStrategyParameter, false));
+                            await Task.Run(() => _strategy.CheckForTopBottomTouch(ticker, prices.ToList(), swingPointStrategyParameter));
 
                         }
                     }
@@ -735,7 +725,7 @@ namespace Stock.UI.Components
                 case "AAPL":
                     return new SwingPointStrategyParameter
                     {
-                        NumberOfCandlesticksToLookBack = 21,
+                        NumberOfCandlesticksToLookBack = 14,
                         Timeframe = timeframe,
                         NumberOfCandlesticksIntersectForTopsAndBottoms = 5,
                     }.Merge(GetDefaultParameter(timeframe));
@@ -762,7 +752,7 @@ namespace Stock.UI.Components
         {
             return new SwingPointStrategyParameter
             {
-                NumberOfCandlesticksToLookBack = 21,
+                NumberOfCandlesticksToLookBack = 14,
                 Timeframe = timeframe,
                 NumberOfCandlesticksIntersectForTopsAndBottoms = 5,
 
