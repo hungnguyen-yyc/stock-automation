@@ -24,9 +24,9 @@ namespace Stock.Data.ScheduledCollector
             foreach (var ticker in tickers)
             {
                 Log($"Collecting data for {ticker} at {DateTime.Now:s}");
-                await dbHandler.QuickFill(ticker, Timeframe.Minute15);
-                await dbHandler.QuickFill(ticker, Timeframe.Minute30);
-                await dbHandler.QuickFill(ticker, Timeframe.Hour1);
+                await dbHandler.QuickFill(ticker, Timeframe.Minute15, DateTime.Today.AddMonths(-3));
+                await dbHandler.QuickFill(ticker, Timeframe.Minute30, DateTime.Today.AddMonths(-3));
+                await dbHandler.QuickFill(ticker, Timeframe.Hour1, DateTime.Today.AddMonths(-3));
                 Log($"Finished collecting data for {ticker} at {DateTime.Now:s}");
                 Log("+++++++++++++++++++++++++++++++++++++++++");
                 await Task.Delay(TimeSpan.FromSeconds(15));

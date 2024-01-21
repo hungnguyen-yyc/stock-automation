@@ -190,11 +190,12 @@ namespace Stock.Strategies
 
         public void CheckForBreakAboveDownTrendLine(string ticker, List<Price> ascSortedByDatePrice, IStrategyParameter strategyParameter)
         {
+            var last6MonthAction = ascSortedByDatePrice.Where(x => x.Date >= DateTime.Now.Date.AddMonths(-6)).ToList();
             var parameter = (SwingPointStrategyParameter)strategyParameter;
             var numberOfCandlesticksToLookBack = parameter.NumberOfCandlesticksToLookBack;
-            var highLines = SwingPointAnalyzer.GetTrendlines(ascSortedByDatePrice, parameter, true);
+            var highLines = SwingPointAnalyzer.GetTrendlines(last6MonthAction, parameter, true);
             var trendingDownLines = highLines.Where(x => x.Item2.High < x.Item1.High).ToList();
-            var nTops = SwingPointAnalyzer.GetNTops(ascSortedByDatePrice, parameter.NumberOfCandlesticksToLookBack);
+            var nTops = SwingPointAnalyzer.GetNTops(last6MonthAction, parameter.NumberOfCandlesticksToLookBack);
 
             // consolidate lines so that we only have 1 line per trend
             var consolidatedLines = new List<Tuple<Price, Price>>();
@@ -218,20 +219,20 @@ namespace Stock.Strategies
                 }
             }
 
-            var thirdLastPriceIndex = ascSortedByDatePrice.Count - 3;
-            var secondLastPriceIndex = ascSortedByDatePrice.Count - 2;
-            var currentPriceIndex = ascSortedByDatePrice.Count - 1;
-            var thirdLastPrice = ascSortedByDatePrice[thirdLastPriceIndex];
-            var secondLastPrice = ascSortedByDatePrice[secondLastPriceIndex];
-            var price = ascSortedByDatePrice.Last();
+            var thirdLastPriceIndex = last6MonthAction.Count - 3;
+            var secondLastPriceIndex = last6MonthAction.Count - 2;
+            var currentPriceIndex = last6MonthAction.Count - 1;
+            var thirdLastPrice = last6MonthAction[thirdLastPriceIndex];
+            var secondLastPrice = last6MonthAction[secondLastPriceIndex];
+            var price = last6MonthAction.Last();
 
             Alert? alert = null;
             foreach (var lineEnds in trendingDownLines)
             {
                 var lineStart = lineEnds.Item1;
                 var lineEnd = lineEnds.Item2;
-                var lineStartIndex = ascSortedByDatePrice.IndexOf(lineStart);
-                var lineEndIndex = ascSortedByDatePrice.IndexOf(lineEnd);
+                var lineStartIndex = last6MonthAction.IndexOf(lineStart);
+                var lineEndIndex = last6MonthAction.IndexOf(lineEnd);
                 var lineStartPoint = new Point(lineStartIndex, lineStart.High);
                 var lineEndPoint = new Point(lineEndIndex, lineEnd.High);
                 var line = new Line(lineStartPoint, lineEndPoint);
@@ -243,7 +244,7 @@ namespace Stock.Strategies
                 var secondLastHighPoint = new Point(secondLastPriceIndex, secondLastPrice.High);
                 var secondLastLowPoint = new Point(secondLastPriceIndex, secondLastPrice.Low);
                 var currentHighPoint = new Point(currentPriceIndex, price.High);
-                var currentLowPoint = new Point(ascSortedByDatePrice.Count - 1, price.Low);
+                var currentLowPoint = new Point(last6MonthAction.Count - 1, price.Low);
 
                 var crossSecondLastPrice = SwingPointAnalyzer.DoLinesIntersect(lineStartPoint, new Point(secondLastPriceIndex, projectedYForSecondLastPriceLine), secondLastLowPoint, secondLastHighPoint);
                 var notCrossCurrentPrice = !SwingPointAnalyzer.DoLinesIntersect(lineStartPoint, new Point(currentPriceIndex, projectedYForCurrentPriceLine), currentLowPoint, currentHighPoint);
@@ -253,9 +254,9 @@ namespace Stock.Strategies
                 
                 var priceNotIntersectThirdLastPrice = !price.CandleRange.Intersect(thirdLastPrice.CandleRange);
 
-                var wma9 = ascSortedByDatePrice.GetWma(9);
-                var wma21 = ascSortedByDatePrice.GetWma(21);
-                var pvo = ascSortedByDatePrice.GetPvo(12, 26, 9);
+                var wma9 = last6MonthAction.GetWma(9);
+                var wma21 = last6MonthAction.GetWma(21);
+                var pvo = last6MonthAction.GetPvo(12, 26, 9);
                 var wma9CrossBelowWma21 = wma9.Last().Wma > wma21.Last().Wma;
                 var pvoCheck = pvo.Last().Pvo > 0 && pvo.Last().Pvo > pvo.Last().Signal && pvo.Last().Histogram > 7;
 
@@ -264,8 +265,8 @@ namespace Stock.Strategies
                 if (numberOfCandlesFromEndPointToLastThirdPrice > 0)
                 {
                     var currentPricePoint = new Point(currentPriceIndex, price.Close);
-                    var priceRangeFromEndPointToLastThirdPrice = ascSortedByDatePrice.GetRange(lineEndIndex, numberOfCandlesFromEndPointToLastThirdPrice);
-                    var bodyRange = priceRangeFromEndPointToLastThirdPrice.Select(x => ascSortedByDatePrice.GetPriceBodyLineCoordinate(x));
+                    var priceRangeFromEndPointToLastThirdPrice = last6MonthAction.GetRange(lineEndIndex, numberOfCandlesFromEndPointToLastThirdPrice);
+                    var bodyRange = priceRangeFromEndPointToLastThirdPrice.Select(x => last6MonthAction.GetPriceBodyLineCoordinate(x));
                     bodyRangeNotIntersectTrendLine = bodyRange.All(x => !SwingPointAnalyzer.DoLinesIntersect(lineEndPoint, new Point(thirdLastPriceIndex, projectedYForThirdLastPriceLine), x.Start, x.End));
                 }
 
@@ -294,7 +295,7 @@ namespace Stock.Strategies
                 }
                 else
                 {
-                    var thirdLastPointIndex = ascSortedByDatePrice.IndexOf(thirdLastPrice);
+                    var thirdLastPointIndex = last6MonthAction.IndexOf(thirdLastPrice);
 
                     var thirdLastPriceOverTrendLine = thirdLastPrice.Close > projectedYForThirdLastPriceLine;
                     var thirdLastPriceHigherThanSecondLastPrice = thirdLastPrice.Close > secondLastPrice.Close;
@@ -332,12 +333,13 @@ namespace Stock.Strategies
 
         public void CheckForBreakBelowUpTrendLine(string ticker, List<Price> ascSortedByDatePrice, IStrategyParameter strategyParameter)
         {
+            var last6MonthAction = ascSortedByDatePrice.Where(x => x.Date >= DateTime.Now.Date.AddMonths(-6)).ToList();
             var parameter = (SwingPointStrategyParameter)strategyParameter;
             var numberOfCandlesticksToLookBack = parameter.NumberOfCandlesticksToLookBack;
-            var lowLines = SwingPointAnalyzer.GetTrendlines(ascSortedByDatePrice, parameter, false);
+            var lowLines = SwingPointAnalyzer.GetTrendlines(last6MonthAction, parameter, false);
             var trendingUpLines = lowLines.Where(x => x.Item2.Low > x.Item1.Low).ToList();
 
-            var nBottoms = SwingPointAnalyzer.GetNBottoms(ascSortedByDatePrice, parameter.NumberOfCandlesticksToLookBack);
+            var nBottoms = SwingPointAnalyzer.GetNBottoms(last6MonthAction, parameter.NumberOfCandlesticksToLookBack);
 
             // consolidate lines so that we only have 1 line per trend
             var consolidatedLines = new List<Tuple<Price, Price>>();
@@ -361,25 +363,25 @@ namespace Stock.Strategies
                 }
             }
 
-            var thirdLastPriceIndex = ascSortedByDatePrice.Count - 3;
-            var secondLastPriceIndex = ascSortedByDatePrice.Count - 2;
-            var currentPriceIndex = ascSortedByDatePrice.Count - 1;
-            var thirdLastPrice = ascSortedByDatePrice[thirdLastPriceIndex];
-            var secondLastPrice = ascSortedByDatePrice[secondLastPriceIndex];
-            var price = ascSortedByDatePrice.Last();
+            var thirdLastPriceIndex = last6MonthAction.Count - 3;
+            var secondLastPriceIndex = last6MonthAction.Count - 2;
+            var currentPriceIndex = last6MonthAction.Count - 1;
+            var thirdLastPrice = last6MonthAction[thirdLastPriceIndex];
+            var secondLastPrice = last6MonthAction[secondLastPriceIndex];
+            var price = last6MonthAction.Last();
 
             Alert? alert = null;
             foreach (var lineEnds in trendingUpLines)
             {
                 var lineStart = lineEnds.Item1;
                 var lineEnd = lineEnds.Item2;
-                var lineStartIndex = ascSortedByDatePrice.IndexOf(lineStart);
-                var lineEndIndex = ascSortedByDatePrice.IndexOf(lineEnd);
+                var lineStartIndex = last6MonthAction.IndexOf(lineStart);
+                var lineEndIndex = last6MonthAction.IndexOf(lineEnd);
                 var lineStartPoint = new Point(lineStartIndex, lineStart.Low);
                 var lineEndPoint = new Point(lineEndIndex, lineEnd.Low);
                 var line = new Line(lineStartPoint, lineEndPoint);
 
-                var secondLastPointIndex = ascSortedByDatePrice.IndexOf(secondLastPrice);
+                var secondLastPointIndex = last6MonthAction.IndexOf(secondLastPrice);
 
                 var projectedYForSecondLastPriceLine = line.FindYAtX(secondLastPriceIndex);
                 var projectedYForCurrentPriceLine = line.FindYAtX(currentPriceIndex);
@@ -404,9 +406,9 @@ namespace Stock.Strategies
                 var priceLessThanSecondLastPrice = price.Close < secondLastPrice.Close;
                 var priceNotIntersectThirdLastPrice = !price.CandleRange.Intersect(thirdLastPrice.CandleRange);
 
-                var wma9 = ascSortedByDatePrice.GetWma(9);
-                var wma21 = ascSortedByDatePrice.GetWma(21);
-                var pvo = ascSortedByDatePrice.GetPvo(12, 26, 9);
+                var wma9 = last6MonthAction.GetWma(9);
+                var wma21 = last6MonthAction.GetWma(21);
+                var pvo = last6MonthAction.GetPvo(12, 26, 9);
                 var wma9CrossBelowWma21 = wma9.Last().Wma < wma21.Last().Wma;
                 var pvoCheck = pvo.Last().Pvo > 0 && pvo.Last().Pvo > pvo.Last().Signal && pvo.Last().Histogram > 5;
 
@@ -415,8 +417,8 @@ namespace Stock.Strategies
                 if (numberOfCandlesFromEndPointToLastThirdPrice > 0)
                 {
                     var currentPricePoint = new Point(currentPriceIndex, price.Close);
-                    var priceRangeFromEndPointToLastThirdPrice = ascSortedByDatePrice.GetRange(lineEndIndex, numberOfCandlesFromEndPointToLastThirdPrice);
-                    var bodyRange = priceRangeFromEndPointToLastThirdPrice.Select(x => ascSortedByDatePrice.GetPriceBodyLineCoordinate(x));
+                    var priceRangeFromEndPointToLastThirdPrice = last6MonthAction.GetRange(lineEndIndex, numberOfCandlesFromEndPointToLastThirdPrice);
+                    var bodyRange = priceRangeFromEndPointToLastThirdPrice.Select(x => last6MonthAction.GetPriceBodyLineCoordinate(x));
                     bodyRangeNotIntersectTrendLine = bodyRange.All(x => !SwingPointAnalyzer.DoLinesIntersect(lineEndPoint, new Point(thirdLastPriceIndex, projectedYForThirdLastPriceLine), x.Start, x.End));
                 }
 
@@ -445,7 +447,7 @@ namespace Stock.Strategies
                 }
                 else
                 {
-                    var thirdLastPointIndex = ascSortedByDatePrice.IndexOf(thirdLastPrice);
+                    var thirdLastPointIndex = last6MonthAction.IndexOf(thirdLastPrice);
 
                     var thirdLastPriceOverTrendLine = thirdLastPrice.Close < projectedYForThirdLastPriceLine;
                     var thirdLastPriceLowerThanSecondLastPrice = thirdLastPrice.Close < secondLastPrice.Close;

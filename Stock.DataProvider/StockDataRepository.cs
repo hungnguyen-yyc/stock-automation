@@ -514,11 +514,12 @@ namespace Stock.Data
         }
 
         // TODO: for temporary use only, to fill data for new ticker, hardcode table name and interval
-        public async Task QuickFill(string ticker, Timeframe timeframe)
+        public async Task QuickFill(string ticker, Timeframe timeframe, DateTime deleteFrom)
         {
             using var conn = new SqliteConnection($"Data Source={_dbPath}");
             try
             {
+                var deleteFromString = deleteFrom.ToString("yyyyMMdd");
                 var tablename = "thirty_minute_price";
                 var interval = 30;
                 var toDate = DateTime.Now.AddDays(1).ToString("yyyyMMdd");
@@ -541,9 +542,9 @@ namespace Stock.Data
                         throw new Exception("Timeframe not supported");
                 }
 
-                var url = "https://ds01.ddfplus.com/historical/queryminutes.ashx?symbol={0}&start=20180101&end={1}&maxrecords=1048501&contractroll=combined&order=Descending&interval={2}&fromt=false&username=randacchub%40gmail.com&password=_placeholder_";
+                var url = "https://ds01.ddfplus.com/historical/queryminutes.ashx?symbol={0}&start={1}&end={2}&contractroll=combined&order=Descending&interval={3}&fromt=false&username=randacchub%40gmail.com&password=_placeholder_";
                 using var httpClient = new HttpClient();
-                var response = await httpClient.GetAsync(string.Format(url, ticker, toDate, interval));
+                var response = await httpClient.GetAsync(string.Format(url, ticker, deleteFromString, toDate, interval));
                 if (response.IsSuccessStatusCode)
                 {
                     var tickerId = await GetTickerId(ticker);
@@ -551,7 +552,7 @@ namespace Stock.Data
                     //delete existing ticker data
                     conn.Open();
                     var cmd = conn.CreateCommand();
-                    cmd.CommandText = $"DELETE FROM {tablename} WHERE ticker_id = {tickerId}";
+                    cmd.CommandText = $"DELETE FROM {tablename} WHERE ticker_id = {tickerId} AND DATE >= '{deleteFrom:yyyy-MM-dd hh:mm:ss}'";
                     cmd.ExecuteNonQuery();
 
                     string content = await response.Content.ReadAsStringAsync();
