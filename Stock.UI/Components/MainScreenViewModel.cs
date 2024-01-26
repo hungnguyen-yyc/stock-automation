@@ -538,7 +538,7 @@ namespace Stock.UI.Components
                     foreach (var timeframe in timeframes)
                     {
                         _strategy.AlertCreated -= Strategy_AlertCreated;
-                        _strategy = new HeikinAshiSwingPointsLiveTradingStrategy();
+                        _strategy = new SwingPointsLiveTrading1HourStrategy();
                         _strategy.AlertCreated += Strategy_AlertCreated;
 
                         if (timeframe == Timeframe.Hour1)
