@@ -1,6 +1,4 @@
 ﻿using IBApi;
-using Microsoft.Toolkit.Uwp.Notifications;
-using Skender.Stock.Indicators;
 using Stock.Data;
 using Stock.Data.EventArgs;
 using Stock.Shared;
@@ -11,10 +9,8 @@ using Stock.Strategies.Parameters;
 using Stock.UI.IBKR.Client;
 using Stock.UI.IBKR.Managers;
 using Stock.UI.IBKR.Messages;
-using Syncfusion.Data.Extensions;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Diagnostics.Contracts;
 using System.Windows.Data;
 using Contract = IBApi.Contract;
 using Order = IBApi.Order;
@@ -505,7 +501,18 @@ namespace Stock.UI.Components
 
                         var prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddYears(-5), DateTime.Now);
                         var firstPrice3MonthAgo = prices.First(x => x.Date >= DateTime.Now.AddDays(-30));
-                        var index = prices.IndexOf(firstPrice3MonthAgo);
+                        var index = 0;
+                        
+                        for (int i = 0; i < prices.Count; i++)
+                        {
+                            var price = prices.ElementAt(i);
+                            if (price.Date == firstPrice3MonthAgo.Date)
+                            {
+                                index = i;
+                                break;
+                            }
+                        }
+                        
                         for (int i = index; i < prices.Count; i++)
                         {
                             await Task.Run(() => {

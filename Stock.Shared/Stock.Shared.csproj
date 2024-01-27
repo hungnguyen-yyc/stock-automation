@@ -10,8 +10,8 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\..\..\..\TWS API\source\CSharpClient\client\CSharpAPI.csproj" />
+  <ItemGroup>    
+    <ProjectReference Include="..\..\..\..\..\..\..\TWS API\source\CSharpClient\client\CSharpAPI.csproj" />
     <ProjectReference Include="..\..\Stock.Indicators\src\Indicators.csproj" />
   </ItemGroup>
 

@@ -23,7 +23,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Stock.Data", "Stock.DataPro
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Stock.Data.ScheduledCollector", "Stock.Data.ScheduledCollector\Stock.Data.ScheduledCollector.csproj", "{FAA61031-2FBD-4E0E-AB15-208F12B6A2FB}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CSharpAPI", "..\..\..\..\..\TWS API\source\CSharpClient\client\CSharpAPI.csproj", "{E90E9062-8061-4F03-A1BA-7A5E85616374}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CSharpAPI", "..\..\..\..\..\..\..\TWS API\source\CSharpClient\client\CSharpAPI.csproj", "{E90E9062-8061-4F03-A1BA-7A5E85616374}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
