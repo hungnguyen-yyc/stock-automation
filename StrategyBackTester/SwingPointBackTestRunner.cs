@@ -7,18 +7,20 @@ using Stock.Strategies;
 using Stock.Strategies.Parameters;
 using Stock.Strategy;
 using System.Diagnostics;
+using IBApi;
+using Stock.Strategies.EventArgs;
 
 namespace StrategyBackTester
 {
     internal class SwingPointBackTestRunner
     {
         private readonly IStrategy _strategy;
-        private readonly List<Order> _trackedOrder;
+        private readonly List<AutomateOrder> _trackedOrder;
 
         public SwingPointBackTestRunner()
         {
             _strategy = new SwingPointsStrategy();
-            _trackedOrder = new List<Order>();
+            _trackedOrder = new List<AutomateOrder>();
             _strategy.OrderCreated += Strategy_OrderCreated;
         }
 
@@ -36,7 +38,7 @@ namespace StrategyBackTester
             Log($"Order created: {order.Ticker} - {order.Time} - {order.Type} - {order.Price.Close} - {order.Quantity}");
         }
 
-        private void Show(Order order)
+        private void Show(AutomateOrder order)
         {
             var toastContent = new ToastContentBuilder()
                 .AddText($"New order created: {order.Ticker} - {order.Action} {order.Type}")
@@ -100,7 +102,7 @@ namespace StrategyBackTester
 
                                 Log($"Running {nameof(SwingPointsStrategy)} for {ticker} at {timeframe} with {numberOfCandlestickToLookBack} lookback");
 
-                                IList<Order>? orders = null;
+                                IList<AutomateOrder>? orders = null;
                                 var repo = new StockDataRepository();
                                 if (timeframe == Timeframe.Daily)
                                 {

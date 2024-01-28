@@ -1,8 +1,8 @@
 ﻿using Stock.Shared.Models;
 
-namespace Stock.Strategies
+namespace Stock.Strategies.EventArgs
 {
-    public class AlertEventArgs : EventArgs
+    public class AlertEventArgs : System.EventArgs
     {
         public Alert Alert { get; set; }
 

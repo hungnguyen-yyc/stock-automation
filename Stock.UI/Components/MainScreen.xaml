@@ -88,31 +88,31 @@
                 </GridView>
             </ListView.View>
         </ListView>
-        <ListView Name="lsvCompletedOrders" 
+        <ListView Name="lsvTrendLines" 
           Grid.Column="1" Grid.Row="1" Height="auto" 
-          ItemsSource="{Binding CompletedOrders}" 
+          ItemsSource="{Binding TrendLines}" 
           VerticalAlignment="Stretch" 
           Margin="5 10 5 0">
             <ListView.View>
                 <GridView>
-                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Contract.LocalSymbol}">
+                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Ticker}">
                         <GridViewColumn.Header>
-                            <GridViewColumnHeader Tag="Time" Click="lsvLogsColumnHeader_Click">Stk/Opt</GridViewColumnHeader>
+                            <GridViewColumnHeader Tag="Ticker" Click="lsvTrendLinesColumnHeader_Click">Ticker</GridViewColumnHeader>
                         </GridViewColumn.Header>
                     </GridViewColumn>
-                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Order.FilledQuantity}">
+                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Timeframe}">
                         <GridViewColumn.Header>
-                            <GridViewColumnHeader Tag="Message" Click="lsvLogsColumnHeader_Click">Filled Qty</GridViewColumnHeader>
+                            <GridViewColumnHeader Tag="Timeframe" Click="lsvTrendLinesColumnHeader_Click">Timeframe</GridViewColumnHeader>
                         </GridViewColumn.Header>
                     </GridViewColumn>
-                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Order.Action}">
+                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding EndPrice}">
                         <GridViewColumn.Header>
-                            <GridViewColumnHeader Tag="Message" Click="lsvLogsColumnHeader_Click">Action</GridViewColumnHeader>
+                            <GridViewColumnHeader Tag="EndPrice" Click="lsvTrendLinesColumnHeader_Click">EndPrice</GridViewColumnHeader>
                         </GridViewColumn.Header>
                     </GridViewColumn>
-                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding OrderState.Status}">
+                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding EndPrice}">
                         <GridViewColumn.Header>
-                            <GridViewColumnHeader Tag="Message" Click="lsvLogsColumnHeader_Click">Status</GridViewColumnHeader>
+                            <GridViewColumnHeader Tag="EndPrice" Click="lsvTrendLinesColumnHeader_Click">EndPrice</GridViewColumnHeader>
                         </GridViewColumn.Header>
                     </GridViewColumn>
                 </GridView>

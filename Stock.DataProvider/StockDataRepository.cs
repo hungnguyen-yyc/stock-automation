@@ -11,7 +11,7 @@ namespace Stock.Data
 {
     public class StockDataRepository
     {
-        private const string _dbPath = @"C:\Users\hnguyen\Documents\stock-back-test\stock-historical-data.db";
+        private const string _dbPath = @"C:\Users\hngde\source\repos\hungnguyen-yyc\stock-automation-db\stock.db";
 
         // log delegate
         public event LogEventHander LogCreated;

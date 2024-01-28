@@ -1,4 +1,5 @@
 ﻿using Stock.Shared.Models;
+using Stock.Strategies.EventArgs;
 using Stock.Strategies.Helpers;
 using Stock.Strategies.Parameters;
 using Stock.Strategies.Trend;

@@ -1,6 +1,7 @@
 ﻿using Skender.Stock.Indicators;
 using Stock.Shared.Extensions;
 using Stock.Shared.Models;
+using Stock.Strategies.EventArgs;
 using Stock.Strategies.Helpers;
 using Stock.Strategies.Parameters;
 
@@ -9,15 +10,17 @@ namespace Stock.Strategies
     public interface ISwingPointStrategy
     {
         event AlertEventHandler AlertCreated;
+        event TrendLineEventHandler TrendLineCreated;
 
         void CheckForTopBottomTouch(string ticker, List<Price> ascSortedByDatePrice, IStrategyParameter strategyParameter);
-        void CheckForBreakAboveDownTrendLine(string ticker, List<Price> ascSortedByDatePrice, IStrategyParameter strategyParameter);
-        void CheckForBreakBelowUpTrendLine(string ticker, List<Price> ascSortedByDatePrice, IStrategyParameter strategyParameter);
+        void CheckForTouchingDownTrendLine(string ticker, List<Price> ascSortedByDatePrice, IStrategyParameter strategyParameter);
+        void CheckForTouchingUpTrendLine(string ticker, List<Price> ascSortedByDatePrice, IStrategyParameter strategyParameter);
     }
 
     public class SwingPointsLiveTrading15MinStrategy: ISwingPointStrategy
     {
         public event AlertEventHandler AlertCreated;
+        public event TrendLineEventHandler TrendLineCreated;
 
         public string Description => "This strategy looks back a number of candles (specified in parameters) and calculates swing highs and lows. \n"
             + "The order then will be created at 2 candles after most recent swing lows or highs found. \n"
@@ -204,7 +207,7 @@ namespace Stock.Strategies
             
         }
 
-        public void CheckForBreakAboveDownTrendLine(string ticker, List<Price> ascSortedByDatePrice, IStrategyParameter strategyParameter)
+        public void CheckForTouchingDownTrendLine(string ticker, List<Price> ascSortedByDatePrice, IStrategyParameter strategyParameter)
         {
             var parameter = (SwingPointStrategyParameter)strategyParameter;
             var numberOfCandlesticksToLookBack = parameter.NumberOfCandlesticksToLookBack;
@@ -346,7 +349,7 @@ namespace Stock.Strategies
             }
         }
 
-        public void CheckForBreakBelowUpTrendLine(string ticker, List<Price> ascSortedByDatePrice, IStrategyParameter strategyParameter)
+        public void CheckForTouchingUpTrendLine(string ticker, List<Price> ascSortedByDatePrice, IStrategyParameter strategyParameter)
         {
             var parameter = (SwingPointStrategyParameter)strategyParameter;
             var numberOfCandlesticksToLookBack = parameter.NumberOfCandlesticksToLookBack;

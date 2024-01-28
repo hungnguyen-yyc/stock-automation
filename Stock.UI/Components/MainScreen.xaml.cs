@@ -92,6 +92,33 @@ namespace Stock.UI.Components
                 }
             }
         }
+        
+        private void lsvTrendLinesColumnHeader_Click(object sender, RoutedEventArgs e)
+        {
+            GridViewColumnHeader column = e.OriginalSource as GridViewColumnHeader;
+
+            if (column != null)
+            {
+                string propertyName = column.Tag as string;
+
+                if (!string.IsNullOrEmpty(propertyName))
+                {
+                    ICollectionView view = CollectionViewSource.GetDefaultView(lsvTrendLines.ItemsSource);
+
+                    ListSortDirection direction = ListSortDirection.Ascending;
+
+                    if (view.SortDescriptions.Count > 0 && view.SortDescriptions[0].PropertyName == propertyName)
+                    {
+                        direction = (view.SortDescriptions[0].Direction == ListSortDirection.Ascending)
+                            ? ListSortDirection.Descending
+                            : ListSortDirection.Ascending;
+                    }
+
+                    view.SortDescriptions.Clear();
+                    view.SortDescriptions.Add(new SortDescription(propertyName, direction));
+                }
+            }
+        }
 
         private void lsvAlerts_DoubleClick(object sender, MouseButtonEventArgs e)
         {
