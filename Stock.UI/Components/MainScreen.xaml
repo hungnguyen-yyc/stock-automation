@@ -187,13 +187,22 @@
                 Grid.Row="1"
                 Margin="5 10 5 0"
                 Text="9746"></TextBox>
-            <Button 
-                Name="btnConnect" 
-                Content="Connect" 
+            
+            <StackPanel
                 Grid.Column="1"
-                Grid.Row="1"
-                Click="BtnConnect_Click" 
-                Margin="5 10 5 0"/>
+                Grid.Row="1">
+                <Button 
+                    Name="btnExportToCsv" 
+                    Content="Export to CSV"
+                    Click="BtnExportToCsv_Click" 
+                    Margin="5 10 5 0"/>
+                <Button 
+                    Name="btnConnect" 
+                    Content="Connect" 
+                    Click="BtnConnect_Click" 
+                    Margin="5 10 5 0"/>
+                
+            </StackPanel>
             <Label 
                 Name="LblAccountSummary" 
                 Content="Account Summary" 

@@ -7,7 +7,9 @@ public class TrendLine
     public string StartPrice { get; }
     public string EndPrice { get; }
     
-    public bool IsLevel { get; }
+    public Price Start { get; }
+    
+    public Price End { get; }
 
     public TrendLine(Timeframe timeframe, string ticker, Price start, Price end)
     {
@@ -15,7 +17,8 @@ public class TrendLine
         Ticker = ticker;
         StartPrice = start.ToString();
         EndPrice = end.ToString();
-        IsLevel = start.Equals(end);
+        Start = start;
+        End = end;
     }
 
     public override bool Equals(object? obj)

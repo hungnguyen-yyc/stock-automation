@@ -145,6 +145,11 @@ namespace Stock.UI.Components
         {
             viewModel.Connect();
         }
+        
+        private void BtnExportToCsv_Click(object sender, RoutedEventArgs e)
+        {
+            viewModel.ExportAlertToCsv();
+        }
 
         private void OnIBKRConnected(bool isConnected)
         {

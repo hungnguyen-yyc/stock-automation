@@ -27,23 +27,26 @@ namespace Stock.Shared.Models
             if (obj == null || GetType() != obj.GetType())
             {
                 return false;
-            } 
-            else
-            {
-                var alert = (Alert)obj;
-                return Ticker == alert.Ticker
-                    && Timeframe == alert.Timeframe
-                    && CreatedAt == alert.CreatedAt
-                    && Message == alert.Message
-                    && Strategy == alert.Strategy
-                    && OrderPosition == alert.OrderPosition
-                    && PositionAction == alert.PositionAction;
             }
+
+            var alert = (Alert)obj;
+            return Ticker == alert.Ticker
+                   && Timeframe == alert.Timeframe
+                   && CreatedAt == alert.CreatedAt
+                   && Message == alert.Message
+                   && Strategy == alert.Strategy
+                   && OrderPosition == alert.OrderPosition
+                   && PositionAction == alert.PositionAction;
         }
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Ticker, Timeframe, CreatedAt, Message, Strategy, OrderPosition, PositionAction);
+            return HashCode.Combine(Ticker, Timeframe, CreatedAt.ToString("s"), Message, Strategy, PriceClosed, OrderPosition, PositionAction);
+        }
+
+        public virtual string ToCsvString()
+        {
+            return $"{Ticker},{Timeframe},{CreatedAt},{Message},{Strategy},{PriceClosed},{OrderPosition},{PositionAction}";
         }
     }
 
@@ -53,5 +56,10 @@ namespace Stock.Shared.Models
         public decimal Low { get; set; }
         public decimal Center { get; set; }
         public decimal ATR { get; set; }
+        
+        public override string ToCsvString()
+        {
+            return $"{Ticker},{Timeframe},{CreatedAt},{Message},{Strategy},{PriceClosed},{OrderPosition},{PositionAction},{High},{Low},{Center},{ATR}";
+        }
     }
 }

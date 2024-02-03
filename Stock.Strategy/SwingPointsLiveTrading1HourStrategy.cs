@@ -36,11 +36,11 @@ namespace Stock.Strategies
                 var isValidCandleForLong = price.IsGreenCandle && price.IsContentCandle;
                 var isValidCandleForShort = price.IsRedCandle && price.IsContentCandle;
 
-                var levelPriceRangeBeforeSecondLastPriceTouched = levels
+                var levelSecondLastPriceTouched = levels
                     .Where(x =>
                     {
                         var center = (x.Key.Low + x.Key.High) / 2;
-                        var centerOffset = center * (decimal)0.005;
+                        var centerOffset = center * (decimal)0.01;
                         var centerPoint = new NumericRange(center - centerOffset, center + centerOffset);
                         return secondLastPrice.CandleRange.Intersect(centerPoint);
                     })
@@ -51,14 +51,14 @@ namespace Stock.Strategies
 
                 var atr = ascSortedByDatePrice.GetAtr(14);
 
-                if (levelPriceRangeBeforeSecondLastPriceTouched.Any())
+                if (levelSecondLastPriceTouched.Any())
                 {
-                    var levelLow = levelPriceRangeBeforeSecondLastPriceTouched.Select(x => x.Key.Low).Min();
-                    var levelHigh = levelPriceRangeBeforeSecondLastPriceTouched.Select(x => x.Key.High).Max();
+                    var levelLow = levelSecondLastPriceTouched.Select(x => x.Key.Low).Min();
+                    var levelHigh = levelSecondLastPriceTouched.Select(x => x.Key.High).Max();
                     var center = (levelLow + levelHigh) / 2;
-                    var centerOffset = center * (decimal)0.0001;
+                    var centerOffset = center * (decimal)0.01;
                     var centerPoint = new NumericRange(center - centerOffset, center + centerOffset);
-                    var averageSwingPointIntersected = levelPriceRangeBeforeSecondLastPriceTouched.Select(x => x.Value.Count).Average();
+                    var averageSwingPointIntersected = levelSecondLastPriceTouched.Select(x => x.Value.Count).Average();
 
                     var priceIntersectSecondLastPrice = price.CandleRange.Intersect(secondLastPrice.CandleRange);
                     var secondLastPriceIntersectCenterLevelPoint = secondLastPrice.CandleRange.Intersect(centerPoint);

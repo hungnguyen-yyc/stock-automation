@@ -11,7 +11,9 @@ using Stock.UI.IBKR.Managers;
 using Stock.UI.IBKR.Messages;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
 using System.Windows.Data;
+using Microsoft.Toolkit.Uwp.Notifications;
 using Stock.Strategies.EventArgs;
 using Contract = IBApi.Contract;
 using Order = IBApi.Order;
@@ -48,6 +50,8 @@ namespace Stock.UI.Components
         private string _pnL;
         private SwingPointPositionTrackingService _swingPointPositionTrackingService;
 
+        private Dictionary<string, IReadOnlyCollection<Price>> _tickerAndPrices;
+
         public delegate void IBKRConnectedHandler(bool isConnected);
         public event IBKRConnectedHandler IBKRConnected;
 
@@ -58,6 +62,7 @@ namespace Stock.UI.Components
             _prices = new List<Price>();
             _selectedTimeframe = ALL;
             _selectedTicker = ALL;
+            _tickerAndPrices = new Dictionary<string, IReadOnlyCollection<Price>>();
             _allAlerts = new ObservableCollection<Alert>();
             _filteredAlerts = new ObservableCollection<Alert>();
             _allTrendLines = new ObservableCollection<TrendLine>();
@@ -329,16 +334,6 @@ namespace Stock.UI.Components
             });
         }
 
-        public IReadOnlyCollection<Price> Prices
-        {
-            get => _prices;
-            set
-            {
-                _prices = value;
-                OnPropertyChanged(nameof(Prices));
-            }
-        }
-
         public ObservableCollection<string> OptionChain => _optionChain;
 
         public ObservableCollection<string> OptionPrice => _optionPrice;
@@ -359,7 +354,7 @@ namespace Stock.UI.Components
                     _selectedTimeframe = value;
 
                     UpdateFilteredAlerts();
-                    UpdateFilteredTrendLines();
+                    UpdateFilteredTrendLines(_selectedTicker);
 
                     OnPropertyChanged(nameof(SelectedTimeframe));
                 }
@@ -376,7 +371,7 @@ namespace Stock.UI.Components
                     _selectedTicker = value;
 
                     UpdateFilteredAlerts();
-                    UpdateFilteredTrendLines();
+                    UpdateFilteredTrendLines(_selectedTicker);
 
                     OnPropertyChanged(nameof(SelectedTicker));
                 }
@@ -465,11 +460,11 @@ namespace Stock.UI.Components
             OnPropertyChanged(nameof(Alerts));
         }
         
-        private void UpdateFilteredTrendLines()
+        private void UpdateFilteredTrendLines(string ticker)
         {
-            _filteredTrendLines.Clear();
             if (SelectedTicker == ALL && SelectedTimeframe.ToString() == ALL)
             {
+                _filteredTrendLines.Clear();
                 foreach (var trendLine in _allTrendLines)
                 {
                     _filteredTrendLines.Add(trendLine);
@@ -477,20 +472,43 @@ namespace Stock.UI.Components
             }
             else
             {
-                ObservableCollection<TrendLine> filtered = null;
+                List<TrendLine> filtered;
 
                 if (SelectedTicker == ALL)
                 {
-                    filtered = new ObservableCollection<TrendLine>(_allTrendLines.Where(x => x.Timeframe.ToString() == SelectedTimeframe));
+                    filtered = new List<TrendLine>(_allTrendLines.Where(x => x.Timeframe.ToString() == SelectedTimeframe));
                 }
                 else if (SelectedTimeframe.ToString() == ALL)
                 {
-                    filtered = new ObservableCollection<TrendLine>(_allTrendLines.Where(x => x.Ticker == SelectedTicker));
+                    filtered = new List<TrendLine>(_allTrendLines.Where(x => x.Ticker == SelectedTicker));
                 }
                 else
                 {
-                    filtered = new ObservableCollection<TrendLine>(_allTrendLines.Where(x => x.Ticker == SelectedTicker && x.Timeframe.ToString() == SelectedTimeframe));
+                    filtered = new List<TrendLine>(_allTrendLines.Where(x => x.Ticker == SelectedTicker && x.Timeframe.ToString() == SelectedTimeframe));
                 }
+                
+                if (!_tickerAndPrices.ContainsKey(SelectedTicker))
+                {
+                    return;
+                }
+
+                if (ticker != _selectedTicker)
+                {
+                    return;
+                }
+                _filteredTrendLines.Clear();
+                
+                var prices = _tickerAndPrices[SelectedTicker];
+                var currentPrice = prices.Last().Close;
+                
+                // order by level where level is closest to current price
+                filtered = filtered
+                    .OrderBy(x =>
+                    {
+                        var endPointValue = (x.End.Close + x.End.Open + x.End.High + x.End.Low) / 4;
+                        return Math.Abs(endPointValue - currentPrice);
+                    })
+                    .ToList();
 
                 foreach (var trendLine in filtered)
                 {
@@ -538,7 +556,9 @@ namespace Stock.UI.Components
                         var swingPointStrategyParameter = GetSwingPointStrategyParameter(ticker, timeframe);
 
                         var prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddYears(-5), DateTime.Now);
-                        var firstPrice3MonthAgo = prices.First(x => x.Date >= DateTime.Now.AddDays(-30));
+
+                        
+                        var firstPrice3MonthAgo = prices.First(x => x.Date >= DateTime.Now.AddDays(-7));
                         var index = 0;
                         
                         for (int i = 0; i < prices.Count; i++)
@@ -553,6 +573,9 @@ namespace Stock.UI.Components
                         
                         for (int i = index; i < prices.Count; i++)
                         {
+                            _tickerAndPrices[ticker] = prices.Take(i).ToList();
+                            UpdateFilteredTrendLines(ticker);
+                            
                             await Task.Run(() => {
                                 _strategy.CheckForTopBottomTouch(ticker, prices.Take(i).ToList(), swingPointStrategyParameter);
                                 _strategy.CheckForTouchingDownTrendLine(ticker, prices.Take(i).ToList(), swingPointStrategyParameter);
@@ -584,7 +607,7 @@ namespace Stock.UI.Components
                     }
                 }
                 
-                UpdateFilteredTrendLines();
+                UpdateFilteredTrendLines(string.Empty);
             }
         }
 
@@ -592,6 +615,12 @@ namespace Stock.UI.Components
         {
             while (true)
             {
+                var minuteModule = DateTime.Now.Minute % 5;
+                if (minuteModule != 0)
+                {
+                    await Task.Delay(TimeSpan.FromMinutes(5 - minuteModule));
+                }
+                
                 try
                 {
                     var tickers = TickersToTrade.POPULAR_TICKERS;
@@ -600,8 +629,8 @@ namespace Stock.UI.Components
                     foreach (var timeframe in timeframes)
                     {
                         _strategy.AlertCreated -= Strategy_AlertCreated;
+                        _strategy.TrendLineCreated -= Strategy_TrendLineCreated;
                         _strategy = new SwingPointsLiveTrading1HourStrategy();
-                        _strategy.AlertCreated += Strategy_AlertCreated;
 
                         if (timeframe == Timeframe.Hour1)
                         {
@@ -611,32 +640,9 @@ namespace Stock.UI.Components
                         {
                             _strategy = new SwingPointsLiveTrading15MinStrategy();
                         }
-
-                        var minuteModule = DateTime.Now.Minute % 15;
-                        if (timeframe == Timeframe.Hour1)
-                        {
-                            minuteModule = DateTime.Now.Minute % 60;
-                        }
-                        else if (timeframe == Timeframe.Minute30)
-                        {
-                            minuteModule = DateTime.Now.Minute % 30;
-                        }
-
-                        // try to run 2 minutes before the candle finish
-                        if (timeframe == Timeframe.Minute15 && minuteModule != 1)
-                        {
-                            continue;
-                        }
-
-                        if (timeframe == Timeframe.Hour1 && minuteModule != 7)
-                        {
-                            continue;
-                        }
-
-                        if (timeframe == Timeframe.Minute30 && minuteModule != 15)
-                        {
-                            continue;
-                        }
+                        
+                        _strategy.AlertCreated += Strategy_AlertCreated;
+                        _strategy.TrendLineCreated += Strategy_TrendLineCreated;
 
                         Logs.Add(new LogEventArg($"Started running strategy at {DateTime.Now}"));
 
@@ -646,15 +652,17 @@ namespace Stock.UI.Components
                             var swingPointStrategyParameter = GetSwingPointStrategyParameter(ticker, timeframe);
 
                             var prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddYears(-10), DateTime.Now);
+                            _tickerAndPrices[ticker] = prices;
+                            UpdateFilteredTrendLines(ticker);
 
                             await Task.Run( async () => {
                                 _strategy.CheckForTopBottomTouch(ticker, prices.ToList(), swingPointStrategyParameter);
                                 
                                 if (timeframe is Timeframe.Minute15 or Timeframe.Minute30)
                                 {
-                                    prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddMonths(-3), DateTime.Now);
-                                    _strategy.CheckForTouchingDownTrendLine(ticker, prices.ToList(), swingPointStrategyParameter);
-                                    _strategy.CheckForTouchingUpTrendLine(ticker, prices.ToList(), swingPointStrategyParameter);
+                                    var lowTimeframePrices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddMonths(-3), DateTime.Now);
+                                    _strategy.CheckForTouchingDownTrendLine(ticker, lowTimeframePrices.ToList(), swingPointStrategyParameter);
+                                    _strategy.CheckForTouchingUpTrendLine(ticker, lowTimeframePrices.ToList(), swingPointStrategyParameter);
                                 }
                             });
 
@@ -682,12 +690,17 @@ namespace Stock.UI.Components
             lock (_lock)
             {
                 var alert = e.Alert;
-                if (!_allAlerts.Contains(alert))
+                var existedAlert = _allAlerts
+                    .FirstOrDefault(x =>
+                        x.Ticker == alert.Ticker && x.Timeframe == alert.Timeframe && x.CreatedAt == alert.CreatedAt);
+                
+                if (existedAlert != null)
                 {
-                    _allAlerts.Add(alert);
-                    CreateTopNBottomBuyOrder(alert).Wait();
-                    UpdateFilteredAlerts();
-
+                    _allAlerts.Remove(existedAlert);
+                }
+                else
+                {
+                    // in release, we only want to show toast notification for new alerts
 #if !DEBUG
                     new ToastContentBuilder()
                     .AddText($"{alert.Ticker} {alert.OrderPosition} {alert.CreatedAt:yyyy-MM-dd HH:mm}")
@@ -695,6 +708,10 @@ namespace Stock.UI.Components
                     .Show();
 #endif
                 }
+                    
+                _allAlerts.Add(alert);
+                CreateTopNBottomBuyOrder(alert).Wait();
+                UpdateFilteredAlerts();
             }
         }
 
@@ -801,13 +818,25 @@ namespace Stock.UI.Components
         {
             switch (ticker)
             {
-                case "AAPL":
+                case "TSLA":
                     return new SwingPointStrategyParameter
                     {
                         Timeframe = timeframe,
-                        NumberOfCandlesticksIntersectForTopsAndBottoms = 2,
+                        NumberOfCandlesticksIntersectForTopsAndBottoms = 3,
                     }.Merge(GetDefaultParameter(timeframe));
                 case "AMD":
+                    return new SwingPointStrategyParameter
+                    {
+                        Timeframe = timeframe,
+                        NumberOfCandlesticksIntersectForTopsAndBottoms = 1,
+                    }.Merge(GetDefaultParameter(timeframe));
+                case "NVDA":
+                    return new SwingPointStrategyParameter
+                    {
+                        Timeframe = timeframe,
+                        NumberOfCandlesticksIntersectForTopsAndBottoms = 1,
+                    }.Merge(GetDefaultParameter(timeframe));
+                case "META":
                     return new SwingPointStrategyParameter
                     {
                         Timeframe = timeframe,
@@ -844,6 +873,36 @@ namespace Stock.UI.Components
                 NumberOfCandlesBetweenCurrentPriceAndLastLineEndPoint = 390,
                 NumberOfCandlesticksBeforeCurrentPriceToLookBack = 7,
             };
+        }
+
+        public void ExportAlertToCsv()
+        {
+            try
+            {
+                var documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                var stockAlertPath = Path.Combine(documents, "StockAlerts");
+                if (!Directory.Exists(stockAlertPath))
+                {
+                    Directory.CreateDirectory(stockAlertPath);
+                }
+                var alertCsvByDayPath = Path.Combine(stockAlertPath, $"alerts{DateTime.Now:yyyyMMddThhmmss}.csv");
+                var csv = _allAlerts.Select(a => a.ToCsvString()).ToList();
+                var csvString = string.Join(Environment.NewLine, csv);
+            
+                File.WriteAllText(alertCsvByDayPath, csvString);
+                
+                new ToastContentBuilder()
+                    .AddText("Alerts exported")
+                    .AddText($"Alerts exported to {alertCsvByDayPath}")
+                    .Show();
+            }
+            catch (Exception e)
+            {
+                new ToastContentBuilder()
+                    .AddText("Alerts export failed")
+                    .AddText(e.Message)
+                    .Show();
+            }
         }
     }
 }
