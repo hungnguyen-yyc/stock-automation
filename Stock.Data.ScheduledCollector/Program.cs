@@ -24,9 +24,10 @@ namespace Stock.Data.ScheduledCollector
             foreach (var ticker in tickers)
             {
                 Log($"Collecting data for {ticker} at {DateTime.Now:s}");
-                await dbHandler.QuickFill(ticker, Timeframe.Minute15, DateTime.Today.AddDays(-3));
-                await dbHandler.QuickFill(ticker, Timeframe.Minute30, DateTime.Today.AddDays(-3));
-                await dbHandler.QuickFill(ticker, Timeframe.Hour1, DateTime.Today.AddDays(-3));
+                await dbHandler.QuickFill(ticker, Timeframe.Minute15, DateTime.Today.AddDays(-20));
+                await dbHandler.QuickFill(ticker, Timeframe.Minute30, DateTime.Today.AddDays(-20));
+                await dbHandler.QuickFill(ticker, Timeframe.Hour1, DateTime.Today.AddDays(-20));
+                await dbHandler.QuickFill(ticker, Timeframe.Daily, DateTime.Today.AddDays(-20));
                 Log($"Finished collecting data for {ticker} at {DateTime.Now:s}");
                 Log("+++++++++++++++++++++++++++++++++++++++++");
                 await Task.Delay(TimeSpan.FromSeconds(15));

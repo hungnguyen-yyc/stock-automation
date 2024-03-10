@@ -538,13 +538,24 @@ namespace Stock.Data
                         tablename = "thirty_minute_price";
                         interval = 30;
                         break;
+                    case Timeframe.Daily:
+                        tablename = "daily_price";
+                        break;
                     default:
                         throw new Exception("Timeframe not supported");
                 }
 
                 var url = "https://ds01.ddfplus.com/historical/queryminutes.ashx?symbol={0}&start={1}&end={2}&contractroll=combined&order=Descending&interval={3}&fromt=false&username=randacchub%40gmail.com&password=_placeholder_";
+                var formatedUrl = string.Format(url, ticker, deleteFromString, toDate, interval);
+                if (timeframe == Timeframe.Daily)
+                {
+                    url =
+                        "https://ds01.ddfplus.com/historical/queryeod.ashx?symbol={0}&start={1}&end={2}&contractroll=combined&order=Descending&fromt=false&username=randacchub%40gmail.com&password=_placeholder_";
+                    formatedUrl = string.Format(url, ticker, deleteFromString, toDate);
+                }
+                
                 using var httpClient = new HttpClient();
-                var response = await httpClient.GetAsync(string.Format(url, ticker, deleteFromString, toDate, interval));
+                var response = await httpClient.GetAsync(formatedUrl);
                 if (response.IsSuccessStatusCode)
                 {
                     var tickerId = await GetTickerId(ticker);
@@ -567,12 +578,24 @@ namespace Stock.Data
                             continue;
                         }
 
-                        price.Date = Convert.ToDateTime(values[0]);
-                        price.Open = Convert.ToDecimal(values[2]);
-                        price.High = Convert.ToDecimal(values[3]);
-                        price.Low = Convert.ToDecimal(values[4]);
-                        price.Close = Convert.ToDecimal(values[5]);
-                        price.Volume = Convert.ToInt64(values[6]);
+                        if (timeframe == Timeframe.Daily)
+                        {
+                            price.Date = Convert.ToDateTime(values[1]);
+                            price.Open = Convert.ToDecimal(values[2]);
+                            price.High = Convert.ToDecimal(values[3]);
+                            price.Low = Convert.ToDecimal(values[4]);
+                            price.Close = Convert.ToDecimal(values[5]);
+                            price.Volume = Convert.ToInt64(values[6]);
+                        }
+                        else
+                        {
+                            price.Date = Convert.ToDateTime(values[0]);
+                            price.Open = Convert.ToDecimal(values[2]);
+                            price.High = Convert.ToDecimal(values[3]);
+                            price.Low = Convert.ToDecimal(values[4]);
+                            price.Close = Convert.ToDecimal(values[5]);
+                            price.Volume = Convert.ToInt64(values[6]);
+                        }
 
                         if (!price.isValid)
                         {

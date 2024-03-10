@@ -10,6 +10,12 @@ namespace Stock.Shared.Models
         public decimal Low { get; set; }
         public decimal Close { get; set; }
         public decimal Volume { get; set; }
+        
+        public decimal OHLC4 => (Open + High + Low + Close) / 4;
+        
+        public decimal HLC3 => (High + Low + Close) / 3;
+        
+        public decimal HL2 => (High + Low) / 2;
 
         public bool isValid
         {
@@ -99,7 +105,7 @@ namespace Stock.Shared.Models
 
         public override string ToString()
         {
-            return $"{Date:s};O:{Open};H:{High};L:{Low};C:{Close};V:{Volume}";
+            return $"{Date:s};O:{Open};H:{High};L:{Low};C:{Close};M:{(Low + High)/2},V:{Volume}";
         }
     }
 

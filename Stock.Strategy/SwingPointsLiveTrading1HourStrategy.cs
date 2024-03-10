@@ -26,6 +26,8 @@ namespace Stock.Strategies
                 var levels = SwingPointAnalyzer.GetLevels(ascSortedByDatePrice, parameter.NumberOfCandlesticksToLookBack)
                     .Where(x => x.Value.Count + 1 >= parameter.NumberOfCandlesticksIntersectForTopsAndBottoms) // + 1 because we need to include the key
                     .ToList();
+                var atr = ascSortedByDatePrice.GetAtr(14);
+                
                 TrendLineCreated?.Invoke(this, new TrendLineEventArgs(levels.Select(x => new TrendLine(parameter.Timeframe, ticker, x.Key, x.Key)).ToList()));
 
                 var hmVolumes = ascSortedByDatePrice.GetHeatmapVolume(21, 21);
@@ -48,8 +50,6 @@ namespace Stock.Strategies
                     .ToList();
 
                 Alert? alert = null;
-
-                var atr = ascSortedByDatePrice.GetAtr(14);
 
                 if (levelSecondLastPriceTouched.Any())
                 {

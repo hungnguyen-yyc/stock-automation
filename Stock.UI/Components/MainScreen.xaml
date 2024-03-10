@@ -100,14 +100,24 @@
                             <GridViewColumnHeader Tag="Ticker" Click="lsvTrendLinesColumnHeader_Click">Ticker</GridViewColumnHeader>
                         </GridViewColumn.Header>
                     </GridViewColumn>
+                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding End.OHLC4}">
+                        <GridViewColumn.Header>
+                            <GridViewColumnHeader Tag="End.OHLC4" Click="lsvTrendLinesColumnHeader_Click">OHLC4</GridViewColumnHeader>
+                        </GridViewColumn.Header>
+                    </GridViewColumn>
+                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding End.HL2}">
+                        <GridViewColumn.Header>
+                            <GridViewColumnHeader Tag="End.HL2" Click="lsvTrendLinesColumnHeader_Click">HL2</GridViewColumnHeader>
+                        </GridViewColumn.Header>
+                    </GridViewColumn>
                     <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Timeframe}">
                         <GridViewColumn.Header>
                             <GridViewColumnHeader Tag="Timeframe" Click="lsvTrendLinesColumnHeader_Click">Timeframe</GridViewColumnHeader>
                         </GridViewColumn.Header>
                     </GridViewColumn>
-                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding EndPrice}">
+                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding StartPrice}">
                         <GridViewColumn.Header>
-                            <GridViewColumnHeader Tag="EndPrice" Click="lsvTrendLinesColumnHeader_Click">EndPrice</GridViewColumnHeader>
+                            <GridViewColumnHeader Tag="StartPrice" Click="lsvTrendLinesColumnHeader_Click">StartPrice</GridViewColumnHeader>
                         </GridViewColumn.Header>
                     </GridViewColumn>
                     <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding EndPrice}">

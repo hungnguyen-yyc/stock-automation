@@ -1,4 +1,5 @@
-﻿using Stock.Shared.Models;
+﻿using Newtonsoft.Json;
+using Stock.Shared.Models;
 
 namespace Stock.Strategies.Parameters
 {
@@ -31,6 +32,12 @@ namespace Stock.Strategies.Parameters
                 NumberOfCandlesticksBeforeCurrentPriceToLookBack = parameter.NumberOfCandlesticksBeforeCurrentPriceToLookBack == 0 ? NumberOfCandlesticksBeforeCurrentPriceToLookBack : parameter.NumberOfCandlesticksBeforeCurrentPriceToLookBack,
                 NumberOfCandlesticksIntersectForTopsAndBottoms = parameter.NumberOfCandlesticksIntersectForTopsAndBottoms == 0 ? NumberOfCandlesticksIntersectForTopsAndBottoms : parameter.NumberOfCandlesticksIntersectForTopsAndBottoms
             };
+        }
+        
+        public string ToJsonString()
+        {
+            var json = JsonConvert.SerializeObject(this);
+            return json;
         }
     }
 }

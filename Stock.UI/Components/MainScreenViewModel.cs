@@ -531,13 +531,13 @@ namespace Stock.UI.Components
         private async Task RunInDebug()
         {
             var tickers = TickersToTrade.POPULAR_TICKERS;
-            var timeframes = new[] { Timeframe.Hour1 };
+            var timeframes = new[] { Timeframe.Daily, Timeframe.Hour1 };
             foreach (var timeframe in timeframes)
             {
                 _strategy.AlertCreated -= Strategy_AlertCreated;
                 _strategy.TrendLineCreated -= Strategy_TrendLineCreated;
 
-                if (timeframe == Timeframe.Hour1)
+                if (timeframe == Timeframe.Hour1 || timeframe == Timeframe.Daily)
                 {
                     _strategy = new SwingPointsLiveTrading1HourStrategy();
                 }
@@ -556,9 +556,12 @@ namespace Stock.UI.Components
                         var swingPointStrategyParameter = GetSwingPointStrategyParameter(ticker, timeframe);
 
                         var prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddYears(-5), DateTime.Now);
-
+                        if (timeframe == Timeframe.Daily)
+                        {
+                            prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddYears(-10), DateTime.Now);
+                        }
                         
-                        var firstPrice3MonthAgo = prices.First(x => x.Date >= DateTime.Now.AddDays(-7));
+                        var firstPrice3MonthAgo = prices.First(x => x.Date >= DateTime.Now.AddMonths(-1));
                         var index = 0;
                         
                         for (int i = 0; i < prices.Count; i++)
@@ -578,8 +581,8 @@ namespace Stock.UI.Components
                             
                             await Task.Run(() => {
                                 _strategy.CheckForTopBottomTouch(ticker, prices.Take(i).ToList(), swingPointStrategyParameter);
-                                _strategy.CheckForTouchingDownTrendLine(ticker, prices.Take(i).ToList(), swingPointStrategyParameter);
-                                _strategy.CheckForTouchingUpTrendLine(ticker, prices.Take(i).ToList(), swingPointStrategyParameter);
+                                //_strategy.CheckForTouchingDownTrendLine(ticker, prices.Take(i).ToList(), swingPointStrategyParameter);
+                                //_strategy.CheckForTouchingUpTrendLine(ticker, prices.Take(i).ToList(), swingPointStrategyParameter);
                             });
                         }
                         Logs.Add(new LogEventArg($"Finished running strategy for {ticker} {timeframe} at {DateTime.Now}"));
@@ -624,7 +627,7 @@ namespace Stock.UI.Components
                 try
                 {
                     var tickers = TickersToTrade.POPULAR_TICKERS;
-                    var timeframes = new[] { Timeframe.Hour1 };
+                    var timeframes = new[] { Timeframe.Hour1, Timeframe.Daily };
 
                     foreach (var timeframe in timeframes)
                     {
@@ -632,7 +635,7 @@ namespace Stock.UI.Components
                         _strategy.TrendLineCreated -= Strategy_TrendLineCreated;
                         _strategy = new SwingPointsLiveTrading1HourStrategy();
 
-                        if (timeframe == Timeframe.Hour1)
+                        if (timeframe == Timeframe.Hour1 || timeframe == Timeframe.Daily)
                         {
                             _strategy = new SwingPointsLiveTrading1HourStrategy();
                         }
@@ -652,6 +655,7 @@ namespace Stock.UI.Components
                             var swingPointStrategyParameter = GetSwingPointStrategyParameter(ticker, timeframe);
 
                             var prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddYears(-10), DateTime.Now);
+                            
                             _tickerAndPrices[ticker] = prices;
                             UpdateFilteredTrendLines(ticker);
 
@@ -822,7 +826,7 @@ namespace Stock.UI.Components
                     return new SwingPointStrategyParameter
                     {
                         Timeframe = timeframe,
-                        NumberOfCandlesticksIntersectForTopsAndBottoms = 3,
+                        NumberOfCandlesticksIntersectForTopsAndBottoms = 2,
                     }.Merge(GetDefaultParameter(timeframe));
                 case "AMD":
                     return new SwingPointStrategyParameter
@@ -861,6 +865,21 @@ namespace Stock.UI.Components
 
         private SwingPointStrategyParameter GetDefaultParameter(Timeframe timeframe)
         {
+            if (timeframe == Timeframe.Daily)
+            {
+                return new SwingPointStrategyParameter
+                {
+                    NumberOfCandlesticksToLookBack = 7,
+                    Timeframe = timeframe,
+                    NumberOfCandlesticksIntersectForTopsAndBottoms = 3,
+                    NumberOfSwingPointsToLookBack = 2,
+                    NumberOfCandlesticksToSkipAfterSwingPoint = 2,
+                    NumberOfTouchesToDrawTrendLine = 2,
+                    NumberOfCandlesBetweenCurrentPriceAndLastLineEndPoint = 390,
+                    NumberOfCandlesticksBeforeCurrentPriceToLookBack = 7,
+                };
+            }
+            
             return new SwingPointStrategyParameter
             {
                 NumberOfCandlesticksToLookBack = 12,
@@ -880,16 +899,25 @@ namespace Stock.UI.Components
             try
             {
                 var documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-                var stockAlertPath = Path.Combine(documents, "StockAlerts");
+                var stockAlertPath = Path.Combine(documents, "StockAlerts", $"{DateTime.Now:yyyyMMddThhmmss}");
                 if (!Directory.Exists(stockAlertPath))
                 {
                     Directory.CreateDirectory(stockAlertPath);
                 }
-                var alertCsvByDayPath = Path.Combine(stockAlertPath, $"alerts{DateTime.Now:yyyyMMddThhmmss}.csv");
+                var alertCsvByDayPath = Path.Combine(stockAlertPath, "alerts.csv");
                 var csv = _allAlerts.Select(a => a.ToCsvString()).ToList();
                 var csvString = string.Join(Environment.NewLine, csv);
             
                 File.WriteAllText(alertCsvByDayPath, csvString);
+                
+                //write parameter to json file
+                foreach (var ticker in TickersToTrade.POPULAR_TICKERS)
+                {
+                    var parameter = GetSwingPointStrategyParameter(ticker, Timeframe.Hour1);
+                    var parameterJson = parameter.ToJsonString();
+                    var parameterPath = Path.Combine(stockAlertPath, $"{ticker}_parameter.json");
+                    File.WriteAllText(parameterPath, parameterJson);
+                }
                 
                 new ToastContentBuilder()
                     .AddText("Alerts exported")
