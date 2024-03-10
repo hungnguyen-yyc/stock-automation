@@ -1,28 +1,33 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Skender.Stock.Indicators;
-using Stock.Shared.Models;
-using Stock.Strategies.Parameters;
-using Stock.Strategy;
-
-namespace StrategyBackTester
+﻿namespace StrategyBackTester
 {
     internal class Program
     {
         static void Main(string[] args)
         {
-#if (!DEBUG)
-            var host = new HostBuilder()
-                .ConfigureHostConfiguration(h => { })
-                .ConfigureServices((hostContext, services) =>
+            RunSwingPointBackTest().Wait();
+        }
+
+        static async Task RunSwingPointBackTest()
+        {
+            while (true)
+            {
+                try
                 {
-                    services.AddHostedService(services => new SwingPointBackTestRunner());
-                }).UseConsoleLifetime().Build();
-            host.Run();
-#else
-            var swingbacktest = new SwingPointBackTestRunner();
-            swingbacktest.Run().Wait();
+                    var swingbacktest = new SwingPointBackTestRunner();
+                    await swingbacktest.Run();
+                    await Task.Delay(TimeSpan.FromMinutes(15));
+#if !DEBUG
+                    if (DateTime.Now.Hour >= 14 && DateTime.Now.Minute >= 30)
+                    {
+                        break;
+                    }
 #endif
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex);
+                }
+            }
         }
     }
 }

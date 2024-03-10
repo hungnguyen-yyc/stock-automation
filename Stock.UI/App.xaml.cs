@@ -15,6 +15,13 @@ namespace Stock.UI
             SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1NHaF1cWWhIfEx1RHxQdld5ZFRHallYTnNWUj0eQnxTdEZiWH1ccHRXT2NeWEd2XQ==");
 
             InitializeComponent();
+
+            Application.Current.Exit += Application_Exiting;
+        }
+
+        private void Application_Exiting(object sender, ExitEventArgs e)
+        {
+            //viewModel.Stop();
         }
     }
 

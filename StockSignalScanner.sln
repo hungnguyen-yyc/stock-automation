@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.4.33205.214
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StockSignalScanner", "StockSignalScanner\StockSignalScanner.csproj", "{8B89C3B3-CAEA-49AB-BBBC-5812D832A40C}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestProject", "TestProject\TestProject.csproj", "{0A3531D6-9511-4F08-A90C-34E0E126280A}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Indicators", "..\Stock.Indicators\src\Indicators.csproj", "{D2454E17-22C9-4192-A3B0-F688110333F4}"
@@ -23,16 +21,16 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Stock.UI", "Stock.UI\Stock.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Stock.Data", "Stock.DataProvider\Stock.Data.csproj", "{0BF0E4E7-6419-4FB4-8A6C-21895D6A64FF}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Stock.Data.ScheduledCollector", "Stock.Data.ScheduledCollector\Stock.Data.ScheduledCollector.csproj", "{FAA61031-2FBD-4E0E-AB15-208F12B6A2FB}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CSharpAPI", "..\..\..\..\..\..\..\TWS API\source\CSharpClient\client\CSharpAPI.csproj", "{E90E9062-8061-4F03-A1BA-7A5E85616374}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{8B89C3B3-CAEA-49AB-BBBC-5812D832A40C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8B89C3B3-CAEA-49AB-BBBC-5812D832A40C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{8B89C3B3-CAEA-49AB-BBBC-5812D832A40C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{8B89C3B3-CAEA-49AB-BBBC-5812D832A40C}.Release|Any CPU.Build.0 = Release|Any CPU
 		{0A3531D6-9511-4F08-A90C-34E0E126280A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{0A3531D6-9511-4F08-A90C-34E0E126280A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0A3531D6-9511-4F08-A90C-34E0E126280A}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -69,6 +67,14 @@ Global
 		{0BF0E4E7-6419-4FB4-8A6C-21895D6A64FF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0BF0E4E7-6419-4FB4-8A6C-21895D6A64FF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0BF0E4E7-6419-4FB4-8A6C-21895D6A64FF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FAA61031-2FBD-4E0E-AB15-208F12B6A2FB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FAA61031-2FBD-4E0E-AB15-208F12B6A2FB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FAA61031-2FBD-4E0E-AB15-208F12B6A2FB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FAA61031-2FBD-4E0E-AB15-208F12B6A2FB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E90E9062-8061-4F03-A1BA-7A5E85616374}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E90E9062-8061-4F03-A1BA-7A5E85616374}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E90E9062-8061-4F03-A1BA-7A5E85616374}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E90E9062-8061-4F03-A1BA-7A5E85616374}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,5 +1,6 @@
-﻿using Stock.DataProvider;
-using Stock.Shared.Models;
+﻿using Stock.Shared.Models;
+using Stock.Strategies.EventArgs;
+using Stock.Strategies.Helpers;
 using Stock.Strategies.Parameters;
 using Stock.Strategies.Trend;
 using Stock.Strategy;
@@ -8,28 +9,28 @@ namespace Stock.Strategies
 {
     public class SwingPointsStrategy : IStrategy
     {
+        public event OrderEventHandler OrderCreated;
+        public event AlertEventHandler AlertCreated;
+
         public string Description => "This strategy looks back a number of candles (specified in parameters) and calculates swing highs and lows. \n"
             + "The order then will be created at 2 candles after most recent swing lows or highs found. \n"
             + "The problem now is how to eliminate loss as soon as posible.";
 
-        public async Task<IList<Order>> Run(string ticker, IStrategyParameter strategyParameter, DateTime from, DateTime to, Timeframe timeframe = Timeframe.Daily)
+        public IList<AutomateOrder> Run(string ticker, List<Price> ascSortedByDatePrice, IStrategyParameter strategyParameter)
         {
             var parameter = (SwingPointStrategyParameter)strategyParameter;
             var numberOfSwingPointsToLookBack = parameter.NumberOfSwingPointsToLookBack;
             var numberOfCandlesticksToLookBack = parameter.NumberOfCandlesticksToLookBack;
-            var dataProvider = new FmpStockDataProvider();
-            var trendIdentifier = new TrendIdentifier();
-            var prices = await dataProvider.CollectData(ticker, timeframe, from, to);
-            var orders = new List<Order>();
+            var orders = new List<AutomateOrder>();
 
-            if (prices == null || prices.Count < 155)
+            if (ascSortedByDatePrice == null || ascSortedByDatePrice.Count < 155)
             {
                 return orders;
             }
 
-            List<Price> orderedPrices = prices.Reverse().ToList();
-            var swingLows = trendIdentifier.FindSwingLows(orderedPrices, numberOfCandlesticksToLookBack);
-            var swingHighs = trendIdentifier.FindSwingHighs(orderedPrices, numberOfCandlesticksToLookBack);
+            List<Price> sortedPrices = ascSortedByDatePrice.ToList();
+            var swingLows = SwingPointAnalyzer.FindSwingLows(sortedPrices, numberOfCandlesticksToLookBack);
+            var swingHighs = SwingPointAnalyzer.FindSwingHighs(sortedPrices, numberOfCandlesticksToLookBack);
             var minCount = Math.Min(swingLows.Count, swingHighs.Count);
 
             if (minCount <= numberOfSwingPointsToLookBack)
@@ -37,6 +38,30 @@ namespace Stock.Strategies
                 return orders;
             }
 
+            for (int i = 155; i < ascSortedByDatePrice.Count; i++)
+            {
+                var rangeToCheck = ascSortedByDatePrice.Skip(i).Take(14).ToList();
+                var channel = SwingPointAnalyzer.CheckRunningCandlesFormingChannel(rangeToCheck, 14, 3);
+                if (channel != null)
+                {
+                    var order = new AutomateOrder
+                    {
+                        Ticker = ticker,
+                        Type = OrderPosition.Long,
+                        Price = rangeToCheck[0],
+                        Quantity = 100,
+                        Action = PositionAction.Open,
+                        Time = rangeToCheck[0].Date
+                    };
+                    orders.Add(order);
+                    OnOrderCreated(new OrderEventArgs(order));
+                }
+            }
+
+            var highLines = SwingPointAnalyzer.GetTrendlines(sortedPrices, parameter, true);
+            var lowLines = SwingPointAnalyzer.GetTrendlines(sortedPrices, parameter, false);
+            var bottoms = SwingPointAnalyzer.GetNBottoms(sortedPrices, numberOfCandlesticksToLookBack);
+            var tops = SwingPointAnalyzer.GetNTops(sortedPrices, numberOfCandlesticksToLookBack);
             swingLows = swingLows.Skip(swingLows.Count - minCount - numberOfSwingPointsToLookBack).ToList();
             swingHighs = swingHighs.Skip(swingHighs.Count - minCount - numberOfSwingPointsToLookBack).ToList();
             
@@ -45,18 +70,18 @@ namespace Stock.Strategies
 
             if (firstSwingLow.Date > firstSwingHigh.Date)
             {
-                orderedPrices = orderedPrices.Where(x => x.Date >= firstSwingHigh.Date).ToList();
+                sortedPrices = sortedPrices.Where(x => x.Date >= firstSwingHigh.Date).ToList();
             }
             else
             {
-                orderedPrices = orderedPrices.Where(x => x.Date >= firstSwingLow.Date).ToList();
+                sortedPrices = sortedPrices.Where(x => x.Date >= firstSwingLow.Date).ToList();
             }
 
             var previousSwingLow = swingLows[0];
             var previousSwingHigh = swingHighs[0];
-            for (int i = 0; i < orderedPrices.Count; i++)
+            for (int i = 0; i < sortedPrices.Count; i++)
             {
-                var price = orderedPrices[i];
+                var price = sortedPrices[i];
                 var immediateSwingLowBeforePrice = swingLows.Where(x => x.Date < price.Date).OrderByDescending(x => x.Date).FirstOrDefault();
                 var immediateSwingHighBeforePrice = swingHighs.Where(x => x.Date < price.Date).OrderByDescending(x => x.Date).FirstOrDefault();
 
@@ -65,8 +90,8 @@ namespace Stock.Strategies
                     continue;
                 }
 
-                var indexOfImmediateSwingLowBeforePrice = orderedPrices.IndexOf(immediateSwingLowBeforePrice);
-                var indexOfImmediateSwingHighBeforePrice = orderedPrices.IndexOf(immediateSwingHighBeforePrice);
+                var indexOfImmediateSwingLowBeforePrice = sortedPrices.IndexOf(immediateSwingLowBeforePrice);
+                var indexOfImmediateSwingHighBeforePrice = sortedPrices.IndexOf(immediateSwingHighBeforePrice);
 
                 var lastorder = orders.LastOrDefault();
                 //var daysAfterSwingLow = CalculateBusinessDays(immediateSwingLowBeforePrice.Date, price.Date);
@@ -74,9 +99,9 @@ namespace Stock.Strategies
                 var daysAfterSwingLow = i - indexOfImmediateSwingLowBeforePrice;
                 var daysAfterSwingHigh = i - indexOfImmediateSwingHighBeforePrice;
 
-                if (lastorder == null || lastorder.Action == EnterSignal.Close)
+                if (lastorder == null || lastorder.Action == PositionAction.Close)
                 {
-                    var previousPrice = orderedPrices[i - 1];
+                    var previousPrice = sortedPrices[i - 1];
                     var orderSize = 100;
                     /**
                      * if price is closer to swing low we start checking for buy signal
@@ -84,71 +109,100 @@ namespace Stock.Strategies
                      **/
                     if (daysAfterSwingLow < daysAfterSwingHigh)
                     {
-                        if (daysAfterSwingLow == parameter.NumberOfCandlesticksToSkipAfterSwingPoint && previousPrice.Low > immediateSwingLowBeforePrice.Low)
+                        // sometimes data comes from FMP is not correct
+                        // strange thing is that when we use trend identifier, we have less trades and less profits
+                        //var swingPointsBeforePrice = swingLows.Where(x => x.Date < price.Date).OrderByDescending(x => x.Date).Take(numberOfSwingPointsToLookBack).ToList();
+                        //var swingPointsTrend = trendIdentifier.DetermineSwingTrend(swingPointsBeforePrice.Select(p => p.Low).ToList(), numberOfSwingPointsToLookBack);
+                        //var isValidTrend = swingPointsTrend == TrendDirection.Uptrend || swingPointsTrend == TrendDirection.ReversalToUptrend;
+                        var isValidTrend = true;
+
+                        // make sure that price is higher than previous swing low to confirm the reversal
+                        var priceBetweenSwingLowAndCurrentPrice = sortedPrices.Where(x => x.Date > immediateSwingLowBeforePrice.Date && x.Date <= price.Date).ToList();
+                        var confirmedSwingLowByPreviousPrice = priceBetweenSwingLowAndCurrentPrice.All(x => x.Low > immediateSwingLowBeforePrice.Low);
+
+                        if (daysAfterSwingLow == parameter.NumberOfCandlesticksToSkipAfterSwingPoint && confirmedSwingLowByPreviousPrice && isValidTrend)
                         {
-                            orders.Add(new Order
+                            var order = new AutomateOrder
                             {
                                 Ticker = ticker,
-                                Type = OrderType.Long,
+                                Type = OrderPosition.Long,
                                 Price = price,
                                 Quantity = orderSize,
-                                Action = EnterSignal.Open,
+                                Action = PositionAction.Open,
                                 Time = price.Date
-                            });
+                            };
+                            orders.Add(order);
                             previousSwingLow = immediateSwingLowBeforePrice;
                             previousSwingHigh = immediateSwingHighBeforePrice;
+
+                            OnOrderCreated(new OrderEventArgs(order));
                         }
                     }
                     else if (daysAfterSwingHigh < daysAfterSwingLow)
                     {
-                        if (daysAfterSwingHigh == parameter.NumberOfCandlesticksToSkipAfterSwingPoint && previousPrice.High < immediateSwingHighBeforePrice.High)
+                        //var swingPointsBeforePrice = swingHighs.Where(x => x.Date < price.Date).OrderByDescending(x => x.Date).Take(numberOfSwingPointsToLookBack).ToList();
+                        //var swingPointsTrend = trendIdentifier.DetermineSwingTrend(swingPointsBeforePrice.Select(p => p.High).ToList(), numberOfSwingPointsToLookBack);
+                        //var isValidTrend = swingPointsTrend == TrendDirection.Downtrend || swingPointsTrend == TrendDirection.ReversalToDowntrend;
+                        var isValidTrend = true;
+
+                        var priceBetweenSwingHighAndCurrentPrice = sortedPrices.Where(x => x.Date > immediateSwingHighBeforePrice.Date && x.Date <= price.Date).ToList();
+                        var confirmedSwingHighByPreviousPrice = priceBetweenSwingHighAndCurrentPrice.All(x => x.High < immediateSwingHighBeforePrice.High);
+
+                        if (daysAfterSwingHigh == parameter.NumberOfCandlesticksToSkipAfterSwingPoint && confirmedSwingHighByPreviousPrice && isValidTrend)
                         {
-                            orders.Add(new Order
+                            var order = new AutomateOrder
                             {
                                 Ticker = ticker,
-                                Type = OrderType.Short,
+                                Type = OrderPosition.Short,
                                 Price = price,
                                 Quantity = orderSize,
-                                Action = EnterSignal.Open,
+                                Action = PositionAction.Open,
                                 Time = price.Date
-                            });
+                            };
+                            orders.Add(order);
                             previousSwingLow = immediateSwingLowBeforePrice;
                             previousSwingHigh = immediateSwingHighBeforePrice;
+
+                            OnOrderCreated(new OrderEventArgs(order));
                         }
                     }
                 }
 
                 // close order
-                if (lastorder != null && lastorder.Action == EnterSignal.Open)
+                if (lastorder != null && lastorder.Action == PositionAction.Open)
                 {
-                    if (lastorder.Type == OrderType.Long)
+                    if (lastorder.Type == OrderPosition.Long)
                     {
                         var newSwingHigh = previousSwingHigh.Date != immediateSwingHighBeforePrice.Date;
 
                         // close when current price is lower than immediate swing low before price
                         if (price.Low < immediateSwingLowBeforePrice.Low)
                         {
-                            orders.Add(new Order
+                            orders.Add(new AutomateOrder
                             {
                                 Ticker = ticker,
-                                Type = OrderType.Long,
+                                Type = OrderPosition.Long,
                                 Price = price,
                                 Quantity = lastorder.Quantity,
-                                Action = EnterSignal.Close,
+                                Action = PositionAction.Close,
                                 Time = price.Date
                             });
+
+                            OnOrderCreated(new OrderEventArgs(lastorder));
                         }
                         else if (newSwingHigh)
                         {
-                            orders.Add(new Order
+                            orders.Add(new AutomateOrder
                             {
                                 Ticker = ticker,
-                                Type = OrderType.Long,
+                                Type = OrderPosition.Long,
                                 Price = price,
                                 Quantity = lastorder.Quantity,
-                                Action = EnterSignal.Close,
+                                Action = PositionAction.Close,
                                 Time = price.Date
                             });
+
+                            OnOrderCreated(new OrderEventArgs(lastorder));
                         }
                     }
                     else
@@ -158,27 +212,31 @@ namespace Stock.Strategies
                         // close when current price is higher than immediate swing high before price
                         if (price.High > immediateSwingHighBeforePrice.High)
                         {
-                            orders.Add(new Order
+                            orders.Add(new AutomateOrder
                             {
                                 Ticker = ticker,
-                                Type = OrderType.Short,
+                                Type = OrderPosition.Short,
                                 Price = price,
-                                Quantity = 1,
-                                Action = EnterSignal.Close,
+                                Quantity = lastorder.Quantity,
+                                Action = PositionAction.Close,
                                 Time = price.Date
                             });
+
+                            OnOrderCreated(new OrderEventArgs(lastorder));
                         }
                         else if (newSwingLow)
                         {
-                            orders.Add(new Order
+                            orders.Add(new AutomateOrder
                             {
                                 Ticker = ticker,
-                                Type = OrderType.Short,
+                                Type = OrderPosition.Short,
                                 Price = price,
-                                Quantity = 1,
-                                Action = EnterSignal.Close,
+                                Quantity = lastorder.Quantity,
+                                Action = PositionAction.Close,
                                 Time = price.Date
                             });
+
+                            OnOrderCreated(new OrderEventArgs(lastorder));
                         }
                     }
                 }
@@ -187,21 +245,14 @@ namespace Stock.Strategies
             return orders;
         }
 
-        public int CalculateBusinessDays(DateTime startDate, DateTime endDate)
+        protected virtual void OnOrderCreated(OrderEventArgs e)
         {
-            int businessDays = 0;
+            OrderCreated?.Invoke(this, e);
+        }
 
-            while (startDate < endDate)
-            {
-                if (startDate.DayOfWeek != DayOfWeek.Saturday && startDate.DayOfWeek != DayOfWeek.Sunday)
-                {
-                    businessDays++;
-                }
-
-                startDate = startDate.AddDays(1);
-            }
-
-            return businessDays;
+        protected virtual void OnAlertCreated(AlertEventArgs e)
+        {
+            AlertCreated?.Invoke(this, e);
         }
     }
 }

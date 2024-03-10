@@ -4,94 +4,313 @@
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
       xmlns:local="clr-namespace:Stock.UI.Components"
-      xmlns:syncfusion="http://schemas.syncfusion.com/wpf" 
-      xmlns:chart="clr-namespace:Syncfusion.UI.Xaml.Charts;assembly=Syncfusion.SfChart.WPF"
       mc:Ignorable="d" 
       d:DesignHeight="450" d:DesignWidth="800"
       Title="MainScreen">
     <Grid Margin="0,0,0,0">
-        <Grid.Resources>
-            <ResourceDictionary>
-                <Style TargetType="Line" x:Key="lineStyle">
-                    <Setter Property="StrokeThickness" Value="0"/>
-                </Style>
-
-                <DataTemplate x:Key="headerTemplate1">
-                    <TextBlock Text="Year 2020" Padding="0,5,0,3" FontSize="14"/>
-                </DataTemplate>
-
-                <DataTemplate x:Key="headerTemplate2">
-                    <TextBlock Text="Index Price" Padding="0,3,0,1" FontSize="14"/>
-                </DataTemplate>
-            </ResourceDictionary>
-        </Grid.Resources>
 
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="70*"/>
+            <RowDefinition Height="30*"/>
         </Grid.RowDefinitions>
 
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="10*"/>
+            <ColumnDefinition Width="50*"/>
+            <ColumnDefinition Width="15*"/>
+            <ColumnDefinition Width="30*"/>
         </Grid.ColumnDefinitions>
-        <syncfusion:ComboBoxAdv 
-            Name="CmbTimeframe" 
-            AllowMultiSelect="False" 
-            Grid.Column="0" 
-            Grid.Row="0" 
-            DefaultText="ComboBox Items" 
-            Height="30" Width="150" 
-            Margin="5 5 5 0"
-            ItemsSource="{Binding Timeframes}"
-            SelectedItem="{Binding SelectedTimeframe, Mode=TwoWay}"/>
-        <syncfusion:ComboBoxAdv 
-            Name="CmbTicker" 
-            AllowMultiSelect="False" 
-            Grid.Column="0" Grid.Row="1" 
-            DefaultText="ComboBox Items" 
-            Height="30" Width="150" Margin="5 5 5 0"
-            ItemsSource="{Binding Tickers}"
-            SelectedItem="{Binding SelectedTicker, Mode=TwoWay}"/>
-        <syncfusion:ComboBoxAdv Name="CmbStrategy" AllowMultiSelect="False" Grid.Column="0" Grid.Row="2" DefaultText="ComboBox Items" Height="30" Width="150" Margin="5 5 5 0"/>
-        <ListView Name="LsvOrders" Grid.Column="0" Grid.Row="3" Height="auto" d:ItemsSource="{d:SampleData ItemCount=5}" VerticalAlignment="Stretch" Margin="5 10 5 0">
+        <ScrollViewer Grid.Column="0" Grid.Row="0" Width="auto" VerticalScrollBarVisibility="Auto">
+            <ListView Name="lsvTickers"
+                      Height="Auto"
+                      Width="Auto"
+                  ItemsSource="{Binding Tickers}" 
+                  SelectedItem="{Binding SelectedTicker, Mode=TwoWay}" 
+                  VerticalAlignment="Stretch" 
+                  Margin="5 10 5 0">
+                <ListView.View>
+                    <GridView>
+                        <GridViewColumn Header="Tickers" />
+                    </GridView>
+                </ListView.View>
+            </ListView>
+        </ScrollViewer>
+        <ListView Name="lsvTimeframes" 
+                  Grid.Column="0" Grid.Row="1" Height="auto" 
+                  ItemsSource="{Binding Timeframes}" 
+                  SelectedItem="{Binding SelectedTimeframe, Mode=TwoWay}"
+                  VerticalAlignment="Stretch" 
+                  Margin="5 10 5 0">
             <ListView.View>
                 <GridView>
-                    <GridViewColumn/>
+                    <GridViewColumn Header="Timeframes" />
                 </GridView>
             </ListView.View>
         </ListView>
-        <chart:SfChart Grid.Column="1" Grid.Row="0" Grid.RowSpan="4" RenderTransformOrigin="0.5,0.5" Background="Transparent">
-            <chart:SfChart.PrimaryAxis>
-                <chart:DateTimeAxis ShowGridLines="False" LabelFormat="MMM-dd" PlotOffsetEnd="10" ZoomFactor="0.4"
-                   AxisLineStyle="{StaticResource lineStyle}" HeaderTemplate="{StaticResource headerTemplate1}" EdgeLabelsDrawingMode="Shift" EdgeLabelsVisibilityMode="Visible">
-                    <chart:DateTimeAxis.LabelStyle>
-                        <chart:LabelStyle FontSize="12.5"/>
-                    </chart:DateTimeAxis.LabelStyle>
-                </chart:DateTimeAxis>
-            </chart:SfChart.PrimaryAxis>
+        <GridSplitter Grid.Column="0" Grid.Row="0" Grid.RowSpan="2" Background="LightGray" Width="3" VerticalAlignment="Stretch" />
+        <ListView 
+            Name="lsvAlerts" 
+            Grid.Column="1" 
+            Grid.Row="0" 
+            Height="auto" 
+            Width="auto" 
+            ItemsSource="{Binding Alerts}" 
+            VerticalAlignment="Stretch" 
+            Margin="5 10 5 0"
+            MouseDoubleClick="lsvAlerts_DoubleClick">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Ticker}">
+                        <GridViewColumn.Header>
+                            <GridViewColumnHeader Tag="Ticker" Click="lsvAlertsColumnHeader_Click">Ticker</GridViewColumnHeader>
+                        </GridViewColumn.Header>
+                    </GridViewColumn>
+                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding CreatedAt}" >
+                        <GridViewColumn.Header>
+                            <GridViewColumnHeader Tag="CreatedAt" Click="lsvAlertsColumnHeader_Click">Time</GridViewColumnHeader>
+                        </GridViewColumn.Header>
+                    </GridViewColumn>
+                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Timeframe}">
+                        <GridViewColumn.Header>
+                            <GridViewColumnHeader Tag="Timeframe" Click="lsvAlertsColumnHeader_Click">Timeframe</GridViewColumnHeader>
+                        </GridViewColumn.Header>
+                    </GridViewColumn>
+                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding OrderPosition}">
+                        <GridViewColumn.Header>
+                            <GridViewColumnHeader Tag="OrderType" Click="lsvAlertsColumnHeader_Click">Order Type</GridViewColumnHeader>
+                        </GridViewColumn.Header>
+                    </GridViewColumn>
+                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Message}">
+                        <GridViewColumn.Header>
+                            <GridViewColumnHeader Tag="Message" Click="lsvAlertsColumnHeader_Click">Message</GridViewColumnHeader>
+                        </GridViewColumn.Header>
+                    </GridViewColumn>
+                </GridView>
+            </ListView.View>
+        </ListView>
+        <ListView Name="lsvTrendLines" 
+          Grid.Column="1" Grid.Row="1" Height="auto" 
+          ItemsSource="{Binding TrendLines}" 
+          VerticalAlignment="Stretch" 
+          Margin="5 10 5 0">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Ticker}">
+                        <GridViewColumn.Header>
+                            <GridViewColumnHeader Tag="Ticker" Click="lsvTrendLinesColumnHeader_Click">Ticker</GridViewColumnHeader>
+                        </GridViewColumn.Header>
+                    </GridViewColumn>
+                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding End.OHLC4}">
+                        <GridViewColumn.Header>
+                            <GridViewColumnHeader Tag="End.OHLC4" Click="lsvTrendLinesColumnHeader_Click">OHLC4</GridViewColumnHeader>
+                        </GridViewColumn.Header>
+                    </GridViewColumn>
+                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding End.HL2}">
+                        <GridViewColumn.Header>
+                            <GridViewColumnHeader Tag="End.HL2" Click="lsvTrendLinesColumnHeader_Click">HL2</GridViewColumnHeader>
+                        </GridViewColumn.Header>
+                    </GridViewColumn>
+                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Timeframe}">
+                        <GridViewColumn.Header>
+                            <GridViewColumnHeader Tag="Timeframe" Click="lsvTrendLinesColumnHeader_Click">Timeframe</GridViewColumnHeader>
+                        </GridViewColumn.Header>
+                    </GridViewColumn>
+                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding StartPrice}">
+                        <GridViewColumn.Header>
+                            <GridViewColumnHeader Tag="StartPrice" Click="lsvTrendLinesColumnHeader_Click">StartPrice</GridViewColumnHeader>
+                        </GridViewColumn.Header>
+                    </GridViewColumn>
+                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding EndPrice}">
+                        <GridViewColumn.Header>
+                            <GridViewColumnHeader Tag="EndPrice" Click="lsvTrendLinesColumnHeader_Click">EndPrice</GridViewColumnHeader>
+                        </GridViewColumn.Header>
+                    </GridViewColumn>
+                </GridView>
+            </ListView.View>
+        </ListView>
+        <GridSplitter Grid.Column="1" Grid.Row="0" Grid.RowSpan="2"  Background="LightGray" Width="3" VerticalAlignment="Stretch" />
+        <ListView Name="lsvOptionChain" 
+            Grid.Column="2" Grid.Row="0" Height="auto" 
+            ItemsSource="{Binding OptionChain}" 
+            VerticalAlignment="Stretch" 
+            Margin="5 10 5 0"
+            HorizontalAlignment="Stretch"
+            Width="auto"
+            MouseDoubleClick="lsvOptionChain_DoubleClick">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn>
+                        <GridViewColumn.Header>
+                            <GridViewColumnHeader Tag="options">Option Chain</GridViewColumnHeader>
+                        </GridViewColumn.Header>
+                    </GridViewColumn>
+                </GridView>
+            </ListView.View>
+        </ListView>
+        <ListView Name="lsvOptionPrice" 
+            Grid.Column="2" Grid.Row="1"
+            ItemsSource="{Binding OptionPrice}" 
+            VerticalAlignment="Stretch"
+            HorizontalAlignment="Stretch"
+            Width="auto"
+            Margin="5 10 5 0">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Width="Auto">
+                        <GridViewColumn.Header>
+                            <GridViewColumnHeader Tag="option-price">Historical Price</GridViewColumnHeader>
+                        </GridViewColumn.Header>
+                    </GridViewColumn>
+                </GridView>
+            </ListView.View>
+        </ListView>
+        <GridSplitter Grid.Column="2" Grid.Row="0" Grid.RowSpan="2" Background="LightGray"  Width="3" VerticalAlignment="Stretch" />
+        <Grid 
+            Grid.Column="3"
+            Grid.Row="0"
+            Grid.RowSpan="2"
+            Background="White">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="auto"/>
+                <RowDefinition Height="auto"/>
+                <RowDefinition Height="auto"/>
+                <RowDefinition Height="auto"/>
+                <RowDefinition Height="auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
 
-            <chart:SfChart.SecondaryAxis>
-                <chart:NumericalAxis Interval="10" LabelFormat="$0" AxisLineStyle="{StaticResource lineStyle}" HeaderTemplate="{StaticResource headerTemplate2}">
-                    <chart:NumericalAxis.LabelStyle>
-                        <chart:LabelStyle FontSize="12.5"/>
-                    </chart:NumericalAxis.LabelStyle>
-                </chart:NumericalAxis>
-            </chart:SfChart.SecondaryAxis>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="50*"/>
+                <ColumnDefinition Width="50*"/>
+            </Grid.ColumnDefinitions>
 
-            <chart:SfChart.Behaviors>
-                <chart:ChartZoomPanBehavior ZoomMode="X" ResetOnDoubleTap="False"/>
-            </chart:SfChart.Behaviors>
+            <GridSplitter Grid.Column="0" Grid.Row="0" Grid.RowSpan="4"  Background="LightGray" Width="3" VerticalAlignment="Stretch" />
+            <Label 
+                Name="Port" 
+                Content="Port" 
+                Grid.Column="0"
+                Grid.Row="0"
+                Margin="5 10 5 0"/>
+            <TextBox
+                Name="TxtPort"
+                Grid.Column="0"
+                Grid.Row="1"
+                Margin="5 10 5 0"
+                Text="9746"></TextBox>
             
-            <chart:CandleSeries Name="series" ItemsSource="{Binding Prices}"
-                XBindingPath="Date"
-                High="High" Open="Open"  
-                Close="Close" Low="Low"
-                Interior="#4A4A4A"
-                ShowTooltip="True"
-                EnableAnimation="False"/>
-        </chart:SfChart>
+            <StackPanel
+                Grid.Column="1"
+                Grid.Row="1">
+                <Button 
+                    Name="btnExportToCsv" 
+                    Content="Export to CSV"
+                    Click="BtnExportToCsv_Click" 
+                    Margin="5 10 5 0"/>
+                <Button 
+                    Name="btnConnect" 
+                    Content="Connect" 
+                    Click="BtnConnect_Click" 
+                    Margin="5 10 5 0"/>
+                
+            </StackPanel>
+            <Label 
+                Name="LblAccountSummary" 
+                Content="Account Summary" 
+                Grid.Column="0"
+                Grid.Row="2"
+                Margin="5 10 5 0"/>
+            <Label 
+                Name="LblPosition" 
+                Content="Positions" 
+                Grid.Column="1"
+                Grid.Row="2"
+                Margin="5 10 5 0"/>
+            <ListView
+                Name="LsvAccountSummary"
+                Grid.Column="0"
+                Grid.Row="3"
+                Margin="5 10 5 0"
+                MaxHeight="200"
+                ItemsSource="{Binding AccountSummary}" 
+                >
+                <ListView.View>
+                    <GridView>
+                        <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Item1}">
+                            <GridViewColumn.Header>
+                                <GridViewColumnHeader>Tag</GridViewColumnHeader>
+                            </GridViewColumn.Header>
+                        </GridViewColumn>
+                        <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Item2}">
+                            <GridViewColumn.Header>
+                                <GridViewColumnHeader>Value</GridViewColumnHeader>
+                            </GridViewColumn.Header>
+                        </GridViewColumn>
+                    </GridView>
+                </ListView.View>
+            </ListView>
+            <ListView
+                Name="LsvPositions"
+                Grid.Column="1"
+                Grid.Row="3"
+                Margin="5 10 5 0"
+                MaxHeight="200"
+                ItemsSource="{Binding Positions}"
+                >
+                <ListView.View>
+                    <GridView>
+                        <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Contract.LocalSymbol}">
+                            <GridViewColumn.Header>
+                                <GridViewColumnHeader>Symbol</GridViewColumnHeader>
+                            </GridViewColumn.Header>
+                        </GridViewColumn>
+                        <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Position}">
+                            <GridViewColumn.Header>
+                                <GridViewColumnHeader>Position</GridViewColumnHeader>
+                            </GridViewColumn.Header>
+                        </GridViewColumn>
+                        <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Position}">
+                            <GridViewColumn.Header>
+                                <GridViewColumnHeader>Position</GridViewColumnHeader>
+                            </GridViewColumn.Header>
+                        </GridViewColumn>
+                        <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding AverageCost}">
+                            <GridViewColumn.Header>
+                                <GridViewColumnHeader>Avg.</GridViewColumnHeader>
+                            </GridViewColumn.Header>
+                        </GridViewColumn>
+                    </GridView>
+                </ListView.View>
+
+            </ListView>
+
+            <Label Grid.Column="0"
+                   Grid.Row="4" 
+                   Grid.ColumnSpan="2"
+                   Content="{Binding PnL}"
+                   Margin="5 10 5 0" VerticalAlignment="Top"/>
+            
+            <ListView Name="lsvLogs" 
+                  Grid.Column="0" Grid.Row="5" 
+                  Grid.ColumnSpan="2"
+                  ItemsSource="{Binding Logs}" 
+                  VerticalAlignment="Stretch" 
+                  Margin="5 10 5 0">
+                <ListView.View>
+                    <GridView>
+                        <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Time}">
+                            <GridViewColumn.Header>
+                                <GridViewColumnHeader Tag="Time" Click="lsvLogsColumnHeader_Click">Time</GridViewColumnHeader>
+                            </GridViewColumn.Header>
+                        </GridViewColumn>
+                        <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Message}">
+                            <GridViewColumn.Header>
+                                <GridViewColumnHeader Tag="Message" Click="lsvLogsColumnHeader_Click">Message</GridViewColumnHeader>
+                            </GridViewColumn.Header>
+                        </GridViewColumn>
+                    </GridView>
+                </ListView.View>
+            </ListView>
+
+        </Grid>
     </Grid>
 </Page>
