@@ -1,10 +1,8 @@
 ﻿using IBApi;
 using Microsoft.Data.Sqlite;
 using Newtonsoft.Json;
-using Stock.DataProvider;
 using Stock.Shared.Models;
 using Stock.Shared.Models.IBKR.Messages;
-using System.Collections.Specialized;
 using System.Diagnostics;
 
 namespace Stock.Data
@@ -624,7 +622,6 @@ namespace Stock.Data
             using var conn = new SqliteConnection($"Data Source={_dbPath}");
             try
             {
-                var collector = new FmpStockDataProvider();
                 var table = string.Empty;
 
                 switch (timeframe)
@@ -659,15 +656,7 @@ namespace Stock.Data
                 }
 
                 Log($"Collecting data for ticker {ticker} at timeframe {timeframe}");
-                var eaternTime = GetEasternTime(DateTime.Now);
-                var prices = await collector.CollectData(ticker, timeframe, lastDate, eaternTime);
-                if (prices == null || prices.Count == 0)
-                {
-                    return;
-                }
-
-                Log($"Inserting data for ticker {ticker} at timeframe {timeframe}");
-                InsertHistoricalPriceToTable(conn, tickerId, table, prices.ToArray());
+                await QuickFill(ticker, timeframe, lastDate);
             }
             catch (Exception ex)
             {
