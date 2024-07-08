@@ -555,7 +555,7 @@ namespace Stock.UI.Components
                     {
                         var swingPointStrategyParameter = GetSwingPointStrategyParameter(ticker, timeframe);
 
-                        var prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddYears(-5), DateTime.Now);
+                        var prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddYears(-1), DateTime.Now);
                         if (timeframe == Timeframe.Daily)
                         {
                             prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddYears(-10), DateTime.Now);
