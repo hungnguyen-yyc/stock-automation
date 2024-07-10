@@ -553,7 +553,7 @@ namespace Stock.UI.Components
                 {
                     try
                     {
-                        var swingPointStrategyParameter = GetSwingPointStrategyParameter(ticker, timeframe);
+                        var swingPointStrategyParameter = SwingPointParametersProvider.GetSwingPointStrategyParameter(ticker, timeframe);
 
                         var prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddYears(-5), DateTime.Now);
                         if (timeframe == Timeframe.Daily)
@@ -652,7 +652,7 @@ namespace Stock.UI.Components
                         foreach (var ticker in tickers)
                         {
                             await _repo.FillLatestDataForTheDay(ticker, timeframe, DateTime.Now, DateTime.Now);
-                            var swingPointStrategyParameter = GetSwingPointStrategyParameter(ticker, timeframe);
+                            var swingPointStrategyParameter = SwingPointParametersProvider.GetSwingPointStrategyParameter(ticker, timeframe);
 
                             var prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddYears(-10), DateTime.Now);
                             
@@ -818,82 +818,6 @@ namespace Stock.UI.Components
 #endif
         }
 
-        private SwingPointStrategyParameter GetSwingPointStrategyParameter(string ticker, Timeframe timeframe)
-        {
-            switch (ticker)
-            {
-                case "TSLA":
-                    return new SwingPointStrategyParameter
-                    {
-                        Timeframe = timeframe,
-                        NumberOfCandlesticksIntersectForTopsAndBottoms = 2,
-                    }.Merge(GetDefaultParameter(timeframe));
-                case "AMD":
-                    return new SwingPointStrategyParameter
-                    {
-                        Timeframe = timeframe,
-                        NumberOfCandlesticksIntersectForTopsAndBottoms = 1,
-                    }.Merge(GetDefaultParameter(timeframe));
-                case "NVDA":
-                    return new SwingPointStrategyParameter
-                    {
-                        Timeframe = timeframe,
-                        NumberOfCandlesticksIntersectForTopsAndBottoms = 1,
-                    }.Merge(GetDefaultParameter(timeframe));
-                case "META":
-                    return new SwingPointStrategyParameter
-                    {
-                        Timeframe = timeframe,
-                        NumberOfCandlesticksIntersectForTopsAndBottoms = 1,
-                    }.Merge(GetDefaultParameter(timeframe));
-                case "QQQ":
-                    return new SwingPointStrategyParameter
-                    {
-                        Timeframe = timeframe,
-                        NumberOfCandlesticksIntersectForTopsAndBottoms = 1,
-                    }.Merge(GetDefaultParameter(timeframe));
-                case "SPY":
-                    return new SwingPointStrategyParameter
-                    {
-                        Timeframe = timeframe,
-                        NumberOfCandlesticksIntersectForTopsAndBottoms = 1,
-                    }.Merge(GetDefaultParameter(timeframe));
-                default:
-                    return GetDefaultParameter(timeframe);
-            }
-        }
-
-        private SwingPointStrategyParameter GetDefaultParameter(Timeframe timeframe)
-        {
-            if (timeframe == Timeframe.Daily)
-            {
-                return new SwingPointStrategyParameter
-                {
-                    NumberOfCandlesticksToLookBack = 7,
-                    Timeframe = timeframe,
-                    NumberOfCandlesticksIntersectForTopsAndBottoms = 3,
-                    NumberOfSwingPointsToLookBack = 2,
-                    NumberOfCandlesticksToSkipAfterSwingPoint = 2,
-                    NumberOfTouchesToDrawTrendLine = 2,
-                    NumberOfCandlesBetweenCurrentPriceAndLastLineEndPoint = 390,
-                    NumberOfCandlesticksBeforeCurrentPriceToLookBack = 7,
-                };
-            }
-            
-            return new SwingPointStrategyParameter
-            {
-                NumberOfCandlesticksToLookBack = 12,
-                Timeframe = timeframe,
-                NumberOfCandlesticksIntersectForTopsAndBottoms = 3,
-
-                NumberOfSwingPointsToLookBack = 2,
-                NumberOfCandlesticksToSkipAfterSwingPoint = 2,
-                NumberOfTouchesToDrawTrendLine = 2,
-                NumberOfCandlesBetweenCurrentPriceAndLastLineEndPoint = 390,
-                NumberOfCandlesticksBeforeCurrentPriceToLookBack = 7,
-            };
-        }
-
         public void ExportAlertToCsv()
         {
             try
@@ -913,7 +837,7 @@ namespace Stock.UI.Components
                 //write parameter to json file
                 foreach (var ticker in TickersToTrade.POPULAR_TICKERS)
                 {
-                    var parameter = GetSwingPointStrategyParameter(ticker, Timeframe.Hour1);
+                    var parameter = SwingPointParametersProvider.GetSwingPointStrategyParameter(ticker, Timeframe.Hour1);
                     var parameterJson = parameter.ToJsonString();
                     var parameterPath = Path.Combine(stockAlertPath, $"{ticker}_parameter.json");
                     File.WriteAllText(parameterPath, parameterJson);
