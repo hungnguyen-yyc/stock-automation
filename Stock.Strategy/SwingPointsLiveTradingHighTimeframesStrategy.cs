@@ -7,7 +7,7 @@ using Stock.Strategies.Parameters;
 
 namespace Stock.Strategies
 {
-    public class SwingPointsLiveTrading1HourStrategy : ISwingPointStrategy
+    public class SwingPointsLiveTradingHighTimeframesStrategy : ISwingPointStrategy
     {
         public event AlertEventHandler AlertCreated;
         public event TrendLineEventHandler TrendLineCreated;
@@ -30,7 +30,7 @@ namespace Stock.Strategies
                 
                 TrendLineCreated?.Invoke(this, new TrendLineEventArgs(levels.Select(x => new TrendLine(parameter.Timeframe, ticker, x.Key, x.Key)).ToList()));
 
-                var hmVolumes = ascSortedByDatePrice.GetHeatmapVolume(21, 21);
+                var hmVolumes = ascSortedByDatePrice.GetHeatmapVolume(1, 1);
                 var hmvThresholdStatus = hmVolumes.Last().ThresholdStatus;
                 var hmVolumeCheck = hmvThresholdStatus != HeatmapVolumeThresholdStatus.Low
                     && hmvThresholdStatus != HeatmapVolumeThresholdStatus.Normal;

@@ -55,7 +55,7 @@ namespace Stock.UI.Components
         public delegate void IBKRConnectedHandler(bool isConnected);
         public event IBKRConnectedHandler IBKRConnected;
 
-        public MainScreenViewModel(StockDataRepository repo, SwingPointsLiveTrading15MinStrategy strategy)
+        public MainScreenViewModel(StockDataRepository repo, SwingPointsLiveTradingLowTimeframesStrategy strategy)
         {
             _repo = repo;
             _strategy = strategy;
@@ -539,11 +539,11 @@ namespace Stock.UI.Components
 
                 if (timeframe == Timeframe.Hour1 || timeframe == Timeframe.Daily)
                 {
-                    _strategy = new SwingPointsLiveTrading1HourStrategy();
+                    _strategy = new SwingPointsLiveTradingHighTimeframesStrategy();
                 }
                 else
                 {
-                    _strategy = new SwingPointsLiveTrading15MinStrategy();
+                    _strategy = new SwingPointsLiveTradingLowTimeframesStrategy();
                 }
 
                 _strategy.AlertCreated += Strategy_AlertCreated;
@@ -633,15 +633,15 @@ namespace Stock.UI.Components
                     {
                         _strategy.AlertCreated -= Strategy_AlertCreated;
                         _strategy.TrendLineCreated -= Strategy_TrendLineCreated;
-                        _strategy = new SwingPointsLiveTrading1HourStrategy();
+                        _strategy = new SwingPointsLiveTradingHighTimeframesStrategy();
 
                         if (timeframe == Timeframe.Hour1 || timeframe == Timeframe.Daily)
                         {
-                            _strategy = new SwingPointsLiveTrading1HourStrategy();
+                            _strategy = new SwingPointsLiveTradingHighTimeframesStrategy();
                         }
                         else
                         {
-                            _strategy = new SwingPointsLiveTrading15MinStrategy();
+                            _strategy = new SwingPointsLiveTradingLowTimeframesStrategy();
                         }
                         
                         _strategy.AlertCreated += Strategy_AlertCreated;

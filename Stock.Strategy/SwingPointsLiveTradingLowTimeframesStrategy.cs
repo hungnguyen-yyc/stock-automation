@@ -17,7 +17,7 @@ namespace Stock.Strategies
         void CheckForTouchingUpTrendLine(string ticker, List<Price> ascSortedByDatePrice, IStrategyParameter strategyParameter);
     }
 
-    public class SwingPointsLiveTrading15MinStrategy: ISwingPointStrategy
+    public class SwingPointsLiveTradingLowTimeframesStrategy: ISwingPointStrategy
     {
         public event AlertEventHandler AlertCreated;
         public event TrendLineEventHandler TrendLineCreated;
