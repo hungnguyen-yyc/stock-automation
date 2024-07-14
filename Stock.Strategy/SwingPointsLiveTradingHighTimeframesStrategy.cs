@@ -30,7 +30,7 @@ namespace Stock.Strategies
                 
                 TrendLineCreated?.Invoke(this, new TrendLineEventArgs(levels.Select(x => new TrendLine(parameter.Timeframe, ticker, x.Key, x.Key)).ToList()));
 
-                var hmVolumes = ascSortedByDatePrice.GetHeatmapVolume(1, 1);
+                var hmVolumes = ascSortedByDatePrice.GetHeatmapVolume(21, 21);
                 var hmvThresholdStatus = hmVolumes.Last().ThresholdStatus;
                 var hmVolumeCheck = hmvThresholdStatus != HeatmapVolumeThresholdStatus.Low
                     && hmvThresholdStatus != HeatmapVolumeThresholdStatus.Normal;
