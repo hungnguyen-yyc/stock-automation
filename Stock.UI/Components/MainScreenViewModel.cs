@@ -602,6 +602,16 @@ namespace Stock.UI.Components
             lock (_lock)
             {
                 var trendLines = e.TrendLines;
+
+                foreach (var trendLine in _allTrendLines.ToList())
+                {
+                    var first = trendLines.FirstOrDefault();
+                    if (first != null && first.Ticker == trendLine.Ticker && first.Timeframe == trendLine.Timeframe)
+                    {
+                        _allTrendLines.Remove(trendLine);
+                    }
+                }
+                
                 foreach (var trendLine in trendLines)
                 {
                     if (!_allTrendLines.Contains(trendLine))
