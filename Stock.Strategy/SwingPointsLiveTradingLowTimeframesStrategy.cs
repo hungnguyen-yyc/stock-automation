@@ -7,17 +7,7 @@ using Stock.Strategies.Parameters;
 
 namespace Stock.Strategies
 {
-    public interface ISwingPointStrategy
-    {
-        event AlertEventHandler AlertCreated;
-        event TrendLineEventHandler TrendLineCreated;
-
-        void CheckForTopBottomTouch(string ticker, List<Price> ascSortedByDatePrice, IStrategyParameter strategyParameter);
-        void CheckForTouchingDownTrendLine(string ticker, List<Price> ascSortedByDatePrice, IStrategyParameter strategyParameter);
-        void CheckForTouchingUpTrendLine(string ticker, List<Price> ascSortedByDatePrice, IStrategyParameter strategyParameter);
-    }
-
-    public class SwingPointsLiveTradingLowTimeframesStrategy: ISwingPointStrategy
+    public sealed class SwingPointsLiveTradingLowTimeframesStrategy: ISwingPointStrategy
     {
         public event AlertEventHandler AlertCreated;
         public event TrendLineEventHandler TrendLineCreated;
@@ -43,8 +33,8 @@ namespace Stock.Strategies
                 var midLines = levels.Select(x => new { mid = (x.Value.Select(y => y.High).Max()) + (x.Value.Select(y => y.Low).Min()) / 2, count = x.Value.Count()})
                     .OrderByDescending(x => x.mid)
                     .ToList();
-
-
+                
+                // TODO: refactor to use VolumeCheckingHelper
                 var hmVolumes = ascSortedByDatePrice.GetHeatmapVolume(21, 21);
                 var hmVolume = hmVolumes.Last().Volume;
                 var hmvThresholdStatus = hmVolumes.Last().ThresholdStatus;
@@ -501,7 +491,7 @@ namespace Stock.Strategies
             }
         }
 
-        protected virtual void OnAlertCreated(AlertEventArgs e)
+        private void OnAlertCreated(AlertEventArgs e)
         {
             AlertCreated?.Invoke(this, e);
         }

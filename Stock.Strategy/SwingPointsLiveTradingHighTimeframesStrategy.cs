@@ -7,8 +7,15 @@ using Stock.Strategies.Parameters;
 
 namespace Stock.Strategies
 {
-    public class SwingPointsLiveTradingHighTimeframesStrategy : ISwingPointStrategy
+    public sealed class SwingPointsLiveTradingHighTimeframesStrategy : ISwingPointStrategy
     {
+        private readonly VolumeCheckingHelper _volumeCheckingHelper;
+        
+        public SwingPointsLiveTradingHighTimeframesStrategy()
+        {
+            _volumeCheckingHelper = new VolumeCheckingHelper();
+        }
+        
         public event AlertEventHandler AlertCreated;
         public event TrendLineEventHandler TrendLineCreated;
 
@@ -30,12 +37,8 @@ namespace Stock.Strategies
                 
                 TrendLineCreated?.Invoke(this, new TrendLineEventArgs( // + 1 because we need to include the key
                     levels.Select(x => new TrendLine(parameter.Timeframe, ticker, x.Key, x.Key, x.Value.Count + 1)).ToList()));
-
-                var hmVolumes = ascSortedByDatePrice.GetHeatmapVolume(21, 21);
-                var hmvThresholdStatus = hmVolumes.Last().ThresholdStatus;
-                var hmVolumeCheck = hmvThresholdStatus != HeatmapVolumeThresholdStatus.Low
-                    && hmvThresholdStatus != HeatmapVolumeThresholdStatus.Normal;
-
+                
+                var hmVolumeCheck = _volumeCheckingHelper.CheckHeatmapVolume(ascSortedByDatePrice, parameter);
                 var isValidCandleForLong = price.IsGreenCandle && price.IsContentCandle;
                 var isValidCandleForShort = price.IsRedCandle && price.IsContentCandle;
 
@@ -402,7 +405,7 @@ namespace Stock.Strategies
             }
         }
 
-        protected virtual void OnAlertCreated(AlertEventArgs e)
+        private void OnAlertCreated(AlertEventArgs e)
         {
             AlertCreated?.Invoke(this, e);
         }
