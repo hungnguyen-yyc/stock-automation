@@ -17,7 +17,7 @@ public class SwingPointParametersProvider
                 return new SwingPointStrategyParameter
                 {
                     Timeframe = timeframe,
-                    NumberOfCandlesticksIntersectForTopsAndBottoms = 1,
+                    NumberOfCandlesticksIntersectForTopsAndBottoms = 2,
                 }.Merge(GetDefaultParameter(timeframe));
             case "NVDA":
                 return new SwingPointStrategyParameter

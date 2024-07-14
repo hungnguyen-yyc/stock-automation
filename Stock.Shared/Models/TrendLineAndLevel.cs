@@ -10,8 +10,10 @@ public class TrendLine
     public Price Start { get; }
     
     public Price End { get; }
+    
+    public int NumberOfSwingPointsIntersected { get; }
 
-    public TrendLine(Timeframe timeframe, string ticker, Price start, Price end)
+    public TrendLine(Timeframe timeframe, string ticker, Price start, Price end, int numberOfSwingPointsIntersected)
     {
         Timeframe = timeframe;
         Ticker = ticker;
@@ -19,6 +21,7 @@ public class TrendLine
         EndPrice = end.ToString();
         Start = start;
         End = end;
+        NumberOfSwingPointsIntersected = numberOfSwingPointsIntersected;
     }
 
     public override bool Equals(object? obj)

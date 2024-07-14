@@ -28,7 +28,8 @@ namespace Stock.Strategies
                     .ToList();
                 var atr = ascSortedByDatePrice.GetAtr(14);
                 
-                TrendLineCreated?.Invoke(this, new TrendLineEventArgs(levels.Select(x => new TrendLine(parameter.Timeframe, ticker, x.Key, x.Key)).ToList()));
+                TrendLineCreated?.Invoke(this, new TrendLineEventArgs( // + 1 because we need to include the key
+                    levels.Select(x => new TrendLine(parameter.Timeframe, ticker, x.Key, x.Key, x.Value.Count + 1)).ToList()));
 
                 var hmVolumes = ascSortedByDatePrice.GetHeatmapVolume(21, 21);
                 var hmvThresholdStatus = hmVolumes.Last().ThresholdStatus;
@@ -184,30 +185,6 @@ namespace Stock.Strategies
             var trendingDownLines = highLines.Where(x => x.Item2.High < x.Item1.High).ToList();
             var nTops = SwingPointAnalyzer.GetNTops(last6MonthAction, parameter.NumberOfCandlesticksToLookBack);
 
-            // consolidate lines so that we only have 1 line per trend
-            var consolidatedLines = new List<Tuple<Price, Price>>();
-            foreach (var line in consolidatedLines)
-            {
-                var lineStart = line.Item1;
-                var lineEnd = line.Item2;
-                var containLineStart = consolidatedLines.Any(x => x.Item1 == lineStart);
-                if (containLineStart)
-                {
-                    var existingLine = consolidatedLines.First(x => x.Item1 == lineStart);
-                    if (existingLine.Item2.High > lineEnd.High)
-                    {
-                        consolidatedLines.Remove(existingLine);
-                        consolidatedLines.Add(line);
-                    }
-                }
-                else
-                {
-                    consolidatedLines.Add(line);
-                }
-            }
-            
-            TrendLineCreated?.Invoke(this, new TrendLineEventArgs(consolidatedLines.Select(x => new TrendLine(parameter.Timeframe, ticker, x.Item1, x.Item2)).ToList()));
-
             var thirdLastPriceIndex = last6MonthAction.Count - 3;
             var secondLastPriceIndex = last6MonthAction.Count - 2;
             var currentPriceIndex = last6MonthAction.Count - 1;
@@ -317,30 +294,6 @@ namespace Stock.Strategies
             var trendingUpLines = lowLines.Where(x => x.Item2.Low > x.Item1.Low).ToList();
 
             var nBottoms = SwingPointAnalyzer.GetNBottoms(last6MonthAction, parameter.NumberOfCandlesticksToLookBack);
-
-            // consolidate lines so that we only have 1 line per trend
-            var consolidatedLines = new List<Tuple<Price, Price>>();
-            foreach (var line in trendingUpLines)
-            {
-                var lineStart = line.Item1;
-                var lineEnd = line.Item2;
-                var containtsLineStart = consolidatedLines.Any(x => x.Item1 == lineStart);
-                if (containtsLineStart)
-                {
-                    var existingLine = consolidatedLines.First(x => x.Item1 == lineStart);
-                    if (existingLine.Item2.Low < lineEnd.Low)
-                    {
-                        consolidatedLines.Remove(existingLine);
-                        consolidatedLines.Add(line);
-                    }
-                }
-                else
-                {
-                    consolidatedLines.Add(line);
-                }
-            }
-            
-            TrendLineCreated?.Invoke(this, new TrendLineEventArgs(consolidatedLines.Select(x => new TrendLine(parameter.Timeframe, ticker, x.Item1, x.Item2)).ToList()));
 
             var thirdLastPriceIndex = last6MonthAction.Count - 3;
             var secondLastPriceIndex = last6MonthAction.Count - 2;
