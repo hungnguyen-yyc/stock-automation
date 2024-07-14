@@ -146,5 +146,16 @@ namespace Stock.UI.Components
                 btnConnect.Content = "Connect";
             }
         }
+
+        private void CalOptionDate_DateSelected(object? sender, SelectionChangedEventArgs e)
+        {
+            var date = this.CalOptionDate.SelectedDate;
+            
+            if (date != null)
+            {
+                var fridayNextWeek = date.Value.AddDays((int)DayOfWeek.Friday - (int)date.Value.DayOfWeek + 7);
+                viewModel.GetOptionChain(viewModel.SelectedTicker, date.Value, fridayNextWeek);
+            }
+        }
     }
 }
