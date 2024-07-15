@@ -36,7 +36,13 @@ namespace Stock.Strategies
                 var atr = ascSortedByDatePrice.GetAtr(14);
                 
                 TrendLineCreated?.Invoke(this, new TrendLineEventArgs( // + 1 because we need to include the key
-                    levels.Select(x => new TrendLine(parameter.Timeframe, ticker, x.Key, x.Key, x.Value.Count + 1)).ToList()));
+                    levels.Select(x =>
+                    {
+                        var combineValuesAndKey = x.Value.Concat(new List<Price> { x.Key }).ToList();
+                        var sortedByDate = combineValuesAndKey.OrderBy(y => y.Date).ToList();
+                        var mostRecent = sortedByDate.Last();
+                        return new TrendLine(parameter.Timeframe, ticker, mostRecent, mostRecent, x.Value.Count + 1);
+                    }).ToList()));
                 
                 var hmVolumeCheck = _volumeCheckingHelper.CheckHeatmapVolume(ascSortedByDatePrice, parameter);
                 var isValidCandleForLong = price.IsGreenCandle && price.IsContentCandle;

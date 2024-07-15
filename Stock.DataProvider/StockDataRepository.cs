@@ -41,10 +41,8 @@ namespace Stock.Data
                     {
                         return null;
                     }
-                    else
-                    {
-                        options = optionPrice.OptionPrice.Select(x => x.ToString()).ToArray();
-                    }
+
+                    options = optionPrice.OptionPrice.Select(x => x.ToString()).ToArray();
                 }
 
                 return options;
@@ -92,10 +90,8 @@ namespace Stock.Data
                     {
                         return null;
                     }
-                    else
-                    {
-                        options = optionChains.Options;
-                    }
+
+                    options = optionChains.Options;
                 }
 
                 return options;

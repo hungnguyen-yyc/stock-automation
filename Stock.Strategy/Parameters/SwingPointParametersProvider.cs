@@ -23,25 +23,25 @@ public class SwingPointParametersProvider
                 return new SwingPointStrategyParameter
                 {
                     Timeframe = timeframe,
-                    NumberOfCandlesticksIntersectForTopsAndBottoms = 1,
+                    NumberOfCandlesticksIntersectForTopsAndBottoms = 2,
                 }.Merge(GetDefaultParameter(timeframe));
             case "META":
                 return new SwingPointStrategyParameter
                 {
                     Timeframe = timeframe,
-                    NumberOfCandlesticksIntersectForTopsAndBottoms = 1,
+                    NumberOfCandlesticksIntersectForTopsAndBottoms = 2,
                 }.Merge(GetDefaultParameter(timeframe));
             case "QQQ":
                 return new SwingPointStrategyParameter
                 {
                     Timeframe = timeframe,
-                    NumberOfCandlesticksIntersectForTopsAndBottoms = 1,
+                    NumberOfCandlesticksIntersectForTopsAndBottoms = 2,
                 }.Merge(GetDefaultParameter(timeframe));
             case "SPY":
                 return new SwingPointStrategyParameter
                 {
                     Timeframe = timeframe,
-                    NumberOfCandlesticksIntersectForTopsAndBottoms = 1,
+                    NumberOfCandlesticksIntersectForTopsAndBottoms = 2,
                 }.Merge(GetDefaultParameter(timeframe));
             default:
                 return GetDefaultParameter(timeframe);

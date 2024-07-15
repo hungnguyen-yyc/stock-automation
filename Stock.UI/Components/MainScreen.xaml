@@ -129,30 +129,34 @@
             </ListView.View>
         </ListView>
         <GridSplitter Grid.Column="1" Grid.Row="0" Grid.RowSpan="2"  Background="LightGray" Width="3" VerticalAlignment="Stretch" />
-        <StackPanel
-            Grid.Column="2" Grid.Row="0" Height="auto">
-            <Label>Option historical price for date</Label>
-            <Calendar 
-                Name="CalOptionDate" 
-                SelectedDatesChanged="CalOptionDate_DateSelected"/>
-            <ListView Name="lsvOptionChain"
-                      ItemsSource="{Binding OptionChain}" 
-                      VerticalAlignment="Stretch" 
-                      Margin="5 10 5 0"
-                      HorizontalAlignment="Stretch"
-                      Width="auto"
-                      MouseDoubleClick="lsvOptionChain_DoubleClick">
-                <ListView.View>
-                    <GridView>
-                        <GridViewColumn>
-                            <GridViewColumn.Header>
-                                <GridViewColumnHeader Tag="options">Option Chain</GridViewColumnHeader>
-                            </GridViewColumn.Header>
-                        </GridViewColumn>
-                    </GridView>
-                </ListView.View>
-            </ListView>
-        </StackPanel>
+        <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                      Grid.Column="2" Grid.Row="0" Height="auto">
+            <StackPanel
+                VerticalAlignment="Top"
+                HorizontalAlignment="Left">
+                <Label>Option historical price for date</Label>
+                <Calendar 
+                    Name="CalOptionDate" 
+                    SelectedDatesChanged="CalOptionDate_DateSelected"/>
+                <ListView Name="lsvOptionChain"
+                          ItemsSource="{Binding OptionChain}" 
+                          VerticalAlignment="Stretch" 
+                          Margin="5 10 5 0"
+                          HorizontalAlignment="Stretch"
+                          Width="auto"
+                          MouseDoubleClick="lsvOptionChain_DoubleClick">
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn>
+                                <GridViewColumn.Header>
+                                    <GridViewColumnHeader Tag="options">Option Chain</GridViewColumnHeader>
+                                </GridViewColumn.Header>
+                            </GridViewColumn>
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+            </StackPanel>
+        </ScrollViewer>
         <ListView Name="lsvOptionPrice" 
             Grid.Column="2" Grid.Row="1"
             ItemsSource="{Binding OptionPrice}" 
