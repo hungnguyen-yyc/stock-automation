@@ -555,19 +555,23 @@ namespace Stock.UI.Components
                     {
                         var swingPointStrategyParameter = SwingPointParametersProvider.GetSwingPointStrategyParameter(ticker, timeframe);
 
-                        var prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddYears(-5), DateTime.Now);
+                        IReadOnlyCollection<Price> prices;
                         if (timeframe == Timeframe.Daily)
                         {
-                            prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddYears(-10), DateTime.Now);
+                            prices = await _repo.GetStockDataForHighTimeframesAsc(ticker, timeframe, DateTime.Now.AddYears(-10), DateTime.Now);
+                        }
+                        else
+                        {
+                            prices = await _repo.GetStockDataForHighTimeframesAsc(ticker, timeframe, DateTime.Now.AddYears(-5), DateTime.Now);
                         }
                         
-                        var firstPrice3MonthAgo = prices.First(x => x.Date >= DateTime.Now.AddMonths(-1));
-                        var index = 0;
+                        var priceToStartTesting = prices.First(x => x.Date >= DateTime.Now.AddMonths(-1));
                         
+                        var index = 0;
                         for (int i = 0; i < prices.Count; i++)
                         {
                             var price = prices.ElementAt(i);
-                            if (price.Date == firstPrice3MonthAgo.Date)
+                            if (price.Date == priceToStartTesting.Date)
                             {
                                 index = i;
                                 break;
@@ -664,7 +668,15 @@ namespace Stock.UI.Components
                             await _repo.FillLatestDataForTheDay(ticker, timeframe, DateTime.Now, DateTime.Now);
                             var swingPointStrategyParameter = SwingPointParametersProvider.GetSwingPointStrategyParameter(ticker, timeframe);
 
-                            var prices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddYears(-10), DateTime.Now);
+                            IReadOnlyCollection<Price> prices;
+                            if (timeframe == Timeframe.Daily)
+                            {
+                                prices = await _repo.GetStockDataForHighTimeframesAsc(ticker, timeframe, DateTime.Now.AddYears(-10), DateTime.Now);
+                            }
+                            else
+                            {
+                                prices = await _repo.GetStockDataForHighTimeframesAsc(ticker, timeframe, DateTime.Now.AddYears(-5), DateTime.Now);
+                            }
                             
                             _tickerAndPrices[ticker] = prices;
                             UpdateFilteredTrendLines(ticker);

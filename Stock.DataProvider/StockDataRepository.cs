@@ -510,6 +510,95 @@ namespace Stock.Data
                 conn.Close();
             }
         }
+        
+        public async Task<IReadOnlyCollection<Price>> GetStockDataForHighTimeframesAsc(string ticker, Timeframe timeframe, DateTime from, DateTime to)
+        {
+            using var conn = new SqliteConnection($"Data Source={_dbPath}");
+            try
+            {
+                var fromString = from.ToString("yyyyMMdd");
+                var interval = 60;
+                var toString = DateTime.Now.AddDays(1).ToString("yyyyMMdd");
+
+                switch (timeframe)
+                {
+                    case Timeframe.Hour1:
+                        interval = 60;
+                        break;
+                    case Timeframe.Daily:
+                        break;
+                    default:
+                        throw new Exception("Timeframe not supported");
+                }
+
+                var url = "https://ds01.ddfplus.com/historical/queryminutes.ashx?symbol={0}&start={1}&end={2}&contractroll=combined&order=Descending&interval={3}&fromt=false&username=randacchub%40gmail.com&password=_placeholder_";
+                var formatedUrl = string.Format(url, ticker, fromString, toString, interval);
+                if (timeframe == Timeframe.Daily)
+                {
+                    url =
+                        "https://ds01.ddfplus.com/historical/queryeod.ashx?symbol={0}&start={1}&end={2}&contractroll=combined&order=Descending&fromt=false&username=randacchub%40gmail.com&password=_placeholder_";
+                    formatedUrl = string.Format(url, ticker, fromString, toString);
+                }
+                
+                using var httpClient = new HttpClient();
+                var response = await httpClient.GetAsync(formatedUrl);
+                if (response.IsSuccessStatusCode)
+                {
+                    var tickerId = await GetTickerId(ticker);
+
+                    var content = await response.Content.ReadAsStringAsync();
+                    var lines = content.Split('\n');
+                    var list = new List<Price>();
+                    foreach (var line in lines)
+                    {
+                        var price = new Price();
+                        var values = line.Split(',');
+                        if (values.Length < 7)
+                        {
+                            continue;
+                        }
+
+                        if (timeframe == Timeframe.Daily)
+                        {
+                            price.Date = Convert.ToDateTime(values[1]);
+                            price.Open = Convert.ToDecimal(values[2]);
+                            price.High = Convert.ToDecimal(values[3]);
+                            price.Low = Convert.ToDecimal(values[4]);
+                            price.Close = Convert.ToDecimal(values[5]);
+                            price.Volume = Convert.ToInt64(values[6]);
+                        }
+                        else
+                        {
+                            price.Date = Convert.ToDateTime(values[0]);
+                            price.Open = Convert.ToDecimal(values[2]);
+                            price.High = Convert.ToDecimal(values[3]);
+                            price.Low = Convert.ToDecimal(values[4]);
+                            price.Close = Convert.ToDecimal(values[5]);
+                            price.Volume = Convert.ToInt64(values[6]);
+                        }
+
+                        if (!price.isValid)
+                        {
+                            throw new Exception($"Invalid price {JsonConvert.SerializeObject(price)}");
+                        }
+
+                        list.Add(price);
+                    }
+                    return list.OrderBy(x => x.Date).ToList();
+                }
+            }
+            catch (Exception ex)
+            {
+                Log(ex.ToString());
+                throw new Exception($"Error getting data for ticker {ticker}", ex);
+            }
+            finally
+            {
+                conn.Close();
+            }
+            
+            return new List<Price>();
+        }
 
         // TODO: for temporary use only, to fill data for new ticker, hardcode table name and interval
         public async Task QuickFill(string ticker, Timeframe timeframe, DateTime deleteFrom)
