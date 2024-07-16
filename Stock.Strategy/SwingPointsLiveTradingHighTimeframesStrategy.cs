@@ -51,7 +51,10 @@ namespace Stock.Strategies
                 var levelSecondLastPriceTouched = levels
                     .Where(x =>
                     {
-                        var center = (x.Key.Low + x.Key.High) / 2;
+                        var combineValuesAndKey = x.Value.Concat(new List<Price> { x.Key }).ToList();
+                        var sortedByDate = combineValuesAndKey.OrderBy(y => y.Date).ToList();
+                        var mostRecent = sortedByDate.Last();
+                        var center = (mostRecent.Low + mostRecent.High) / 2;
                         var centerOffset = center * (decimal)0.01;
                         var centerPoint = new NumericRange(center - centerOffset, center + centerOffset);
                         return secondLastPrice.CandleRange.Intersect(centerPoint);
