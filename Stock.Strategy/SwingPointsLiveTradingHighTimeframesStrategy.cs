@@ -30,7 +30,8 @@ namespace Stock.Strategies
             {
                 var secondLastPrice = ascSortedByDatePrice[ascSortedByDatePrice.Count - 2];
                 var price = ascSortedByDatePrice.Last();
-                var levels = SwingPointAnalyzer.GetLevels(ascSortedByDatePrice, parameter.NumberOfCandlesticksToLookBack)
+                var excludeLastPrice = ascSortedByDatePrice.GetRange(0, ascSortedByDatePrice.Count - 1);
+                var levels = SwingPointAnalyzer.GetLevels(excludeLastPrice, parameter.NumberOfCandlesticksToLookBack)
                     .Where(x => x.Value.Count + 1 >= parameter.NumberOfCandlesticksIntersectForTopsAndBottoms) // + 1 because we need to include the key
                     .ToList();
                 var atr = ascSortedByDatePrice.GetAtr(14);

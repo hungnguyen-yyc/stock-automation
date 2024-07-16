@@ -424,6 +424,63 @@ namespace Stock.UI.Components
 
             OnPropertyChanged(nameof(OptionPrice));
         }
+        
+        public async Task GetLevels()
+        {
+            try
+            {
+                var tickers = TickersToTrade.POPULAR_TICKERS;
+                var timeframes = new[] { Timeframe.Hour1, Timeframe.Daily };
+
+                foreach (var timeframe in timeframes)
+                {
+                    _strategy.TrendLineCreated -= Strategy_TrendLineCreated;
+                    _strategy = new SwingPointsLiveTradingHighTimeframesStrategy();
+
+                    if (timeframe is Timeframe.Hour1 or Timeframe.Daily)
+                    {
+                        _strategy = new SwingPointsLiveTradingHighTimeframesStrategy();
+                    }
+                    else
+                    {
+                        _strategy = new SwingPointsLiveTradingLowTimeframesStrategy();
+                    }
+                    
+                    _strategy.TrendLineCreated += Strategy_TrendLineCreated;
+
+                    foreach (var ticker in tickers)
+                    {
+                        IReadOnlyCollection<Price> prices;
+                        if (timeframe == Timeframe.Daily)
+                        {
+                            prices = await _repo.GetStockDataForHighTimeframesAsc(ticker, timeframe, DateTime.Now.AddYears(-10), DateTime.Now);
+                        }
+                        else
+                        {
+                            prices = await _repo.GetStockDataForHighTimeframesAsc(ticker, timeframe, DateTime.Now.AddYears(-5), DateTime.Now);
+                        }
+                        
+                        _tickerAndPrices[ticker] = prices;
+                        UpdateFilteredTrendLines(ticker);
+                        
+                        var swingPointStrategyParameter = SwingPointParametersProvider.GetSwingPointStrategyParameter(ticker, timeframe);
+                        await Task.Run(() =>
+                        {
+                            _strategy.CheckForTopBottomTouch(ticker, prices.ToList(), swingPointStrategyParameter);
+                            return Task.CompletedTask;
+                        });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logs.Add(new LogEventArg(ex.Message));
+            }
+            finally
+            {
+                await Task.Delay(TimeSpan.FromMinutes(1));
+            }
+        }
 
         private void UpdateFilteredAlerts()
         {
@@ -522,7 +579,7 @@ namespace Stock.UI.Components
         private async Task StartStrategy()
         {
 #if DEBUG
-            await RunInDebug();
+            //await RunInDebug();
 #else
             await RunInRelease();
 #endif

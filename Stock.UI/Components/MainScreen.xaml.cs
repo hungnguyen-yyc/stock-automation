@@ -157,5 +157,10 @@ namespace Stock.UI.Components
                 viewModel.GetOptionChain(viewModel.SelectedTicker, date.Value, fridayNextWeek);
             }
         }
+
+        private void btnGetLevels_Click(object sender, RoutedEventArgs e)
+        {
+            viewModel.GetLevels();
+        }
     }
 }

@@ -212,6 +212,11 @@
                 Grid.Column="1"
                 Grid.Row="1">
                 <Button 
+                    Name="btnGetLevels" 
+                    Content="Get Levels"
+                    Click="btnGetLevels_Click" 
+                    Margin="5 10 5 0"/>
+                <Button 
                     Name="btnExportToCsv" 
                     Content="Export to CSV"
                     Click="BtnExportToCsv_Click" 
