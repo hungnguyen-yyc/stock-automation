@@ -509,12 +509,11 @@ namespace Stock.Data
         
         public async Task<IReadOnlyCollection<Price>> GetStockDataForHighTimeframesAsc(string ticker, Timeframe timeframe, DateTime from, DateTime to)
         {
-            using var conn = new SqliteConnection($"Data Source={_dbPath}");
             try
             {
                 var fromString = from.ToString("yyyyMMdd");
                 var interval = 60;
-                var toString = DateTime.Now.AddDays(1).ToString("yyyyMMdd");
+                var toString = to.ToString("yyyyMMdd");
 
                 switch (timeframe)
                 {
@@ -540,8 +539,6 @@ namespace Stock.Data
                 var response = await httpClient.GetAsync(formatedUrl);
                 if (response.IsSuccessStatusCode)
                 {
-                    var tickerId = await GetTickerId(ticker);
-
                     var content = await response.Content.ReadAsStringAsync();
                     var lines = content.Split('\n');
                     var list = new List<Price>();
@@ -587,10 +584,6 @@ namespace Stock.Data
             {
                 Log(ex.ToString());
                 throw new Exception($"Error getting data for ticker {ticker}", ex);
-            }
-            finally
-            {
-                conn.Close();
             }
             
             return new List<Price>();

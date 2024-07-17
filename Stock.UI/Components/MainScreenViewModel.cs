@@ -453,11 +453,11 @@ namespace Stock.UI.Components
                         IReadOnlyCollection<Price> prices;
                         if (timeframe == Timeframe.Daily)
                         {
-                            prices = await _repo.GetStockDataForHighTimeframesAsc(ticker, timeframe, DateTime.Now.AddYears(-10), DateTime.Now);
+                            prices = await _repo.GetStockDataForHighTimeframesAsc(ticker, timeframe, DateTime.Now.AddYears(-10), DateTime.Now.AddDays(1));
                         }
                         else
                         {
-                            prices = await _repo.GetStockDataForHighTimeframesAsc(ticker, timeframe, DateTime.Now.AddYears(-5), DateTime.Now);
+                            prices = await _repo.GetStockDataForHighTimeframesAsc(ticker, timeframe, DateTime.Now.AddYears(-5), DateTime.Now.AddDays(1));
                         }
                         
                         _tickerAndPrices[ticker] = prices;
@@ -615,11 +615,11 @@ namespace Stock.UI.Components
                         IReadOnlyCollection<Price> prices;
                         if (timeframe == Timeframe.Daily)
                         {
-                            prices = await _repo.GetStockDataForHighTimeframesAsc(ticker, timeframe, DateTime.Now.AddYears(-10), DateTime.Now);
+                            prices = await _repo.GetStockDataForHighTimeframesAsc(ticker, timeframe, DateTime.Now.AddYears(-10), DateTime.Now.AddDays(1));
                         }
                         else
                         {
-                            prices = await _repo.GetStockDataForHighTimeframesAsc(ticker, timeframe, DateTime.Now.AddYears(-5), DateTime.Now);
+                            prices = await _repo.GetStockDataForHighTimeframesAsc(ticker, timeframe, DateTime.Now.AddYears(-5), DateTime.Now.AddDays(1));
                         }
                         
                         var priceToStartTesting = prices.First(x => x.Date >= DateTime.Now.AddMonths(-1));
@@ -728,11 +728,11 @@ namespace Stock.UI.Components
                             IReadOnlyCollection<Price> prices;
                             if (timeframe == Timeframe.Daily)
                             {
-                                prices = await _repo.GetStockDataForHighTimeframesAsc(ticker, timeframe, DateTime.Now.AddYears(-10), DateTime.Now);
+                                prices = await _repo.GetStockDataForHighTimeframesAsc(ticker, timeframe, DateTime.Now.AddYears(-10), DateTime.Now.AddDays(1));
                             }
                             else
                             {
-                                prices = await _repo.GetStockDataForHighTimeframesAsc(ticker, timeframe, DateTime.Now.AddYears(-5), DateTime.Now);
+                                prices = await _repo.GetStockDataForHighTimeframesAsc(ticker, timeframe, DateTime.Now.AddYears(-5), DateTime.Now.AddDays(1));
                             }
                             
                             _tickerAndPrices[ticker] = prices;
