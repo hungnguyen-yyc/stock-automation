@@ -579,7 +579,7 @@ namespace Stock.UI.Components
         private async Task StartStrategy()
         {
 #if DEBUG
-            //await RunInDebug();
+            await RunInDebug();
 #else
             await RunInRelease();
 #endif
@@ -722,7 +722,6 @@ namespace Stock.UI.Components
 
                         foreach (var ticker in tickers)
                         {
-                            await _repo.FillLatestDataForTheDay(ticker, timeframe, DateTime.Now, DateTime.Now);
                             var swingPointStrategyParameter = SwingPointParametersProvider.GetSwingPointStrategyParameter(ticker, timeframe);
 
                             IReadOnlyCollection<Price> prices;
