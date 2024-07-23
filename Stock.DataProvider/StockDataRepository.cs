@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using Stock.Shared.Models;
 using Stock.Shared.Models.IBKR.Messages;
 using System.Diagnostics;
+using System.Globalization;
 
 namespace Stock.Data
 {
@@ -27,8 +28,19 @@ namespace Stock.Data
             {
                 using var httpClient = new HttpClient();
                 var optionDetail = optionDetailByBarChart.Split('|');
+                var symbol = optionDetail[0];
+                var expiryDate = optionDetail[1];
+                var strikePrice = Decimal.Parse(optionDetail[2].Substring(0, optionDetail[2].Length - 1));
+                var optionType = optionDetail[2].Substring(optionDetail[2].Length - 1);
+                var option = new Option
+                {
+                    Ticker = symbol,
+                    ExpiryDate = DateTime.ParseExact(expiryDate, "yyyyMMdd", CultureInfo.InvariantCulture),
+                    StrikePrice = strikePrice,
+                    OptionType = optionType
+                };
                 var url = "https://webapp-proxy.aws.barchart.com/v1/ondemand/getEquityOptionsHistory.json?symbol={0}%7C{1}%7C{2}&fields=volatility,theoretical,delta,gamma,theta,vega,rho";
-                var formattedUrl = string.Format(url, optionDetail[0], optionDetail[1], optionDetail[2]);
+                var formattedUrl = string.Format(url, symbol, optionDetail[1], optionDetail[2]);
                 var response = await httpClient.GetAsync(formattedUrl);
                 string[]? options = null;
 
@@ -42,7 +54,11 @@ namespace Stock.Data
                         return null;
                     }
 
-                    options = optionPrice.OptionPrice.Select(x => x.ToString()).ToArray();
+                    var latestPrice = await GetLatestPrice(symbol);
+                    
+                    options = latestPrice == null ? 
+                        optionPrice.OptionPrice.Select(x => x.ToString()).ToArray() :
+                        optionPrice.OptionPrice.Select(x => x.ToString(option, latestPrice.Close)).ToArray();
                 }
 
                 return options;
@@ -505,6 +521,48 @@ namespace Stock.Data
             {
                 conn.Close();
             }
+        }
+        
+        public async Task<Price?> GetLatestPrice(string ticker)
+        {
+            try
+            {
+                var today = DateTime.Now.ToString("yyyyMMdd");
+                var tomorrow = DateTime.Now.AddDays(1).ToString("yyyyMMdd");
+                var url = "https://ds01.ddfplus.com/historical/queryminutes.ashx?symbol={0}&start={1}&end={2}&contractroll=combined&order=Descending&interval=1&fromt=false&username=randacchub%40gmail.com&password=_placeholder_";
+                var formattedUrl = string.Format(url, ticker, today, tomorrow);
+                
+                using var httpClient = new HttpClient();
+                var response = await httpClient.GetAsync(formattedUrl);
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                    var lines = content.Split('\n');
+                    var latest = lines.Last();
+                    var price = new Price();
+                    var values = latest.Split(',');
+
+                    price.Date = Convert.ToDateTime(values[0]);
+                    price.Open = Convert.ToDecimal(values[2]);
+                    price.High = Convert.ToDecimal(values[3]);
+                    price.Low = Convert.ToDecimal(values[4]);
+                    price.Close = Convert.ToDecimal(values[5]);
+                    price.Volume = Convert.ToInt64(values[6]);
+
+                    if (!price.isValid)
+                    {
+                        throw new Exception($"Invalid price {JsonConvert.SerializeObject(price)}");
+                    }
+                    return price;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log(ex.ToString());
+                throw new Exception($"Error getting data for ticker {ticker}", ex);
+            }
+            
+            return null;
         }
         
         public async Task<IReadOnlyCollection<Price>> GetStockDataForHighTimeframesAsc(string ticker, Timeframe timeframe, DateTime from, DateTime to)

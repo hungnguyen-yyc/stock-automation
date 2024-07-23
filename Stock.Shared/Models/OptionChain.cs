@@ -144,9 +144,13 @@ namespace Stock.Shared.Models
         public DateTime ExpiryDate { get; set; }
         public decimal StrikePrice { get; set; }
         public string OptionType { get; set; }
+        
+        public bool IsCallOption => OptionType == OptionTypeEnum.C.ToString();
+        
+        public bool IsPutOption => OptionType == OptionTypeEnum.P.ToString();
     }
 
-    public enum OptionType
+    public enum OptionTypeEnum
     {
         C,
         P
