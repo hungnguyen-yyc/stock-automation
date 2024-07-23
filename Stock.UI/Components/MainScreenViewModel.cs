@@ -52,6 +52,7 @@ namespace Stock.UI.Components
         private SwingPointPositionTrackingService _swingPointPositionTrackingService;
 
         private Dictionary<string, IReadOnlyCollection<Price>> _tickerAndPrices;
+        private IReadOnlyCollection<string> _allOptionTypes;
 
         public delegate void IBKRConnectedHandler(bool isConnected);
         public event IBKRConnectedHandler IBKRConnected;
@@ -69,6 +70,7 @@ namespace Stock.UI.Components
             _filteredAlerts = new ObservableCollection<Alert>();
             _allTrendLines = new ObservableCollection<TrendLine>();
             _filteredTrendLines = new ObservableCollection<TrendLine>();
+            _allOptionTypes = new List<string> { ALL, OptionType.C.ToString(), OptionType.P.ToString() };
             BindingOperations.EnableCollectionSynchronization(_filteredTrendLines, _lock);
             BindingOperations.EnableCollectionSynchronization(_filteredAlerts, _lock);
 
@@ -337,6 +339,8 @@ namespace Stock.UI.Components
             });
         }
 
+        public IReadOnlyCollection<string> AllOptionTypes => _allOptionTypes;
+        
         public ObservableCollection<string> AllOptionChain => _filteredOptionChain;
 
         public ObservableCollection<string> OptionPrice => _optionPrice;
@@ -421,6 +425,7 @@ namespace Stock.UI.Components
                 _allOptionChain.Add(option);
             }
 
+            FilterOptionChainByType();
             OnPropertyChanged(nameof(AllOptionChain));
         }
 
@@ -953,18 +958,16 @@ namespace Stock.UI.Components
             }
         }
 
-        public void FilterOptionChainByType(string selectedValue)
+        public void FilterOptionChainByType()
         {
             _filteredOptionChain.Clear();
-            var isValidOptionType = selectedValue.Equals("P", StringComparison.CurrentCultureIgnoreCase) || selectedValue.Equals("C", StringComparison.CurrentCultureIgnoreCase);
+            var isValidOptionType = SelectedOptionType.Equals("P", StringComparison.CurrentCultureIgnoreCase) || SelectedOptionType.Equals("C", StringComparison.CurrentCultureIgnoreCase);
             
             if (isValidOptionType)
             {
                 foreach (var optionChain in _allOptionChain)
                 {
-                    var cleaned = optionChain.Trim();
-                    var lastLetter = cleaned.Last().ToString();
-                    if (selectedValue.Equals(lastLetter, StringComparison.CurrentCultureIgnoreCase))
+                    if (optionChain.EndsWith(SelectedOptionType, StringComparison.CurrentCultureIgnoreCase))
                     {
                         _filteredOptionChain.Add(optionChain);
                     }
@@ -972,7 +975,10 @@ namespace Stock.UI.Components
             }
             else
             {
-                _filteredOptionChain = _allOptionChain;
+                foreach (var optionChain in _allOptionChain)
+                {
+                    _filteredOptionChain.Add(optionChain);
+                }
             }
             
             OnPropertyChanged(nameof(AllOptionChain));

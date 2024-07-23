@@ -153,7 +153,9 @@ namespace Stock.UI.Components
             
             if (date != null)
             {
-                var fridayNextWeek = date.Value.AddDays((int)DayOfWeek.Friday - (int)date.Value.DayOfWeek + 7);
+                var fridayNextWeek = date.Value
+                    .AddMonths(1)
+                    .AddDays((int)DayOfWeek.Friday - (int)date.Value.DayOfWeek + 7);
                 viewModel.GetOptionChain(viewModel.SelectedTicker, date.Value, fridayNextWeek);
             }
         }
@@ -165,10 +167,7 @@ namespace Stock.UI.Components
 
         private void OptionTypeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            var comboBox = sender as ComboBox;
-            var selectedItem = comboBox?.SelectedItem as ComboBoxItem;
-            var selectedValue = selectedItem?.Content.ToString() ?? "All";
-            viewModel?.FilterOptionChainByType(selectedValue);
+            viewModel?.FilterOptionChainByType();
         }
     }
 }

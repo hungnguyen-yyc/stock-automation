@@ -139,11 +139,9 @@
                     Name="CalOptionDate" 
                     SelectedDatesChanged="CalOptionDate_DateSelected"/>
                 <ComboBox Name="cbxOptionType"
-                          SelectionChanged="OptionTypeComboBox_SelectionChanged">
-                    <ComboBoxItem Content="All" IsSelected="True" />
-                    <ComboBoxItem Content="C" />
-                    <ComboBoxItem Content="P" />
-                </ComboBox>
+                          ItemsSource="{Binding AllOptionTypes}"
+                          SelectedItem="{Binding SelectedOptionType, Mode=TwoWay}"
+                          SelectionChanged="OptionTypeComboBox_SelectionChanged"/>
                 <ListView Name="lsvOptionChain"
                           ItemsSource="{Binding AllOptionChain}" 
                           VerticalAlignment="Stretch" 
