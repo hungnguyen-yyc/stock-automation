@@ -19,7 +19,6 @@ namespace Stock.UI.Components
             InitializeComponent();
 
             viewModel = new MainScreenViewModel(new Data.StockDataRepository(), new Strategies.SwingPointsLiveTradingLowTimeframesStrategy());
-            viewModel.IBKRConnected += OnIBKRConnected;
             DataContext = viewModel;
         }
 
@@ -124,27 +123,10 @@ namespace Stock.UI.Components
                 viewModel.GetOptionPrice(alert);
             }
         }
-
-        private void BtnConnect_Click(object sender, RoutedEventArgs e)
-        {
-            viewModel.Connect();
-        }
         
         private void BtnExportToCsv_Click(object sender, RoutedEventArgs e)
         {
             viewModel.ExportAlertToCsv();
-        }
-
-        private void OnIBKRConnected(bool isConnected)
-        {
-            if (isConnected)
-            {
-                btnConnect.Content = "Disconnect";
-            }
-            else
-            {
-                btnConnect.Content = "Connect";
-            }
         }
 
         private void CalOptionDate_DateSelected(object? sender, SelectionChangedEventArgs e)
