@@ -5,7 +5,6 @@ using Stock.Shared;
 using Stock.Shared.Models;
 using Stock.Shared.Models.IBKR.Messages;
 using Stock.Strategies;
-using Stock.Strategies.Parameters;
 using Stock.UI.IBKR.Client;
 using Stock.UI.IBKR.Managers;
 using Stock.UI.IBKR.Messages;
@@ -34,9 +33,11 @@ namespace Stock.UI.Components
         private IReadOnlyCollection<Price> _prices;
         private string _selectedTimeframe;
         private string _selectedTicker;
+        private string _selectedOptionType;
         private ObservableCollection<Alert> _allAlerts;
         private ObservableCollection<Alert> _filteredAlerts;
-        private ObservableCollection<string> _optionChain;
+        private ObservableCollection<string> _allOptionChain;
+        private ObservableCollection<string> _filteredOptionChain;
         private ObservableCollection<string> _optionPrice;
         private readonly object _lock = new();
         private AccountManager _accountManager;
@@ -62,6 +63,7 @@ namespace Stock.UI.Components
             _prices = new List<Price>();
             _selectedTimeframe = ALL;
             _selectedTicker = ALL;
+            _selectedOptionType = ALL;
             _tickerAndPrices = new Dictionary<string, IReadOnlyCollection<Price>>();
             _allAlerts = new ObservableCollection<Alert>();
             _filteredAlerts = new ObservableCollection<Alert>();
@@ -73,9 +75,10 @@ namespace Stock.UI.Components
             Logs = new ObservableCollection<LogEventArg>();
             BindingOperations.EnableCollectionSynchronization(Logs, _lock);
 
-            _optionChain = new ObservableCollection<string>();
+            _allOptionChain = new ObservableCollection<string>();
+            _filteredOptionChain = new ObservableCollection<string>();
             _optionPrice = new ObservableCollection<string>();
-            BindingOperations.EnableCollectionSynchronization(_optionChain, _lock);
+            BindingOperations.EnableCollectionSynchronization(_filteredOptionChain, _lock);
             BindingOperations.EnableCollectionSynchronization(_optionPrice, _lock);
 
             _signal = new EReaderMonitorSignal();
@@ -334,7 +337,7 @@ namespace Stock.UI.Components
             });
         }
 
-        public ObservableCollection<string> OptionChain => _optionChain;
+        public ObservableCollection<string> AllOptionChain => _filteredOptionChain;
 
         public ObservableCollection<string> OptionPrice => _optionPrice;
 
@@ -377,6 +380,21 @@ namespace Stock.UI.Components
                 }
             }
         }
+        
+        public string SelectedOptionType
+        {
+            get { return _selectedOptionType; }
+            set
+            {
+                if (_selectedOptionType != value)
+                {
+                    _selectedOptionType = value;
+
+
+                    OnPropertyChanged(nameof(SelectedOptionType));
+                }
+            }
+        }
 
         public ObservableCollection<Alert> Alerts => _filteredAlerts;
         public ObservableCollection<TrendLine> TrendLines => _filteredTrendLines;
@@ -392,7 +410,7 @@ namespace Stock.UI.Components
                 return;
             }
 
-            _optionChain.Clear();
+            _allOptionChain.Clear();
 
             var expiredOptions = optionChain.Expired ?? Array.Empty<string>();
             var activeOptions = optionChain.Active ?? Array.Empty<string>();
@@ -400,10 +418,10 @@ namespace Stock.UI.Components
 
             foreach (var option in allOptions)
             {
-                _optionChain.Add(option);
+                _allOptionChain.Add(option);
             }
 
-            OnPropertyChanged(nameof(OptionChain));
+            OnPropertyChanged(nameof(AllOptionChain));
         }
 
         public async Task GetOptionPrice(string optionDetailByBarChart)
@@ -933,6 +951,31 @@ namespace Stock.UI.Components
                     .AddText(e.Message)
                     .Show();
             }
+        }
+
+        public void FilterOptionChainByType(string selectedValue)
+        {
+            _filteredOptionChain.Clear();
+            var isValidOptionType = selectedValue.Equals("P", StringComparison.CurrentCultureIgnoreCase) || selectedValue.Equals("C", StringComparison.CurrentCultureIgnoreCase);
+            
+            if (isValidOptionType)
+            {
+                foreach (var optionChain in _allOptionChain)
+                {
+                    var cleaned = optionChain.Trim();
+                    var lastLetter = cleaned.Last().ToString();
+                    if (selectedValue.Equals(lastLetter, StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        _filteredOptionChain.Add(optionChain);
+                    }
+                }
+            }
+            else
+            {
+                _filteredOptionChain = _allOptionChain;
+            }
+            
+            OnPropertyChanged(nameof(AllOptionChain));
         }
     }
 }

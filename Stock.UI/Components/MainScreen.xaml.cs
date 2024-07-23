@@ -162,5 +162,13 @@ namespace Stock.UI.Components
         {
             viewModel.GetLevels();
         }
+
+        private void OptionTypeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            var comboBox = sender as ComboBox;
+            var selectedItem = comboBox?.SelectedItem as ComboBoxItem;
+            var selectedValue = selectedItem?.Content.ToString() ?? "All";
+            viewModel?.FilterOptionChainByType(selectedValue);
+        }
     }
 }
