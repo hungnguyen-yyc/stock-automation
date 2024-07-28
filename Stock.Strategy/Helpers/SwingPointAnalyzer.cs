@@ -84,7 +84,9 @@ namespace Stock.Strategies.Helpers
 
         /**
          * returns a map of first swing high as key and the next n swing highs that intersect with the key one as value,
-         * it can be double top or triple top or more, but we don't check for 2 or 3 consecutive swing highs
+         * it can be double top or triple top or more
+         * this means any swing highs or lows that has no intersection with the next n swing highs or lows are not considered
+         * thus, missing ATH or ATL
          **/
         public static IReadOnlyDictionary<Price, HashSet<Price>> GetNTops(List<Price> prices, int numberOfCandlesToLookBack)
         {
