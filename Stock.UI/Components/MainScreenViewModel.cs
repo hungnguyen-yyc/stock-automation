@@ -50,7 +50,7 @@ namespace Stock.UI.Components
             _filteredAlerts = new ObservableCollection<Alert>();
             _allTrendLines = new ObservableCollection<TrendLine>();
             _filteredTrendLines = new ObservableCollection<TrendLine>();
-            _allOptionTypes = new List<string> { ALL, OptionType.C.ToString(), OptionType.P.ToString() };
+            _allOptionTypes = new List<string> { ALL, OptionTypeEnum.C.ToString(), OptionTypeEnum.P.ToString() };
             BindingOperations.EnableCollectionSynchronization(_filteredTrendLines, _lock);
             BindingOperations.EnableCollectionSynchronization(_filteredAlerts, _lock);
 

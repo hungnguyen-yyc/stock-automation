@@ -89,6 +89,38 @@ namespace Stock.Shared.Models
 
         [JsonProperty("rho")]
         public double Rho { get; set; }
+        
+        public string GetOptionRecommendation(Option option, decimal underlyingPrice)
+        {
+            var timeUntilExpiration = option.ExpiryDate - DateTime.Now;
+            var daysUntilExpiration = timeUntilExpiration.TotalDays;
+            
+            var intrinsicValue = option.OptionType == OptionTypeEnum.C.ToString() ? Math.Max(0, underlyingPrice - option.StrikePrice) : Math.Max(0, option.StrikePrice - underlyingPrice);
+            var extrinsicValue = (decimal)Ask - intrinsicValue;
+            var thetaImpact = Theta * daysUntilExpiration;
+            var thetaImpactDecimal = (decimal)thetaImpact;
+            var recommendation = "Hold";
+
+            var shouldBuy = thetaImpactDecimal > -extrinsicValue;
+            var shouldSell = thetaImpactDecimal < -extrinsicValue;
+
+            if ((option.IsCallOption || option.IsPutOption) && shouldBuy)
+            {
+                recommendation = "Buy";
+            }
+            else if ((option.IsCallOption || option.IsPutOption) && shouldSell)
+            {
+                recommendation = "Sell";
+            }
+            
+            return recommendation;
+        }
+        
+        public string ToString(Option option, decimal underlyingPrice)
+        {
+            var recommendation = GetOptionRecommendation(option, underlyingPrice);
+            return $"{Symbol}|{Date:yyyy-MM-dd}|O: {Open}|H: {High}|L: {Low}|C: {Close}|Recommendation: {recommendation}";
+        }
 
         public override string ToString()
         {

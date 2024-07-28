@@ -136,7 +136,6 @@ namespace Stock.UI.Components
             if (date != null)
             {
                 var fridayNextWeek = date.Value
-                    .AddMonths(1)
                     .AddDays((int)DayOfWeek.Friday - (int)date.Value.DayOfWeek + 7);
                 viewModel.GetOptionChain(viewModel.SelectedTicker, date.Value, fridayNextWeek);
             }
