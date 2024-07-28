@@ -34,7 +34,6 @@ namespace Stock.UI.Components
         private ObservableCollection<PositionMessage> _accountPosition;
         private ObservableCollection<TrendLine> _allTrendLines;
         private ObservableCollection<TrendLine> _filteredTrendLines;
-        private SwingPointPositionTrackingService _swingPointPositionTrackingService;
 
         private Dictionary<string, IReadOnlyCollection<Price>> _tickerAndPrices;
         private IReadOnlyCollection<string> _allOptionTypes;
@@ -72,8 +71,6 @@ namespace Stock.UI.Components
 
             _completedOrders = new ObservableCollection<CompletedOrderMessage>();
             BindingOperations.EnableCollectionSynchronization(_completedOrders, _lock);
-
-            _swingPointPositionTrackingService = new SwingPointPositionTrackingService(_repo);
 
             _repo.LogCreated += (message) =>
             {
@@ -121,7 +118,6 @@ namespace Stock.UI.Components
             }
         }
 
-        public bool IsConnected { get; private set; }
         public ObservableCollection<Tuple<string, string>> AccountSummary { 
             get => _accountSummary; 
             set
@@ -255,7 +251,7 @@ namespace Stock.UI.Components
             try
             {
                 var tickers = TickersToTrade.POPULAR_TICKERS;
-                var timeframes = new[] { Timeframe.Hour1, Timeframe.Daily };
+                var timeframes = new[] { Timeframe.Daily };
 
                 foreach (var timeframe in timeframes)
                 {
@@ -404,7 +400,7 @@ namespace Stock.UI.Components
         private async Task StartStrategy()
         {
 #if DEBUG
-            await RunInDebug();
+            // await RunInDebug();
 #else
             await RunInRelease();
 #endif
@@ -413,7 +409,7 @@ namespace Stock.UI.Components
         private async Task RunInDebug()
         {
             var tickers = TickersToTrade.POPULAR_TICKERS;
-            var timeframes = new[] { Timeframe.Daily, Timeframe.Hour1 };
+            var timeframes = new[] { Timeframe.Daily };
             foreach (var timeframe in timeframes)
             {
                 _strategy.AlertCreated -= Strategy_AlertCreated;
