@@ -54,7 +54,8 @@ namespace Stock.Data
                         return null;
                     }
 
-                    var latestPrice = await GetLatestPrice(symbol);
+                    // TODO: improve optimal option price before continue
+                    Price? latestPrice = null;
                     
                     options = latestPrice == null ? 
                         optionPrice.OptionPrice.Select(x => x.ToString()).ToArray() :
