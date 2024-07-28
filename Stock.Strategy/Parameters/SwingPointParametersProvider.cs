@@ -8,41 +8,41 @@ public class SwingPointParametersProvider
         switch (ticker)
         {
             case "TSLA":
-                return new SwingPointStrategyParameter
+                return GetDefaultParameter(timeframe).Merge(new SwingPointStrategyParameter
                 {
                     Timeframe = timeframe,
                     NumberOfCandlesticksIntersectForTopsAndBottoms = 2,
-                }.Merge(GetDefaultParameter(timeframe));
+                });
             case "AMD":
-                return new SwingPointStrategyParameter
+                return GetDefaultParameter(timeframe).Merge(new SwingPointStrategyParameter
                 {
                     Timeframe = timeframe,
                     NumberOfCandlesticksIntersectForTopsAndBottoms = 2,
-                }.Merge(GetDefaultParameter(timeframe));
+                });
             case "NVDA":
-                return new SwingPointStrategyParameter
+                return GetDefaultParameter(timeframe).Merge(new SwingPointStrategyParameter
                 {
                     Timeframe = timeframe,
                     NumberOfCandlesticksIntersectForTopsAndBottoms = 2,
-                }.Merge(GetDefaultParameter(timeframe));
+                });
             case "META":
-                return new SwingPointStrategyParameter
+                return GetDefaultParameter(timeframe).Merge(new SwingPointStrategyParameter
                 {
                     Timeframe = timeframe,
                     NumberOfCandlesticksIntersectForTopsAndBottoms = 2,
-                }.Merge(GetDefaultParameter(timeframe));
+                });
             case "QQQ":
-                return new SwingPointStrategyParameter
+                return GetDefaultParameter(timeframe).Merge(new SwingPointStrategyParameter
                 {
                     Timeframe = timeframe,
                     NumberOfCandlesticksIntersectForTopsAndBottoms = 2,
-                }.Merge(GetDefaultParameter(timeframe));
+                });
             case "SPY":
-                return new SwingPointStrategyParameter
+                return GetDefaultParameter(timeframe).Merge(new SwingPointStrategyParameter
                 {
                     Timeframe = timeframe,
                     NumberOfCandlesticksIntersectForTopsAndBottoms = 2,
-                }.Merge(GetDefaultParameter(timeframe));
+                });
             default:
                 return GetDefaultParameter(timeframe);
         }

@@ -40,6 +40,8 @@ namespace Stock.Strategies.Helpers
                     }
                 }
             }
+            
+            combined = combined.OrderBy(x => x.Key.Date).ToDictionary(x => x.Key, x => x.Value);
 
             return combined;
         }
