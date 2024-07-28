@@ -43,6 +43,12 @@ public class SwingPointParametersProvider
                     Timeframe = timeframe,
                     NumberOfCandlesticksIntersectForTopsAndBottoms = 2,
                 });
+            case "RBLX":
+                return GetDefaultParameter(timeframe).Merge(new SwingPointStrategyParameter
+                {
+                    Timeframe = timeframe,
+                    NumberOfCandlesticksIntersectForTopsAndBottoms = 2,
+                });
             default:
                 return GetDefaultParameter(timeframe);
         }
