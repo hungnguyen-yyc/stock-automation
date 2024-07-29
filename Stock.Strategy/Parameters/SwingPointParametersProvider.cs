@@ -49,6 +49,12 @@ public class SwingPointParametersProvider
                     Timeframe = timeframe,
                     NumberOfCandlesticksIntersectForTopsAndBottoms = 2,
                 });
+            case "V":
+                return GetDefaultParameter(timeframe).Merge(new SwingPointStrategyParameter
+                {
+                    Timeframe = timeframe,
+                    NumberOfCandlesticksIntersectForTopsAndBottoms = 2,
+                });
             default:
                 return GetDefaultParameter(timeframe);
         }
@@ -62,7 +68,7 @@ public class SwingPointParametersProvider
             {
                 NumberOfCandlesticksToLookBack = 7,
                 Timeframe = timeframe,
-                NumberOfCandlesticksIntersectForTopsAndBottoms = 3,
+                NumberOfCandlesticksIntersectForTopsAndBottoms = 2,
                 NumberOfSwingPointsToLookBack = 2,
                 NumberOfCandlesticksToSkipAfterSwingPoint = 2,
                 NumberOfTouchesToDrawTrendLine = 2,

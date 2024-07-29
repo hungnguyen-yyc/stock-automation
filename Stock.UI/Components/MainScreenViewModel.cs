@@ -251,7 +251,7 @@ namespace Stock.UI.Components
             try
             {
                 var tickers = TickersToTrade.POPULAR_TICKERS;
-                var timeframes = new[] { Timeframe.Daily };
+                var timeframes = new[] { Timeframe.Daily, Timeframe.Hour1};
 
                 foreach (var timeframe in timeframes)
                 {
@@ -409,7 +409,7 @@ namespace Stock.UI.Components
         private async Task RunInDebug()
         {
             var tickers = TickersToTrade.POPULAR_TICKERS;
-            var timeframes = new[] { Timeframe.Daily };
+            var timeframes = new[] { Timeframe.Daily, Timeframe.Hour1 };
             foreach (var timeframe in timeframes)
             {
                 _strategy.AlertCreated -= Strategy_AlertCreated;
