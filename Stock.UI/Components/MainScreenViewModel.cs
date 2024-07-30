@@ -98,48 +98,8 @@ namespace Stock.UI.Components
 
             StartStrategy();
         }
-
-        private void OnCompletedOrderReceived(List<CompletedOrderMessage> completedOrder)
-        {
-            _completedOrders.Clear();
-            foreach (var order in completedOrder)
-            {
-                _completedOrders.Add(order);
-            }
-        }
         
         private IReadOnlyCollection<string> TickersWithoutAll => Tickers.Where(x => x != ALL).ToList();
-
-        public ObservableCollection<CompletedOrderMessage> CompletedOrders
-        {
-            get => _completedOrders;
-            set
-            {
-                _completedOrders = value;
-                OnPropertyChanged(nameof(CompletedOrders));
-            }
-        }
-
-        public ObservableCollection<Tuple<string, string>> AccountSummary { 
-            get => _accountSummary; 
-            set
-            {
-                _accountSummary = value;
-                OnPropertyChanged(nameof(AccountSummary));
-            }
-        }
-
-        public ObservableCollection<PositionMessage> Positions
-        {
-            get => _accountPosition;
-            set
-            {
-                _accountPosition = value;
-                OnPropertyChanged(nameof(Positions));
-            }
-        }
-
-        public IReadOnlyCollection<string> AllOptionTypes => _allOptionTypes;
         
         public ObservableCollection<string> AllOptionChain => _filteredOptionChain;
 
