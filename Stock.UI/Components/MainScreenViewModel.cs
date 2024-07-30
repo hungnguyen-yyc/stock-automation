@@ -107,6 +107,8 @@ namespace Stock.UI.Components
                 _completedOrders.Add(order);
             }
         }
+        
+        private IReadOnlyCollection<string> TickersWithoutAll => Tickers.Where(x => x != ALL).ToList();
 
         public ObservableCollection<CompletedOrderMessage> CompletedOrders
         {
@@ -250,7 +252,7 @@ namespace Stock.UI.Components
         {
             try
             {
-                var tickers = TickersToTrade.POPULAR_TICKERS;
+                var tickers = TickersWithoutAll;
                 var timeframes = new[] { Timeframe.Daily, Timeframe.Hour1};
 
                 foreach (var timeframe in timeframes)
@@ -408,7 +410,7 @@ namespace Stock.UI.Components
 
         private async Task RunInDebug()
         {
-            var tickers = TickersToTrade.POPULAR_TICKERS;
+            var tickers = TickersWithoutAll;
             var timeframes = new[] { Timeframe.Daily, Timeframe.Hour1 };
             foreach (var timeframe in timeframes)
             {
@@ -518,7 +520,7 @@ namespace Stock.UI.Components
                 
                 try
                 {
-                    var tickers = TickersToTrade.POPULAR_TICKERS;
+                    var tickers = TickersWithoutAll;
                     var timeframes = new[] { Timeframe.Hour1, Timeframe.Daily };
 
                     foreach (var timeframe in timeframes)

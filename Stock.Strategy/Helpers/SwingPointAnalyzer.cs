@@ -9,6 +9,7 @@ namespace Stock.Strategies.Helpers
     {
         public static IReadOnlyDictionary<Price, HashSet<Price>> GetLevels(List<Price> prices, int numberOfCandlesToLookBack)
         {
+            // TODO: there are cases where the swings points are not intersected at top/bottom half but intersected whole candles instead. How to handle this?
             var tops = GetNTops(prices, numberOfCandlesToLookBack);
             var bottoms = GetNBottoms(prices, numberOfCandlesToLookBack);
             var combined = new Dictionary<Price, HashSet<Price>>();

@@ -16,25 +16,46 @@
 
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="10*"/>
-            <ColumnDefinition Width="50*"/>
+            <ColumnDefinition Width="65*"/>
+            <ColumnDefinition Width="10*"/>
             <ColumnDefinition Width="15*"/>
-            <ColumnDefinition Width="30*"/>
         </Grid.ColumnDefinitions>
-        <ScrollViewer Grid.Column="0" Grid.Row="0" Width="auto" VerticalScrollBarVisibility="Auto">
-            <ListView Name="lsvTickers"
-                      Height="Auto"
-                      Width="Auto"
-                  ItemsSource="{Binding Tickers}" 
-                  SelectedItem="{Binding SelectedTicker, Mode=TwoWay}" 
-                  VerticalAlignment="Stretch" 
-                  Margin="5 10 5 0">
-                <ListView.View>
-                    <GridView>
-                        <GridViewColumn Header="Tickers" />
-                    </GridView>
-                </ListView.View>
-            </ListView>
-        </ScrollViewer>
+        <Grid Grid.Column="0" Grid.Row="0" Height="Auto">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="80*"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="100*"/>
+            </Grid.ColumnDefinitions>
+            <Label Grid.Column="0" Grid.Row="0">Ticker to search:</Label>
+            <TextBox Grid.Column="0" Grid.Row="1" Name="txtTicker"
+                     Width="auto" 
+                     Margin="5 10 5 0"/>
+            <Button Grid.Column="0" Grid.Row="2" Name="btnSearch" 
+                    Content="Add and Search" 
+                    Click="BtnAddAndSearch_Click" 
+                    Margin="5 10 5 0"/>
+            <Label Grid.Column="0" Grid.Row="3">Fav. Tickers</Label>
+            <ScrollViewer Grid.Column="0" Grid.Row="4" Width="auto" VerticalScrollBarVisibility="Auto">
+                <ListView Name="lsvTickers"
+                          Height="Auto"
+                          Width="Auto"
+                          ItemsSource="{Binding Tickers}" 
+                          SelectedItem="{Binding SelectedTicker, Mode=TwoWay}" 
+                          VerticalAlignment="Stretch" 
+                          Margin="5 10 5 0">
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Header="Tickers" />
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+            </ScrollViewer>
+        </Grid>
         <ListView Name="lsvTimeframes" 
                   Grid.Column="0" Grid.Row="1" Height="auto" 
                   ItemsSource="{Binding Timeframes}" 
@@ -115,14 +136,19 @@
                             <GridViewColumnHeader Tag="NumberOfSwingPointsIntersected" Click="lsvTrendLinesColumnHeader_Click">Number Of SwingPoints Intersected</GridViewColumnHeader>
                         </GridViewColumn.Header>
                     </GridViewColumn>
-                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding StartPrice}">
+                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Start.DateAsString}">
                         <GridViewColumn.Header>
-                            <GridViewColumnHeader Tag="StartPrice" Click="lsvTrendLinesColumnHeader_Click">StartPrice</GridViewColumnHeader>
+                            <GridViewColumnHeader Tag="Start.DateAsString" Click="lsvTrendLinesColumnHeader_Click">Date time</GridViewColumnHeader>
                         </GridViewColumn.Header>
                     </GridViewColumn>
-                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding EndPrice}">
+                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Start.High}">
                         <GridViewColumn.Header>
-                            <GridViewColumnHeader Tag="EndPrice" Click="lsvTrendLinesColumnHeader_Click">EndPrice</GridViewColumnHeader>
+                            <GridViewColumnHeader Tag="Start.High" Click="lsvTrendLinesColumnHeader_Click">High</GridViewColumnHeader>
+                        </GridViewColumn.Header>
+                    </GridViewColumn>
+                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Start.Low}">
+                        <GridViewColumn.Header>
+                            <GridViewColumnHeader Tag="Start.Low" Click="lsvTrendLinesColumnHeader_Click">Low</GridViewColumnHeader>
                         </GridViewColumn.Header>
                     </GridViewColumn>
                 </GridView>

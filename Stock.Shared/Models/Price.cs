@@ -5,6 +5,9 @@ namespace Stock.Shared.Models
     public class Price : IPrice
     {
         public DateTime Date { get; set; }
+        
+        public string DateAsString => Date.ToString("yyyy-MM-dd HH:mm:ss");
+
         public decimal Open { get; set; }
         public decimal High { get; set; }
         public decimal Low { get; set; }

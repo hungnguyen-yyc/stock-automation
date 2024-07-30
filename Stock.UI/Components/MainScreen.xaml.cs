@@ -78,17 +78,17 @@ namespace Stock.UI.Components
         
         private void lsvTrendLinesColumnHeader_Click(object sender, RoutedEventArgs e)
         {
-            GridViewColumnHeader column = e.OriginalSource as GridViewColumnHeader;
+            var column = e.OriginalSource as GridViewColumnHeader;
 
             if (column != null)
             {
-                string propertyName = column.Tag as string;
+                var propertyName = column.Tag as string;
 
                 if (!string.IsNullOrEmpty(propertyName))
                 {
-                    ICollectionView view = CollectionViewSource.GetDefaultView(lsvTrendLines.ItemsSource);
+                    var view = CollectionViewSource.GetDefaultView(lsvTrendLines.ItemsSource);
 
-                    ListSortDirection direction = ListSortDirection.Ascending;
+                    var direction = ListSortDirection.Ascending;
 
                     if (view.SortDescriptions.Count > 0 && view.SortDescriptions[0].PropertyName == propertyName)
                     {
@@ -149,6 +149,24 @@ namespace Stock.UI.Components
         private void OptionTypeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             viewModel?.FilterOptionChainByType();
+        }
+
+        private void BtnAddAndSearch_Click(object sender, RoutedEventArgs e)
+        {
+            var newTicker = txtTicker.Text.Trim().ToUpper();
+            if (string.IsNullOrEmpty(newTicker))
+            {
+                return;
+            }
+            
+            if (viewModel.Tickers.Contains(newTicker, StringComparer.OrdinalIgnoreCase))
+            {
+                return;
+            }
+            
+            viewModel.Tickers.Insert(1, newTicker); // index 0 is for "All"
+            txtTicker.Text = string.Empty;
+            viewModel.GetLevels();
         }
     }
 }
