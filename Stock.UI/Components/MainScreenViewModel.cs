@@ -34,6 +34,9 @@ namespace Stock.UI.Components
         private ObservableCollection<PositionMessage> _accountPosition;
         private ObservableCollection<TrendLine> _allTrendLines;
         private ObservableCollection<TrendLine> _filteredTrendLines;
+        
+        private bool _isAlertsViewVisible;
+        private bool _isOptionsViewVisible = true;
 
         private Dictionary<string, IReadOnlyCollection<Price>> _tickerAndPrices;
         private IReadOnlyCollection<string> _allOptionTypes;
@@ -111,6 +114,32 @@ namespace Stock.UI.Components
 
         public ObservableCollection<LogEventArg> Logs { get; }
 
+        public bool IsOptionsViewVisible
+        {
+            get => _isOptionsViewVisible;
+            set
+            {
+                if (_isOptionsViewVisible != value)
+                {
+                    _isOptionsViewVisible = value;
+                    OnPropertyChanged(nameof(IsOptionsViewVisible));
+                }
+            }
+        }
+        
+        public bool IsAlertsViewVisible
+        {
+            get => _isAlertsViewVisible;
+            set
+            {
+                if (_isAlertsViewVisible != value)
+                {
+                    _isAlertsViewVisible = value;
+                    OnPropertyChanged(nameof(IsAlertsViewVisible));
+                }
+            }
+        }
+        
         public string SelectedTimeframe
         {
             get { return _selectedTimeframe; }

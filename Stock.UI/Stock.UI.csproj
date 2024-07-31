@@ -17,4 +17,16 @@
     <ProjectReference Include="..\Stock.Shared\Stock.Shared.csproj" />
     <ProjectReference Include="..\Stock.Strategy\Stock.Strategies.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Page Update="Components\Options\OptionsView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <XamlRuntime>Wpf</XamlRuntime>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Components\MainScreen.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <XamlRuntime>Wpf</XamlRuntime>
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
 </Project>

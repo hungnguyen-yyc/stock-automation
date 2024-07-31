@@ -1,9 +1,9 @@
-﻿using Stock.Shared.Models;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
+using Stock.Shared.Models;
 
 namespace Stock.UI.Components
 {
@@ -18,6 +18,8 @@ namespace Stock.UI.Components
         {
             InitializeComponent();
 
+            // not ideal, but it's a quick way to get the data and strategy in place
+            // TODO: fix this
             viewModel = new MainScreenViewModel(new Data.StockDataRepository(), new Strategies.SwingPointsLiveTradingLowTimeframesStrategy());
             DataContext = viewModel;
         }
