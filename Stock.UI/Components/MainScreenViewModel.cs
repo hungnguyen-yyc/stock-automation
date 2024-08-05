@@ -472,7 +472,7 @@ namespace Stock.UI.Components
         {
             while (true)
             {
-                var minuteModule = DateTime.Now.Minute % 5;
+                var minuteModule = DateTime.Now.Minute % 10;
                 if (minuteModule != 0)
                 {
                     await Task.Delay(TimeSpan.FromMinutes(5 - minuteModule));
@@ -481,7 +481,7 @@ namespace Stock.UI.Components
                 try
                 {
                     var tickers = TickersWithoutAll;
-                    var timeframes = new[] { Timeframe.Hour1, Timeframe.Daily };
+                    var timeframes = new[] { Timeframe.Daily };
 
                     foreach (var timeframe in timeframes)
                     {
