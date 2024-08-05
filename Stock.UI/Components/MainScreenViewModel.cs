@@ -362,7 +362,7 @@ namespace Stock.UI.Components
         private async Task StartStrategy()
         {
 #if DEBUG
-            // await RunInDebug();
+            await RunInDebug();
 #else
             await RunInRelease();
 #endif
@@ -405,7 +405,7 @@ namespace Stock.UI.Components
                             prices = await _repo.GetStockDataForHighTimeframesAsc(ticker, timeframe, DateTime.Now.AddYears(-5), DateTime.Now.AddDays(1));
                         }
                         
-                        var priceToStartTesting = prices.First(x => x.Date >= DateTime.Now.AddMonths(-1));
+                        var priceToStartTesting = prices.First(x => x.Date >= DateTime.Now.AddMonths(-6));
                         
                         var index = 0;
                         for (int i = 0; i < prices.Count; i++)

@@ -28,6 +28,9 @@ namespace Stock.Strategies
             var parameter = (SwingPointStrategyParameter)strategyParameter;
             try
             {
+                var mfi = ascSortedByDatePrice.GetMfi(10);
+                var mfiValues = mfi.Where(x => x.Date.Year == 2024).Select(x => $"{x.Date.ToString("yyyyMMdd")},{x.Mfi}").ToList();
+                var stringMfiValues = string.Join("\n", mfiValues);
                 var secondLastPrice = ascSortedByDatePrice[ascSortedByDatePrice.Count - 2];
                 var price = ascSortedByDatePrice.Last();
                 var excludeLastPrice = ascSortedByDatePrice.GetRange(0, ascSortedByDatePrice.Count - 1);
@@ -36,6 +39,38 @@ namespace Stock.Strategies
                     .Where(x => x.Value.Count + 1 >= parameter.NumberOfCandlesticksIntersectForTopsAndBottoms) // + 1 because we need to include the key
                     .ToList();
                 var atr = ascSortedByDatePrice.GetAtr(14);
+                
+                if (MfiDivergenceDetector.CheckBearishDivergenceOnRunningCandles(ascSortedByDatePrice, 10))
+                {
+                    var message = $"MFI divergence detected on {price.Date:s}";
+                    var mfiDivergentAlert = new Alert
+                    {
+                        Ticker = ticker,
+                        Message = message,
+                        CreatedAt = price.Date,
+                        Strategy = "SwingPointsLiveTradingStrategy",
+                        OrderPosition = OrderPosition.Short,
+                        PositionAction = PositionAction.Open,
+                        Timeframe = parameter.Timeframe
+                    };
+                    OnAlertCreated(new AlertEventArgs(mfiDivergentAlert));
+                }
+                
+                if (MfiDivergenceDetector.CheckBullishDivergenceOnRunningCandles(ascSortedByDatePrice, 10))
+                {
+                    var message = $"MFI divergence detected on {price.Date:s}";
+                    var mfiDivergentAlert = new Alert
+                    {
+                        Ticker = ticker,
+                        Message = message,
+                        CreatedAt = price.Date,
+                        Strategy = "SwingPointsLiveTradingStrategy",
+                        OrderPosition = OrderPosition.Long,
+                        PositionAction = PositionAction.Open,
+                        Timeframe = parameter.Timeframe
+                    };
+                    OnAlertCreated(new AlertEventArgs(mfiDivergentAlert));
+                }
                 
                 TrendLineCreated?.Invoke(this, new TrendLineEventArgs( // + 1 because we need to include the key
                     levels.Select(x =>
@@ -181,7 +216,7 @@ namespace Stock.Strategies
 
                 if (alert != null)
                 {
-                    OnAlertCreated(new AlertEventArgs(alert));
+                    // OnAlertCreated(new AlertEventArgs(alert));
                 }
             }
             catch (Exception ex)
