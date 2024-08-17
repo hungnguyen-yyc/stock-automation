@@ -362,7 +362,7 @@ namespace Stock.UI.Components
         private async Task StartStrategy()
         {
 #if DEBUG
-            // await RunInDebug();
+            await RunInDebug();
 #else
             await RunInRelease();
 #endif
