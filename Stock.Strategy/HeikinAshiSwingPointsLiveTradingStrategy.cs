@@ -11,6 +11,7 @@ namespace Stock.Strategies
     {
         public event AlertEventHandler AlertCreated;
         public event TrendLineEventHandler TrendLineCreated;
+        public event PivotLevelEventHandler PivotLevelCreated;
 
         public string Description => "This strategy looks back a number of candles (specified in parameters) and calculates swing highs and lows. \n"
             + "The order then will be created at 2 candles after most recent swing lows or highs found. \n"

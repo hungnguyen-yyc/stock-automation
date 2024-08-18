@@ -371,13 +371,14 @@ namespace Stock.UI.Components
         private async Task RunInDebug()
         {
             var tickers = TickersWithoutAll;
-            var timeframes = new[] { Timeframe.Daily, Timeframe.Hour1 };
+            var timeframes = new[] { Timeframe.Daily };
             foreach (var timeframe in timeframes)
             {
                 _strategy.AlertCreated -= Strategy_AlertCreated;
                 _strategy.TrendLineCreated -= Strategy_TrendLineCreated;
+                _strategy.PivotLevelCreated -= Strategy_PivotLevelCreated;
 
-                if (timeframe == Timeframe.Hour1 || timeframe == Timeframe.Daily)
+                if (timeframe == Timeframe.Daily)
                 {
                     _strategy = new SwingPointsLiveTradingHighTimeframesStrategy();
                 }
@@ -388,6 +389,7 @@ namespace Stock.UI.Components
 
                 _strategy.AlertCreated += Strategy_AlertCreated;
                 _strategy.TrendLineCreated += Strategy_TrendLineCreated;
+                _strategy.PivotLevelCreated += Strategy_PivotLevelCreated;
 
                 foreach (var ticker in tickers)
                 {
@@ -405,7 +407,8 @@ namespace Stock.UI.Components
                             prices = await _repo.GetStockDataForHighTimeframesAsc(ticker, timeframe, DateTime.Now.AddYears(-5), DateTime.Now.AddDays(1));
                         }
                         
-                        var priceToStartTesting = prices.First(x => x.Date >= DateTime.Now.AddMonths(-1));
+                        var priceToStartTesting = prices.First(x => x.Date >= DateTime.Now.AddMonths(-2));
+                        prices = prices.Where(x => x.Date <= new DateTime(2024, 07, 22)).ToList();
                         
                         var index = 0;
                         for (int i = 0; i < prices.Count; i++)
@@ -439,6 +442,34 @@ namespace Stock.UI.Components
             }
 
             Logs.Add(new LogEventArg($"Finished running strategy at {DateTime.Now}"));
+        }
+
+        private void Strategy_PivotLevelCreated(object sender, PivotLevelEventArgs e)
+        {
+            lock (_lock)
+            {
+                var pivotLevels = e.PivotLevels;
+
+                foreach (var trendLine in _allTrendLines.ToList())
+                {
+                    var first = pivotLevels.FirstOrDefault();
+                    if (first != null && first.Ticker == trendLine.Ticker && first.Timeframe == trendLine.Timeframe)
+                    {
+                        _allTrendLines.Remove(trendLine);
+                    }
+                }
+                
+                foreach (var pivotLevel in pivotLevels)
+                {
+                    var trendLine = pivotLevel.ToTrendLine();
+                    if (!_allTrendLines.Contains(trendLine))
+                    {
+                        _allTrendLines.Add(trendLine);
+                    }
+                }
+                
+                UpdateFilteredTrendLines(string.Empty);
+            }
         }
 
         private void Strategy_TrendLineCreated(object sender, TrendLineEventArgs e)

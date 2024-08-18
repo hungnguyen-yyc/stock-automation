@@ -11,3 +11,13 @@ public class TrendLineEventArgs : System.EventArgs
         TrendLines = trendLines;
     }
 }
+
+public class PivotLevelEventArgs : System.EventArgs
+{
+    public IReadOnlyList<PivotLevel> PivotLevels { get; }
+    
+    public PivotLevelEventArgs(IReadOnlyList<PivotLevel> pivotLevels)
+    {
+        PivotLevels = pivotLevels;
+    }
+}

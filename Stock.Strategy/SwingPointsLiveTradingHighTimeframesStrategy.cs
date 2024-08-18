@@ -9,6 +9,7 @@ namespace Stock.Strategies
 {
     public sealed class SwingPointsLiveTradingHighTimeframesStrategy : ISwingPointStrategy
     {
+        private const decimal OFFSET = 0.01m;
         private readonly VolumeCheckingHelper _volumeCheckingHelper;
         
         public SwingPointsLiveTradingHighTimeframesStrategy()
@@ -17,7 +18,10 @@ namespace Stock.Strategies
         }
         
         public event AlertEventHandler AlertCreated;
+        
         public event TrendLineEventHandler TrendLineCreated;
+        
+        public event PivotLevelEventHandler PivotLevelCreated;
 
         public string Description => "This strategy looks back a number of candles (specified in parameters) and calculates swing highs and lows. \n"
             + "The order then will be created at 2 candles after most recent swing lows or highs found. \n"
@@ -37,60 +41,59 @@ namespace Stock.Strategies
                     .ToList();
                 var atr = ascSortedByDatePrice.GetAtr(14);
                 
-                TrendLineCreated?.Invoke(this, new TrendLineEventArgs( // + 1 because we need to include the key
-                    levels.Select(x =>
+                var pivotLevels = levels.Select(x =>
+                {
+                    var combineValuesAndKey = x.Value.Concat(new List<Price> { x.Key }).ToList();
+                    var averageHigh = combineValuesAndKey.Select(y => y.High).Average();
+                    var averageLow = combineValuesAndKey.Select(y => y.Low).Average();
+                    var averageVolume = combineValuesAndKey.Select(y => y.Volume).Average();
+                    var averageClose = combineValuesAndKey.Select(y => y.Close).Average();
+                    var averageOpen = combineValuesAndKey.Select(y => y.Open).Average();
+                    var sortedByDate = combineValuesAndKey.OrderBy(y => y.Date).ToList();
+                    var mostRecent = sortedByDate.Last();
+                    var averageOhlcPrice = new Price
                     {
-                        var combineValuesAndKey = x.Value.Concat(new List<Price> { x.Key }).ToList();
-                        var sortedByDate = combineValuesAndKey.OrderBy(y => y.Date).ToList();
-                        var mostRecent = sortedByDate.Last();
-                        return new TrendLine(parameter.Timeframe, ticker, mostRecent, mostRecent, x.Value.Count + 1);
-                    }).ToList()));
+                        Date = mostRecent.Date,
+                        Open = Math.Round(averageOpen, 2),
+                        High = Math.Round(averageHigh, 2),
+                        Low = Math.Round(averageLow, 2),
+                        Close = Math.Round(averageClose, 2),
+                        Volume = averageVolume
+                    };
+                    return new PivotLevel(parameter.Timeframe, ticker, averageOhlcPrice, combineValuesAndKey.Count + 1);
+                }).ToList();
+                
+                PivotLevelCreated?.Invoke(this, new PivotLevelEventArgs(pivotLevels));
                 
                 var hmVolumeCheck = _volumeCheckingHelper.CheckHeatmapVolume(ascSortedByDatePrice, parameter);
                 var isValidCandleForLong = price.IsGreenCandle && price.IsContentCandle;
                 var isValidCandleForShort = price.IsRedCandle && price.IsContentCandle;
 
-                var levelSecondLastPriceTouched = levels
+                var levelSecondLastPriceTouched = pivotLevels
                     .Where(x =>
                     {
-                        var combineValuesAndKey = x.Value.Concat(new List<Price> { x.Key }).ToList();
-                        var sortedByDate = combineValuesAndKey.OrderBy(y => y.Date).ToList();
-                        var mostRecent = sortedByDate.Last();
-                        var center = (mostRecent.Low + mostRecent.High) / 2;
-                        var centerOffset = center * (decimal)0.01;
+                        var center = x.Level.HL2;
+                        var centerOffset = center * OFFSET;
                         var centerPoint = new NumericRange(center - centerOffset, center + centerOffset);
                         return secondLastPrice.CandleRange.Intersect(centerPoint);
                     })
-                    .Where(x => !x.Key.Equals(price))
                     .ToList();
 
                 Alert? alert = null;
 
                 if (levelSecondLastPriceTouched.Any())
                 {
-                    var levelLow = levelSecondLastPriceTouched.Select(x => x.Key.Low).Min();
-                    var levelHigh = levelSecondLastPriceTouched.Select(x => x.Key.High).Max();
-                    var center = (levelLow + levelHigh) / 2;
-                    var centerOffset = center * (decimal)0.01;
+                    var latestLevel = levelSecondLastPriceTouched.Last();
+                    
+                    var levelLow = latestLevel.Level.Low;
+                    var levelHigh = latestLevel.Level.High;
+                    var center = latestLevel.Level.HL2;
+                    var centerOffset = center * OFFSET;
                     var centerPoint = new NumericRange(center - centerOffset, center + centerOffset);
-                    var averageSwingPointIntersected = levelSecondLastPriceTouched.Select(x => x.Value.Count).Average();
 
-                    var priceIntersectSecondLastPrice = price.CandleRange.Intersect(secondLastPrice.CandleRange);
-                    var secondLastPriceIntersectCenterLevelPoint = secondLastPrice.CandleRange.Intersect(centerPoint);
-                    var priceNotIntersectCenterLevelPoint = !price.CandleRange.Intersect(centerPoint);
-
-                    var priceIntersectAnyLevelPoint = false;
-                    var priceIntersectLevels = levels.Where(x => price.CandleRange.Intersect(x.Key.CandleRange)).ToList();
-                    decimal pricePointCenter = 0;
-                    if (priceIntersectLevels.Any())
-                    {
-                        var pricePointInterectHigh = priceIntersectLevels.Select(x => x.Key.High).Max();
-                        var pricePointInterectLow = priceIntersectLevels.Select(x => x.Key.Low).Min();
-                        pricePointCenter = (pricePointInterectHigh + pricePointInterectLow) / 2;
-
-                        var pricePointInterect = new NumericRange(pricePointCenter, pricePointCenter);
-                        priceIntersectAnyLevelPoint = price.CandleRange.Intersect(pricePointInterect);
-                    }
+                    var priceIntersectSecondLastPrice = price.CandleRange.Intersect(secondLastPrice.CandleRange); // to make sure current price is not too far from previous price to make sure it move gradually and healthily
+                    var secondLastPriceIntersectCenterLevelPoint = secondLastPrice.CandleRange.Intersect(centerPoint); // to make sure previous price touched the pivot level
+                    var priceNotIntersectCenterLevelPoint = !price.CandleRange.Intersect(centerPoint); // to make sure the current price is not too out of the pivot level which means it's heading toward a direction (up or down).
 
                     if (secondLastPriceIntersectCenterLevelPoint
                         && secondLastPrice.High > centerPoint.High
@@ -99,9 +102,7 @@ namespace Stock.Strategies
                         && priceIntersectSecondLastPrice
                         && priceNotIntersectCenterLevelPoint)
                     {
-                        var message = priceIntersectAnyLevelPoint
-                            ? $"Price {price.Close} ({price.Date:s}) > {centerPoint.High} ({levelLow} - {levelHigh}), points: {averageSwingPointIntersected}, big body candle: {price.IsContentCandle}, *level touch*: {pricePointCenter}"
-                            : $"Price {price.Close} ({price.Date:s}) > {centerPoint.High} ({levelLow} - {levelHigh}), points: {averageSwingPointIntersected}, big body candle: {price.IsContentCandle}";
+                        var message = $"Price {price.Close} ({price.Date:s}) > {centerPoint.High} ({levelLow} - {levelHigh}), points: {levelSecondLastPriceTouched.Count}, big body candle: {price.IsContentCandle}";
 
                         if (hmVolumeCheck && isValidCandleForLong)
                         {
@@ -142,9 +143,7 @@ namespace Stock.Strategies
                         && priceIntersectSecondLastPrice
                         && priceNotIntersectCenterLevelPoint)
                     {
-                        var message = priceIntersectAnyLevelPoint
-                            ? $"Price {price.Close} ({price.Date:s}) < {centerPoint.Low} ({levelLow} - {levelHigh}), points: {averageSwingPointIntersected}, big body candle: {price.IsContentCandle}, *level touch*: {pricePointCenter}"
-                            : $"Price {price.Close} ({price.Date:s}) < {centerPoint.Low} ({levelLow} - {levelHigh}), points: {averageSwingPointIntersected}, big body candle: {price.IsContentCandle}";
+                        var message = $"Price {price.Close} ({price.Date:s}) < {centerPoint.Low} ({levelLow} - {levelHigh}), points: {levelSecondLastPriceTouched.Count}, big body candle: {price.IsContentCandle}";
 
                         if (hmVolumeCheck && isValidCandleForShort)
                         {
