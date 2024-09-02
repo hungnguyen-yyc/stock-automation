@@ -69,51 +69,164 @@
             </ListView.View>
         </ListView>
         <GridSplitter Grid.Column="0" Grid.Row="0" Grid.RowSpan="2" Background="LightGray" Width="3" VerticalAlignment="Stretch" />
-        <ListView 
-            Name="lsvAlerts" 
-            Grid.Column="1" 
-            Grid.Row="0" 
-            Height="auto" 
-            Width="auto" 
-            ItemsSource="{Binding Alerts}" 
+        <Grid Grid.Column="1" Grid.Row="0" VerticalAlignment="Stretch">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="100*"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="50*"/>
+                <ColumnDefinition Width="50*"/>
+            </Grid.ColumnDefinitions>
+            <ScrollViewer Grid.Column="0" Grid.Row="0" Width="auto" VerticalScrollBarVisibility="Auto">
+                <ListView 
+                    Name="lsvAlerts"
+                    Height="auto" 
+                    Width="auto" 
+                    ItemsSource="{Binding Alerts}" 
+                    Margin="5 10 5 0"
+                    MouseDoubleClick="lsvAlerts_DoubleClick">
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Ticker}">
+                                <GridViewColumn.Header>
+                                    <GridViewColumnHeader Tag="Ticker" Click="lsvAlertsColumnHeader_Click">Ticker</GridViewColumnHeader>
+                                </GridViewColumn.Header>
+                            </GridViewColumn>
+                            <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding CreatedAt}" >
+                                <GridViewColumn.Header>
+                                    <GridViewColumnHeader Tag="CreatedAt" Click="lsvAlertsColumnHeader_Click">Time</GridViewColumnHeader>
+                                </GridViewColumn.Header>
+                            </GridViewColumn>
+                            <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Timeframe}">
+                                <GridViewColumn.Header>
+                                    <GridViewColumnHeader Tag="Timeframe" Click="lsvAlertsColumnHeader_Click">Timeframe</GridViewColumnHeader>
+                                </GridViewColumn.Header>
+                            </GridViewColumn>
+                            <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding OrderPosition}">
+                                <GridViewColumn.Header>
+                                    <GridViewColumnHeader Tag="OrderType" Click="lsvAlertsColumnHeader_Click">Order Type</GridViewColumnHeader>
+                                </GridViewColumn.Header>
+                            </GridViewColumn>
+                            <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Message}">
+                                <GridViewColumn.Header>
+                                    <GridViewColumnHeader Tag="Message" Click="lsvAlertsColumnHeader_Click">Message</GridViewColumnHeader>
+                                </GridViewColumn.Header>
+                            </GridViewColumn>
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+            </ScrollViewer>
+            <GridSplitter Grid.Column="0" Grid.Row="0" Background="LightGray" Width="3" VerticalAlignment="Stretch" />
+            <Grid Grid.Column="1" Grid.Row="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="100*"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="100*"/>
+                </Grid.ColumnDefinitions>
+                <Label Grid.Column="0" Grid.Row="0">Min Volume</Label>
+                <TextBox Grid.Column="1" Grid.Row="0" Name="txtMinVolume"
+                         Width="50"
+                         Text="10000"
+                         Margin="5 10 5 0"/>
+                <Label Grid.Column="2" Grid.Row="0">Max Volume</Label>
+                <TextBox Grid.Column="3" Grid.Row="0" Name="txtMaxVolume"
+                         Width="50" 
+                         Margin="5 10 5 0"/>
+                <Label Grid.Column="0" Grid.Row="1">Min Open Interest</Label>
+                <TextBox Grid.Column="1" Grid.Row="1" Name="txtMinOpenInterest"
+                         Width="50"
+                         Text="10000"
+                         Margin="5 10 5 0"/>
+                <Label Grid.Column="2" Grid.Row="1">Max Open Interest</Label>
+                <TextBox Grid.Column="3" Grid.Row="1" Name="txtMaxOpenInterest"
+                         Width="50" 
+                         Margin="5 10 5 0"/>
+                <Label Grid.Column="0" Grid.Row="2">Min DTE</Label>
+                <TextBox Grid.Column="1" Grid.Row="2" Name="txtMinDTE"
+                         Width="50"
+                         Text="5"
+                         Margin="5 10 5 0"/>
+                <Label Grid.Column="2" Grid.Row="2">Max DTE</Label>
+                <TextBox Grid.Column="3" Grid.Row="2" Name="txtMaxDTE"
+                         Width="50" 
+                         Margin="5 10 5 0"/>
+                <Button Grid.Column="0" Grid.Row="3" Grid.ColumnSpan="2" 
+                        Name="btnScreeningOptions"
+                        Click="btnScreeningOptions_Click"
+                        Margin="5 10 5 0">Screen Option</Button>
+                <Button Grid.Column="2" Grid.Row="3" Grid.ColumnSpan="2" 
+                        Name="btnScreeningOptionsClearSorting"
+                        Click="btnScreeningOptionsClearSorting_Click"
+                        Margin="5 10 5 0">Clear Sorting</Button>
+                <ScrollViewer Grid.Column="0" Grid.Row="4" Grid.ColumnSpan="5" VerticalScrollBarVisibility="Auto">
+                    <ListView 
+                        Name="lsvScreenedOptions"
+                        Height="auto" 
+                        Width="auto" 
+                        ItemsSource="{Binding OptionsScreeningResults}" 
+                        Margin="5 10 5 0">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding UnderlyingSymbol}">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader HorizontalAlignment="Stretch" Tag="UnderlyingSymbol" Click="lsvScreenedOptions_Click">Ticker</GridViewColumnHeader>
+                                    </GridViewColumn.Header>
+                                </GridViewColumn>
+                                <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Type}" >
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Tag="Type" Click="lsvScreenedOptions_Click">Type</GridViewColumnHeader>
+                                    </GridViewColumn.Header>
+                                </GridViewColumn>
+                                <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Strike}">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Tag="Strike" Click="lsvScreenedOptions_Click">Strike</GridViewColumnHeader>
+                                    </GridViewColumn.Header>
+                                </GridViewColumn>
+                                <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding ExpirationDate}">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Tag="ExpirationDate" Click="lsvScreenedOptions_Click">Expiration</GridViewColumnHeader>
+                                    </GridViewColumn.Header>
+                                </GridViewColumn>
+                                <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Volume}">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Tag="Volume" Click="lsvScreenedOptions_Click">Volume</GridViewColumnHeader>
+                                    </GridViewColumn.Header>
+                                </GridViewColumn>
+                                <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding OpenInterest}">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Tag="OpenInterest" Click="lsvScreenedOptions_Click">OpenInterest</GridViewColumnHeader>
+                                    </GridViewColumn.Header>
+                                </GridViewColumn>
+                                <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding VolumeOpenInterestRatio}">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Tag="VolumeOpenInterestRatio" Click="lsvScreenedOptions_Click">VOIR</GridViewColumnHeader>
+                                    </GridViewColumn.Header>
+                                </GridViewColumn>
+                                <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding TradeTimeFormatted}">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Tag="TradeTimeFormatted" Click="lsvScreenedOptions_Click">Trade time</GridViewColumnHeader>
+                                    </GridViewColumn.Header>
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                </ScrollViewer>
+            </Grid>
+        </Grid>
+        <ListView Name="lsvTrendLines"
+            Grid.Column="1" Grid.Row="1" Height="auto" 
+            ItemsSource="{Binding TrendLines}" 
             VerticalAlignment="Stretch" 
-            Margin="5 10 5 0"
-            MouseDoubleClick="lsvAlerts_DoubleClick">
-            <ListView.View>
-                <GridView>
-                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Ticker}">
-                        <GridViewColumn.Header>
-                            <GridViewColumnHeader Tag="Ticker" Click="lsvAlertsColumnHeader_Click">Ticker</GridViewColumnHeader>
-                        </GridViewColumn.Header>
-                    </GridViewColumn>
-                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding CreatedAt}" >
-                        <GridViewColumn.Header>
-                            <GridViewColumnHeader Tag="CreatedAt" Click="lsvAlertsColumnHeader_Click">Time</GridViewColumnHeader>
-                        </GridViewColumn.Header>
-                    </GridViewColumn>
-                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Timeframe}">
-                        <GridViewColumn.Header>
-                            <GridViewColumnHeader Tag="Timeframe" Click="lsvAlertsColumnHeader_Click">Timeframe</GridViewColumnHeader>
-                        </GridViewColumn.Header>
-                    </GridViewColumn>
-                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding OrderPosition}">
-                        <GridViewColumn.Header>
-                            <GridViewColumnHeader Tag="OrderType" Click="lsvAlertsColumnHeader_Click">Order Type</GridViewColumnHeader>
-                        </GridViewColumn.Header>
-                    </GridViewColumn>
-                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Message}">
-                        <GridViewColumn.Header>
-                            <GridViewColumnHeader Tag="Message" Click="lsvAlertsColumnHeader_Click">Message</GridViewColumnHeader>
-                        </GridViewColumn.Header>
-                    </GridViewColumn>
-                </GridView>
-            </ListView.View>
-        </ListView>
-        <ListView Name="lsvTrendLines" 
-          Grid.Column="1" Grid.Row="1" Height="auto" 
-          ItemsSource="{Binding TrendLines}" 
-          VerticalAlignment="Stretch" 
-          Margin="5 10 5 0">
+            Margin="5 10 5 0">
             <ListView.View>
                 <GridView>
                     <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Ticker}">

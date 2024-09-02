@@ -55,6 +55,8 @@ namespace Stock.Shared.Models
 
         [JsonProperty("tradeTime")]
         public DateTimeOffset TradeTime { get; set; }
+        
+        public string TradeTimeFormatted => TradeTime.ToString("yyyy-MM-dd HH:mm:ss");
 
         [JsonProperty("delta")]
         public decimal Delta { get; set; }

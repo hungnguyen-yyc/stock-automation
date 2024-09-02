@@ -35,6 +35,8 @@ namespace Stock.UI.Components
         private ObservableCollection<PositionMessage> _accountPosition;
         private ObservableCollection<TrendLine> _allTrendLines;
         private ObservableCollection<TrendLine> _filteredTrendLines;
+        private ObservableCollection<OptionsScreeningResult> _allOptionsScreeningResults;
+        private ObservableCollection<OptionsScreeningResult> _filteredOptionsScreeningResults;
 
         private Dictionary<string, IReadOnlyCollection<Price>> _tickerAndPrices;
         private IReadOnlyCollection<string> _allOptionTypes;
@@ -72,6 +74,10 @@ namespace Stock.UI.Components
 
             _completedOrders = new ObservableCollection<CompletedOrderMessage>();
             BindingOperations.EnableCollectionSynchronization(_completedOrders, _lock);
+            
+            _allOptionsScreeningResults = new ObservableCollection<OptionsScreeningResult>();
+            _filteredOptionsScreeningResults = new ObservableCollection<OptionsScreeningResult>();
+            BindingOperations.EnableCollectionSynchronization(_filteredOptionsScreeningResults, _lock);
 
             _repo.LogCreated += (message) =>
             {
@@ -111,6 +117,8 @@ namespace Stock.UI.Components
         public ObservableCollection<string> Tickers { get; }
 
         public ObservableCollection<LogEventArg> Logs { get; }
+        
+        public ObservableCollection<OptionsScreeningResult> OptionsScreeningResults => _filteredOptionsScreeningResults;
 
         public string SelectedTimeframe
         {
@@ -140,6 +148,7 @@ namespace Stock.UI.Components
 
                     UpdateFilteredAlerts();
                     UpdateFilteredTrendLines(_selectedTicker);
+                    FilterOptionsScreeningResults();
 
                     OnPropertyChanged(nameof(SelectedTicker));
                 }
@@ -364,7 +373,7 @@ namespace Stock.UI.Components
         private async Task StartStrategy()
         {
 #if DEBUG
-            await RunInDebug();
+            // await RunInDebug();
 #else
             await RunInRelease();
 #endif
@@ -674,6 +683,47 @@ namespace Stock.UI.Components
             }
             
             OnPropertyChanged(nameof(AllOptionChain));
+        }
+
+        public async Task ScreenOptions(OptionsScreeningParams screeningParams)
+        {
+            await GetScreenedOptions(screeningParams);
+            FilterOptionsScreeningResults();
+        }
+        
+        private void FilterOptionsScreeningResults()
+        {
+            _filteredOptionsScreeningResults.Clear();
+            var optionsScreeningResults = _allOptionsScreeningResults.ToList();
+            
+            if (_selectedTicker == ALL)
+            {
+                foreach (var result in optionsScreeningResults)
+                {
+                    _filteredOptionsScreeningResults.Add(result);
+                }
+            }
+            else
+            {
+                foreach (var result in optionsScreeningResults)
+                {
+                    if (result.UnderlyingSymbol == _selectedTicker)
+                    {
+                        _filteredOptionsScreeningResults.Add(result);
+                    }
+                }
+            }
+        }
+        
+        private async Task GetScreenedOptions(OptionsScreeningParams screeningParams)
+        {
+            var optionsScreeningResults = await _repo.GetOptionsScreeningResults(screeningParams);
+            _allOptionsScreeningResults.Clear();
+            
+            foreach (var result in optionsScreeningResults)
+            {
+                _allOptionsScreeningResults.Add(result);
+            }
         }
     }
 }

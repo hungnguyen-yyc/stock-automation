@@ -6,10 +6,9 @@ public class OptionsScreeningParams
     public int? MaxVolume { get; set; }
     public int MinOpenInterest { get; set; }
     public int? MaxOpenInterest { get; set; }
-    public int? MinDelta { get; set; }
-    public int? MaxDelta { get; set; }
     public int MinExpirationDays { get; set; }
     public int? MaxExpirationDays { get; set; }
+    public int Limit { get; set; }
     
     public string Fields => "openInterest,volumeOpenInterestRatio,volume,delta";
 
@@ -17,12 +16,13 @@ public class OptionsScreeningParams
     {
         MinVolume = 10000,
         MinOpenInterest = 10000,
-        MinExpirationDays = 10
+        MinExpirationDays = 5,
+        Limit = 500
     };
     
     public string ToQueryString()
     {
-        var queryString = $"?instrumentType=stocks&optionType=both&minVolume={MinVolume}&minOpenInterest={MinOpenInterest}&minExpirationDays={MinExpirationDays}&fields={Fields}";
+        var queryString = $"?instrumentType=stocks&optionType=both&minVolume={MinVolume}&minOpenInterest={MinOpenInterest}&minDTE={MinExpirationDays}&fields={Fields}&limit={Limit}";
         if (MaxVolume is > 0)
         {
             queryString += $"&maxVolume={MaxVolume}";
@@ -31,17 +31,9 @@ public class OptionsScreeningParams
         {
             queryString += $"&maxOpenInterest={MaxOpenInterest}";
         }
-        if (MinDelta is > 0)
-        {
-            queryString += $"&minDelta={MinDelta}";
-        }
-        if (MaxDelta is > 0)
-        {
-            queryString += $"&maxDelta={MaxDelta}";
-        }
         if (MaxExpirationDays is > 0)
         {
-            queryString += $"&maxExpirationDays={MaxExpirationDays}";
+            queryString += $"&maxDTE={MaxExpirationDays}";
         }
         return queryString;
     }

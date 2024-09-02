@@ -28,14 +28,33 @@ namespace Stock.Data
             try
             {
                 using var httpClient = new HttpClient();
-                var url = "https://webapp-proxy.aws.barchart.com/v1/ondemand/getOptionsScreener.json" + requestParams.ToQueryString();
-                var response = await httpClient.GetAsync(url);
-                if (response.IsSuccessStatusCode)
+                var page = 1;
+                var results = new List<OptionsScreeningResult>();
+                
+                while (true)
                 {
-                    var content = await response.Content.ReadAsStringAsync();
-                    var optionsScreeningResponse = OptionsScreeningResponse.FromJson(content);
-                    return optionsScreeningResponse.Results;
+                    var url = "https://webapp-proxy.aws.barchart.com/v1/ondemand/getOptionsScreener.json" + requestParams.ToQueryString() + $"&page={page}";
+                    var response = await httpClient.GetAsync(url);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var content = await response.Content.ReadAsStringAsync();
+                        var optionsScreeningResponse = OptionsScreeningResponse.FromJson(content);
+                        
+                        if (optionsScreeningResponse.Results == null)
+                        {
+                            break;
+                        }
+                        
+                        results.AddRange(optionsScreeningResponse.Results);
+                        page++;
+                    }
+                    else
+                    {
+                        break;
+                    }
                 }
+
+                return results;
             }
             catch (Exception ex)
             {
