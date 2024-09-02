@@ -63,13 +63,13 @@ namespace Stock.Strategies.Helpers
                     var currentSwingLow = swingLows[i];
                     var nextSwingLow = swingLows[j];
 
-                    if (currentSwingLow.BottomHalfOfCandle.Intersect(nextSwingLow.BottomHalfOfCandle))
+                    if (currentSwingLow.CandleRange.Intersect(nextSwingLow.CandleRange))
                     {
-                        var hasKey = result.Keys.Any(x => x.BottomHalfOfCandle.Intersect(currentSwingLow.BottomHalfOfCandle));
+                        var hasKey = result.Keys.Any(x => x.CandleRange.Intersect(currentSwingLow.CandleRange));
 
                         if (hasKey)
                         {
-                            var key = result.Keys.First(x => x.BottomHalfOfCandle.Intersect(currentSwingLow.BottomHalfOfCandle));
+                            var key = result.Keys.First(x => x.CandleRange.Intersect(currentSwingLow.CandleRange));
                             result[key].Add(nextSwingLow);
                         }
                         else
@@ -101,13 +101,13 @@ namespace Stock.Strategies.Helpers
                     var currentSwingHigh = swingHighs[i];
                     var nextSwingHigh = swingHighs[j];
 
-                    if (currentSwingHigh.TopHalfOfCandle.Intersect(nextSwingHigh.TopHalfOfCandle))
+                    if (currentSwingHigh.CandleRange.Intersect(nextSwingHigh.CandleRange))
                     {
-                        var hasKey = result.Keys.Any(x => x.TopHalfOfCandle.Intersect(currentSwingHigh.TopHalfOfCandle));
+                        var hasKey = result.Keys.Any(x => x.CandleRange.Intersect(currentSwingHigh.CandleRange));
 
                         if (hasKey)
                         {
-                            var key = result.Keys.First(x => x.TopHalfOfCandle.Intersect(currentSwingHigh.TopHalfOfCandle));
+                            var key = result.Keys.First(x => x.CandleRange.Intersect(currentSwingHigh.CandleRange));
                             result[key].Add(nextSwingHigh);
                         }
                         else

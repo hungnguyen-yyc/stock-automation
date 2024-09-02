@@ -408,7 +408,6 @@ namespace Stock.UI.Components
                         }
                         
                         var priceToStartTesting = prices.First(x => x.Date >= DateTime.Now.AddMonths(-2));
-                        prices = prices.Where(x => x.Date <= new DateTime(2024, 07, 22)).ToList();
                         
                         var index = 0;
                         for (int i = 0; i < prices.Count; i++)
