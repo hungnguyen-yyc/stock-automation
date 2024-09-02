@@ -10,6 +10,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Windows.Data;
 using Microsoft.Toolkit.Uwp.Notifications;
+using Stock.Shared.Models.Parameters;
 using Stock.Strategies.EventArgs;
 
 namespace Stock.UI.Components
@@ -214,6 +215,7 @@ namespace Stock.UI.Components
             {
                 var tickers = TickersWithoutAll;
                 var timeframes = new[] { Timeframe.Daily, Timeframe.Hour1};
+                var testing = await _repo.GetOptionsScreeningResults(OptionsScreeningParams.Default);
 
                 foreach (var timeframe in timeframes)
                 {

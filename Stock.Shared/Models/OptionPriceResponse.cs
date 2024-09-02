@@ -12,7 +12,7 @@ namespace Stock.Shared.Models
     public class OptionPriceResponse
     {
         [JsonProperty("status")]
-        public Status Status { get; set; }
+        public ResponseStatus Status { get; set; }
 
         [JsonProperty("results")]
         public OptionPrice[] OptionPrice { get; set; }
@@ -126,14 +126,5 @@ namespace Stock.Shared.Models
         {
             return $"{Symbol}|{Date:yyyy-MM-dd}|O: {Open}|H: {High}|L: {Low}|C: {Close}";
         }
-    }
-
-    public partial class Status
-    {
-        [JsonProperty("code")]
-        public long Code { get; set; }
-
-        [JsonProperty("message")]
-        public string Message { get; set; }
     }
 }

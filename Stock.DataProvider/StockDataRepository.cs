@@ -5,6 +5,7 @@ using Stock.Shared.Models;
 using Stock.Shared.Models.IBKR.Messages;
 using System.Diagnostics;
 using System.Globalization;
+using Stock.Shared.Models.Parameters;
 
 namespace Stock.Data
 {
@@ -20,6 +21,28 @@ namespace Stock.Data
             Debug.WriteLine(message);
             Console.WriteLine(message);
             LogCreated?.Invoke(new EventArgs.LogEventArg(message));
+        }
+        
+        public async Task<IReadOnlyCollection<OptionsScreeningResult>> GetOptionsScreeningResults(OptionsScreeningParams requestParams)
+        {
+            try
+            {
+                using var httpClient = new HttpClient();
+                var url = "https://webapp-proxy.aws.barchart.com/v1/ondemand/getOptionsScreener.json" + requestParams.ToQueryString();
+                var response = await httpClient.GetAsync(url);
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                    var optionsScreeningResponse = OptionsScreeningResponse.FromJson(content);
+                    return optionsScreeningResponse.Results;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log(ex.Message);
+            }
+
+            return new List<OptionsScreeningResult>();
         }
 
         public async Task<string[]?> GetOptionPriceAsync(string optionDetailByBarChart)

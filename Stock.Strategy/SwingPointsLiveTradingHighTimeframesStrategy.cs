@@ -102,7 +102,7 @@ namespace Stock.Strategies
                         && priceIntersectSecondLastPrice
                         && priceNotIntersectCenterLevelPoint)
                     {
-                        var message = $"Price {price.Close} ({price.Date:s}) > {centerPoint.High} ({levelLow} - {levelHigh}), points: {levelSecondLastPriceTouched.Count}, big body candle: {price.IsContentCandle}";
+                        var message = $"Price {price.Close} ({price.Date:s}) > {centerPoint.High} ({levelLow} - {levelHigh})";
 
                         if (hmVolumeCheck && isValidCandleForLong)
                         {
@@ -143,7 +143,7 @@ namespace Stock.Strategies
                         && priceIntersectSecondLastPrice
                         && priceNotIntersectCenterLevelPoint)
                     {
-                        var message = $"Price {price.Close} ({price.Date:s}) < {centerPoint.Low} ({levelLow} - {levelHigh}), points: {levelSecondLastPriceTouched.Count}, big body candle: {price.IsContentCandle}";
+                        var message = $"Price {price.Close} ({price.Date:s}) < {centerPoint.Low} ({levelLow} - {levelHigh})";
 
                         if (hmVolumeCheck && isValidCandleForShort)
                         {
