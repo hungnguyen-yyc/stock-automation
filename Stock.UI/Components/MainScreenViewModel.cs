@@ -39,9 +39,8 @@ namespace Stock.UI.Components
         private ObservableCollection<OptionsScreeningResult> _filteredOptionsScreeningResults;
 
         private Dictionary<string, IReadOnlyCollection<Price>> _tickerAndPrices;
-        private IReadOnlyCollection<string> _allOptionTypes;
 
-        public MainScreenViewModel(StockDataRepository repo, SwingPointsLiveTradingLowTimeframesStrategy strategy)
+        public MainScreenViewModel(StockDataRepository repo, ISwingPointStrategy strategy)
         {
             _repo = repo;
             _strategy = strategy;
@@ -53,7 +52,6 @@ namespace Stock.UI.Components
             _filteredAlerts = new ObservableCollection<Alert>();
             _allTrendLines = new ObservableCollection<TrendLine>();
             _filteredTrendLines = new ObservableCollection<TrendLine>();
-            _allOptionTypes = new List<string> { ALL, OptionTypeEnum.C.ToString(), OptionTypeEnum.P.ToString() };
             BindingOperations.EnableCollectionSynchronization(_filteredTrendLines, _lock);
             BindingOperations.EnableCollectionSynchronization(_filteredAlerts, _lock);
 
@@ -230,15 +228,6 @@ namespace Stock.UI.Components
                     _strategy.TrendLineCreated -= Strategy_TrendLineCreated;
                     _strategy.PivotLevelCreated -= Strategy_PivotLevelCreated;
                     _strategy = new SwingPointsLiveTradingHighTimeframesStrategy();
-
-                    if (timeframe is Timeframe.Hour1 or Timeframe.Daily)
-                    {
-                        _strategy = new SwingPointsLiveTradingHighTimeframesStrategy();
-                    }
-                    else
-                    {
-                        _strategy = new SwingPointsLiveTradingLowTimeframesStrategy();
-                    }
                     
                     _strategy.TrendLineCreated += Strategy_TrendLineCreated;
                     _strategy.PivotLevelCreated += Strategy_PivotLevelCreated;
@@ -390,14 +379,7 @@ namespace Stock.UI.Components
                 _strategy.TrendLineCreated -= Strategy_TrendLineCreated;
                 _strategy.PivotLevelCreated -= Strategy_PivotLevelCreated;
 
-                if (timeframe == Timeframe.Daily)
-                {
-                    _strategy = new SwingPointsLiveTradingHighTimeframesStrategy();
-                }
-                else
-                {
-                    _strategy = new SwingPointsLiveTradingLowTimeframesStrategy();
-                }
+                _strategy = new SwingPointsLiveTradingHighTimeframesStrategy();
 
                 _strategy.AlertCreated += Strategy_AlertCreated;
                 _strategy.TrendLineCreated += Strategy_TrendLineCreated;
@@ -530,20 +512,12 @@ namespace Stock.UI.Components
                         _strategy.AlertCreated -= Strategy_AlertCreated;
                         _strategy.TrendLineCreated -= Strategy_TrendLineCreated;
                         _strategy.PivotLevelCreated -= Strategy_PivotLevelCreated;
+                        
                         _strategy = new SwingPointsLiveTradingHighTimeframesStrategy();
-
-                        if (timeframe == Timeframe.Hour1 || timeframe == Timeframe.Daily)
-                        {
-                            _strategy = new SwingPointsLiveTradingHighTimeframesStrategy();
-                        }
-                        else
-                        {
-                            _strategy = new SwingPointsLiveTradingLowTimeframesStrategy();
-                        }
                         
                         _strategy.AlertCreated += Strategy_AlertCreated;
                         _strategy.TrendLineCreated += Strategy_TrendLineCreated;
-                        _strategy.PivotLevelCreated -= Strategy_PivotLevelCreated;
+                        _strategy.PivotLevelCreated += Strategy_PivotLevelCreated;
 
                         Logs.Add(new LogEventArg($"Started running strategy at {DateTime.Now}"));
 
