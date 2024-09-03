@@ -28,29 +28,38 @@ namespace Stock.Data
             try
             {
                 using var httpClient = new HttpClient();
-                var page = 1;
+                var endPoint = "https://webapp-proxy.aws.barchart.com/v1/ondemand/getOptionsScreener.json";
                 var results = new List<OptionsScreeningResult>();
-                
-                while (true)
+                var urls = new List<string>()
                 {
-                    var url = "https://webapp-proxy.aws.barchart.com/v1/ondemand/getOptionsScreener.json" + requestParams.ToQueryString() + $"&page={page}";
-                    var response = await httpClient.GetAsync(url);
-                    if (response.IsSuccessStatusCode)
+                    $"{endPoint}{requestParams.ToQueryString(OptionsScreeningParams.INSTRUMENT_TYPE_STOCKS)}",
+                    $"{endPoint}{requestParams.ToQueryString(OptionsScreeningParams.INSTRUMENT_TYPE_ETF)}"
+                };
+                
+                foreach (var url in urls)
+                {
+                    var page = 1;
+                    while (true)
                     {
-                        var content = await response.Content.ReadAsStringAsync();
-                        var optionsScreeningResponse = OptionsScreeningResponse.FromJson(content);
+                        var pagedUrl = $"{url}&page={page}";
+                        var response = await httpClient.GetAsync(pagedUrl);
+                        if (response.IsSuccessStatusCode)
+                        {
+                            var content = await response.Content.ReadAsStringAsync();
+                            var optionsScreeningResponse = OptionsScreeningResponse.FromJson(content);
                         
-                        if (optionsScreeningResponse.Results == null)
+                            if (optionsScreeningResponse.Results == null)
+                            {
+                                break;
+                            }
+                        
+                            results.AddRange(optionsScreeningResponse.Results);
+                            page++;
+                        }
+                        else
                         {
                             break;
                         }
-                        
-                        results.AddRange(optionsScreeningResponse.Results);
-                        page++;
-                    }
-                    else
-                    {
-                        break;
                     }
                 }
 

@@ -2,6 +2,9 @@ namespace Stock.Shared.Models.Parameters;
 
 public class OptionsScreeningParams
 {
+    public static string INSTRUMENT_TYPE_STOCKS => "stocks";
+    public static string INSTRUMENT_TYPE_ETF => "etfs";
+    
     public int MinVolume { get; set; }
     public int? MaxVolume { get; set; }
     public int MinOpenInterest { get; set; }
@@ -20,9 +23,9 @@ public class OptionsScreeningParams
         Limit = 500
     };
     
-    public string ToQueryString()
+    public string ToQueryString(string instrumentType = "stocks")
     {
-        var queryString = $"?instrumentType=stocks&optionType=both&minVolume={MinVolume}&minOpenInterest={MinOpenInterest}&minDTE={MinExpirationDays}&fields={Fields}&limit={Limit}&eod=0";
+        var queryString = $"?instrumentType={instrumentType}&optionType=both&minVolume={MinVolume}&minOpenInterest={MinOpenInterest}&minDTE={MinExpirationDays}&fields={Fields}&limit={Limit}&eod=0";
         if (MaxVolume is > 0)
         {
             queryString += $"&maxVolume={MaxVolume}";
