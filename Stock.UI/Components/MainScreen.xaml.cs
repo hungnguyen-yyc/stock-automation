@@ -18,7 +18,7 @@ namespace Stock.UI.Components
         {
             InitializeComponent();
 
-            viewModel = new MainScreenViewModel(new Data.StockDataRepository(), new Strategies.SwingPointsLiveTradingLowTimeframesStrategy());
+            viewModel = new MainScreenViewModel(new Data.StockDataRepository(), new Strategies.SwingPointsLiveTradingHighTimeframesStrategy());
             DataContext = viewModel;
         }
 
