@@ -60,10 +60,10 @@ namespace Stock.Shared.Models
         public long? Trades { get; set; }
 
         [JsonProperty("ask")]
-        public double Ask { get; set; }
+        public double? Ask { get; set; }
 
         [JsonProperty("askSize")]
-        public long AskSize { get; set; }
+        public long? AskSize { get; set; }
 
         [JsonProperty("bid")]
         public double? Bid { get; set; }
