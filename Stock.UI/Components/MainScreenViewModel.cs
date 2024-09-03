@@ -21,6 +21,7 @@ namespace Stock.UI.Components
 
         private readonly StockDataRepository _repo;
         private ISwingPointStrategy _strategy;
+        private string _optionScreeningProgressStatus;
         private string _selectedTimeframe;
         private string _selectedTicker;
         private string _selectedOptionType;
@@ -101,6 +102,7 @@ namespace Stock.UI.Components
                 Timeframe.Daily.ToString()
             };
 
+            OptionScreeningProgressStatus = "Idle.";
             StartStrategy();
         }
         
@@ -115,6 +117,18 @@ namespace Stock.UI.Components
         public ObservableCollection<string> Tickers { get; }
 
         public ObservableCollection<LogEventArg> Logs { get; }
+        
+        public string OptionScreeningProgressStatus { 
+            get => _optionScreeningProgressStatus;
+            set
+            {
+                if (_optionScreeningProgressStatus != value)
+                {
+                    _optionScreeningProgressStatus = value;
+                    OnPropertyChanged(nameof(OptionScreeningProgressStatus));
+                }
+            }
+        }
         
         public ObservableCollection<OptionsScreeningResult> OptionsScreeningResults => _filteredOptionsScreeningResults;
 
@@ -664,8 +678,14 @@ namespace Stock.UI.Components
 
         public async Task ScreenOptions(OptionsScreeningParams screeningParams)
         {
+            OptionScreeningProgressStatus = "Screening...";
+            
             await GetScreenedOptions(screeningParams);
             FilterOptionsScreeningResults();
+            
+            OptionScreeningProgressStatus = "Idle.";
+            
+            OnPropertyChanged(nameof(OptionScreeningProgressStatus));
         }
         
         private void FilterOptionsScreeningResults()
