@@ -513,7 +513,8 @@ namespace Stock.UI.Components
                 var minuteModule = DateTime.Now.Minute % 10;
                 if (minuteModule != 0)
                 {
-                    await Task.Delay(TimeSpan.FromMinutes(5 - minuteModule));
+                    var timeToDelay = Math.Max(10 - minuteModule, 0);
+                    await Task.Delay(TimeSpan.FromMinutes(timeToDelay));
                 }
                 
                 try
