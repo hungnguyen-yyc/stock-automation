@@ -224,11 +224,11 @@ namespace Stock.UI.Components
             {
                 var tickers = TickersWithoutAll;
                 var timeframes = new[] { Timeframe.Daily, Timeframe.Hour1};
-                var testing = await _repo.GetOptionsScreeningResults(OptionsScreeningParams.Default);
 
                 foreach (var timeframe in timeframes)
                 {
                     _strategy.TrendLineCreated -= Strategy_TrendLineCreated;
+                    _strategy.PivotLevelCreated -= Strategy_PivotLevelCreated;
                     _strategy = new SwingPointsLiveTradingHighTimeframesStrategy();
 
                     if (timeframe is Timeframe.Hour1 or Timeframe.Daily)
@@ -241,6 +241,7 @@ namespace Stock.UI.Components
                     }
                     
                     _strategy.TrendLineCreated += Strategy_TrendLineCreated;
+                    _strategy.PivotLevelCreated += Strategy_PivotLevelCreated;
 
                     foreach (var ticker in tickers)
                     {
@@ -528,6 +529,7 @@ namespace Stock.UI.Components
                     {
                         _strategy.AlertCreated -= Strategy_AlertCreated;
                         _strategy.TrendLineCreated -= Strategy_TrendLineCreated;
+                        _strategy.PivotLevelCreated -= Strategy_PivotLevelCreated;
                         _strategy = new SwingPointsLiveTradingHighTimeframesStrategy();
 
                         if (timeframe == Timeframe.Hour1 || timeframe == Timeframe.Daily)
@@ -541,6 +543,7 @@ namespace Stock.UI.Components
                         
                         _strategy.AlertCreated += Strategy_AlertCreated;
                         _strategy.TrendLineCreated += Strategy_TrendLineCreated;
+                        _strategy.PivotLevelCreated -= Strategy_PivotLevelCreated;
 
                         Logs.Add(new LogEventArg($"Started running strategy at {DateTime.Now}"));
 

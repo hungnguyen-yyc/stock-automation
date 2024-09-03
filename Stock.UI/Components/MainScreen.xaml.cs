@@ -130,26 +130,9 @@ namespace Stock.UI.Components
             viewModel.ExportAlertToCsv();
         }
 
-        private void CalOptionDate_DateSelected(object? sender, SelectionChangedEventArgs e)
-        {
-            var date = this.CalOptionDate.SelectedDate;
-            
-            if (date != null)
-            {
-                var fridayNextWeek = date.Value
-                    .AddDays((int)DayOfWeek.Friday - (int)date.Value.DayOfWeek + 7);
-                viewModel.GetOptionChain(viewModel.SelectedTicker, date.Value, fridayNextWeek);
-            }
-        }
-
         private void btnGetLevels_Click(object sender, RoutedEventArgs e)
         {
             viewModel.GetLevels();
-        }
-
-        private void OptionTypeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            viewModel?.FilterOptionChainByType();
         }
 
         private void BtnAddAndSearch_Click(object sender, RoutedEventArgs e)
@@ -248,7 +231,7 @@ namespace Stock.UI.Components
             }
             if (txtMaxDTE.Text.Trim().Length > 0 && int.TryParse(txtMaxDTE.Text, out var maxDte))
             {
-                screeningParams.MinExpirationDays = maxDte;
+                screeningParams.MaxExpirationDays = maxDte;
             }
             
             return screeningParams;

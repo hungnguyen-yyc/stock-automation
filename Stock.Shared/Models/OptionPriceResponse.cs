@@ -35,6 +35,8 @@ namespace Stock.Shared.Models
 
         [JsonProperty("date")]
         public DateTimeOffset Date { get; set; }
+        
+        public string DateFormatted => Date.ToString("yyyy-MM-dd");
 
         [JsonProperty("open")]
         public double? Open { get; set; }
