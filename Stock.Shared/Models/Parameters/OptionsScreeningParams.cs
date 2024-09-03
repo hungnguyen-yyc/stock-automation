@@ -22,7 +22,7 @@ public class OptionsScreeningParams
     
     public string ToQueryString()
     {
-        var queryString = $"?instrumentType=stocks&optionType=both&minVolume={MinVolume}&minOpenInterest={MinOpenInterest}&minDTE={MinExpirationDays}&fields={Fields}&limit={Limit}";
+        var queryString = $"?instrumentType=stocks&optionType=both&minVolume={MinVolume}&minOpenInterest={MinOpenInterest}&minDTE={MinExpirationDays}&fields={Fields}&limit={Limit}&eod=0";
         if (MaxVolume is > 0)
         {
             queryString += $"&maxVolume={MaxVolume}";
