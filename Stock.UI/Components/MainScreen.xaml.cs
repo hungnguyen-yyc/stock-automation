@@ -11,7 +11,7 @@ namespace Stock.UI.Components
     /// <summary>
     /// Interaction logic for MainScreen.xaml
     /// </summary>
-    public partial class MainScreen : Page
+    public partial class MainScreen : Window
     {
         private MainScreenViewModel viewModel;
 
@@ -252,6 +252,15 @@ namespace Stock.UI.Components
             }
             
             return screeningParams;
+        }
+
+        private void lsvScreenedOptions_DoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (((FrameworkElement)e.OriginalSource).DataContext is not OptionsScreeningResult option) return;
+            
+            var optionType = option.Type.Contains("call", StringComparison.InvariantCultureIgnoreCase) ? OptionTypeEnum.C : OptionTypeEnum.P;
+            var optionString = $"{option.UnderlyingSymbol}|{option.ExpirationDate:yyyyMMdd}|{option.Strike}{optionType}";
+            viewModel.GetOptionPrice(optionString);
         }
     }
 }

@@ -64,7 +64,7 @@ namespace Stock.Data
             return new List<OptionsScreeningResult>();
         }
 
-        public async Task<string[]?> GetOptionPriceAsync(string optionDetailByBarChart)
+        public async Task<OptionPriceList?> GetOptionPriceAsync(string optionDetailByBarChart)
         {
             try
             {
@@ -81,10 +81,10 @@ namespace Stock.Data
                     StrikePrice = strikePrice,
                     OptionType = optionType
                 };
-                var url = "https://webapp-proxy.aws.barchart.com/v1/ondemand/getEquityOptionsHistory.json?symbol={0}%7C{1}%7C{2}&fields=volatility,theoretical,delta,gamma,theta,vega,rho";
+                var url = "https://webapp-proxy.aws.barchart.com/v1/ondemand/getEquityOptionsHistory.json?symbol={0}%7C{1}%7C{2}&fields=volatility,theoretical,delta,gamma,theta,vega,rho,openInterest,volume,trades";
                 var formattedUrl = string.Format(url, symbol, optionDetail[1], optionDetail[2]);
                 var response = await httpClient.GetAsync(formattedUrl);
-                string[]? options = null;
+                OptionPriceList options = null;
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -95,13 +95,13 @@ namespace Stock.Data
                     {
                         return null;
                     }
-
-                    // TODO: improve optimal option price before continue
-                    Price? latestPrice = null;
                     
-                    options = latestPrice == null ? 
-                        optionPrice.OptionPrice.Select(x => x.ToString()).ToArray() :
-                        optionPrice.OptionPrice.Select(x => x.ToString(option, latestPrice.Close)).ToArray();
+                    if (optionPrice.OptionPrice.Length == 0)
+                    {
+                        return null;
+                    }
+
+                    options = new OptionPriceList(optionPrice.OptionPrice);
                 }
 
                 return options;
@@ -121,7 +121,14 @@ namespace Stock.Data
                 var expiredDateStr = expiredDate.ToString("yyyyMMdd");
                 var strikeStr = strike.ToString("0.00");
                 strikeStr += optionRight;
-                return await GetOptionPriceAsync($"{ticker}|{expiredDateStr}|{strikeStr}");
+                var optionPrices = await GetOptionPriceAsync($"{ticker}|{expiredDateStr}|{strikeStr}");
+                
+                if (optionPrices == null)
+                {
+                    return null;
+                }
+                
+                return optionPrices.Select(o => o.ToStringV2()).ToArray();
             }
             catch (Exception ex)
             {

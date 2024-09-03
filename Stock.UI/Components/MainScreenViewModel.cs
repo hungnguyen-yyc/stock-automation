@@ -28,7 +28,7 @@ namespace Stock.UI.Components
         private ObservableCollection<Alert> _filteredAlerts;
         private ObservableCollection<string> _allOptionChain;
         private ObservableCollection<string> _filteredOptionChain;
-        private ObservableCollection<string> _optionPrice;
+        private ObservableCollection<OptionPrice> _optionPrices;
         private readonly object _lock = new();
         private ObservableCollection<CompletedOrderMessage> _completedOrders;
         private ObservableCollection<Tuple<string, string>> _accountSummary;
@@ -62,9 +62,9 @@ namespace Stock.UI.Components
 
             _allOptionChain = new ObservableCollection<string>();
             _filteredOptionChain = new ObservableCollection<string>();
-            _optionPrice = new ObservableCollection<string>();
+            _optionPrices = new ObservableCollection<OptionPrice>();
             BindingOperations.EnableCollectionSynchronization(_filteredOptionChain, _lock);
-            BindingOperations.EnableCollectionSynchronization(_optionPrice, _lock);
+            BindingOperations.EnableCollectionSynchronization(_optionPrices, _lock);
 
             _accountSummary = new ObservableCollection<Tuple<string, string>>();
             _accountPosition = new ObservableCollection<PositionMessage>();
@@ -110,7 +110,7 @@ namespace Stock.UI.Components
         
         public ObservableCollection<string> AllOptionChain => _filteredOptionChain;
 
-        public ObservableCollection<string> OptionPrice => _optionPrice;
+        public ObservableCollection<OptionPrice> OptionPrices => _optionPrices;
 
         public ObservableCollection<string> Timeframes { get; }
 
@@ -208,14 +208,14 @@ namespace Stock.UI.Components
                 return;
             }
 
-            _optionPrice.Clear();
+            _optionPrices.Clear();
 
             foreach (var option in optionPrice)
             {
-                _optionPrice.Add(option);
+                _optionPrices.Add(option);
             }
 
-            OnPropertyChanged(nameof(OptionPrice));
+            OnPropertyChanged(nameof(OptionPrices));
         }
         
         public async Task GetLevels()
