@@ -682,11 +682,14 @@ namespace Stock.UI.Components
             OptionScreeningProgressStatus = "Screening...";
             
             await GetScreenedOptions(screeningParams);
-            FilterOptionsScreeningResults();
+            await Task.Run(() =>
+            {
+                FilterOptionsScreeningResults();
             
-            OptionScreeningProgressStatus = "Idle.";
+                OptionScreeningProgressStatus = $"Completed. Found {_filteredOptionsScreeningResults.Count} options.";
             
-            OnPropertyChanged(nameof(OptionScreeningProgressStatus));
+                OnPropertyChanged(nameof(OptionScreeningProgressStatus));
+            });
         }
         
         private void FilterOptionsScreeningResults()

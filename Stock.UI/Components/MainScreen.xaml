@@ -11,14 +11,14 @@
     <Grid Margin="0,0,0,0">
 
         <Grid.RowDefinitions>
-            <RowDefinition Height="65*"/>
-            <RowDefinition Height="35*"/>
+            <RowDefinition Height="70*"/>
+            <RowDefinition Height="30*"/>
         </Grid.RowDefinitions>
 
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="10*"/>
-            <ColumnDefinition Width="60*"/>
-            <ColumnDefinition Width="20*"/>
+            <ColumnDefinition Width="55*"/>
+            <ColumnDefinition Width="25*"/>
             <ColumnDefinition Width="10*"/>
         </Grid.ColumnDefinitions>
         <Grid Grid.Column="0" Grid.Row="0" Height="Auto">
@@ -75,8 +75,8 @@
                 <RowDefinition Height="100*"/>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="50*"/>
-                <ColumnDefinition Width="50*"/>
+                <ColumnDefinition Width="60*"/>
+                <ColumnDefinition Width="40*"/>
             </Grid.ColumnDefinitions>
             <ScrollViewer Grid.Column="0" Grid.Row="0" Width="auto" VerticalScrollBarVisibility="Auto">
                 <ListView 
