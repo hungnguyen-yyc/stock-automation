@@ -221,8 +221,10 @@ namespace Stock.UI.Components
             }
 
             _optionPrices.Clear();
-
-            foreach (var option in optionPrice)
+            var ordered = optionPrice.ToList();
+            ordered = ordered.OrderByDescending(o => o.DateFormatted).ToList();
+            
+            foreach (var option in ordered)
             {
                 _optionPrices.Add(option);
             }
@@ -559,12 +561,6 @@ namespace Stock.UI.Components
 
                             await Task.Run(() => {
                                 _strategy.CheckForTopBottomTouch(ticker, prices.ToList(), swingPointStrategyParameter);
-
-                                var screeningParams = OptionsScreeningParams.Default;
-                                screeningParams.MinVolume = 1000;
-                                screeningParams.MinOpenInterest = 10000;
-                                screeningParams.MinExpirationDays = 5;
-                                highChangeInOpenInterestStrategy.Run(screeningParams, 5.0);
                             });
 
                         }
@@ -574,7 +570,7 @@ namespace Stock.UI.Components
                             screeningParams.MinVolume = 1000;
                             screeningParams.MinOpenInterest = 10000;
                             screeningParams.MinExpirationDays = 5;
-                            highChangeInOpenInterestStrategy.Run(screeningParams, 5.0);
+                            highChangeInOpenInterestStrategy.Run(screeningParams, 2.0);
                         });
                     }
                 }
