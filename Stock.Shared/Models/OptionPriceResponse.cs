@@ -120,6 +120,16 @@ namespace Stock.Shared.Models
                 return volumeOpenInterestRatio;
             }
         }
+        
+        public double VolumeChangeOpenInterestChangeRatio
+        {
+            get
+            {
+                var volumeChange = (double)VolumeChange;
+                var openInterestChange = (double)OpenInterestChange;
+                return Math.Round((volumeChange / openInterestChange), 2);
+            }
+        }
 
         public override string ToString()
         {

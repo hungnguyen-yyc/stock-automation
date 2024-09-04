@@ -307,7 +307,7 @@
                             <GridViewColumnHeader>OI</GridViewColumnHeader>
                         </GridViewColumn.Header>
                     </GridViewColumn>
-                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding VolumeOpenInterestRatio}">
+                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding VolumeChangeOpenInterestChangeRatio}">
                         <GridViewColumn.Header>
                             <GridViewColumnHeader>VOIR</GridViewColumnHeader>
                         </GridViewColumn.Header>
