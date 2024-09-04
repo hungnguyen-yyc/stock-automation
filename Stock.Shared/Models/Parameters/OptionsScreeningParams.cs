@@ -23,9 +23,10 @@ public class OptionsScreeningParams
         Limit = 500
     };
     
-    public string ToQueryString(string instrumentType = "stocks")
+    public string ToQueryString(string instrumentType, bool eod)
     {
-        var queryString = $"?instrumentType={instrumentType}&optionType=both&minVolume={MinVolume}&minOpenInterest={MinOpenInterest}&minDTE={MinExpirationDays}&fields={Fields}&limit={Limit}&eod=0";
+        var isEod = eod ? 1 : 0;
+        var queryString = $"?instrumentType={instrumentType}&optionType=both&minVolume={MinVolume}&minOpenInterest={MinOpenInterest}&minDTE={MinExpirationDays}&fields={Fields}&limit={Limit}&eod={isEod}";
         if (MaxVolume is > 0)
         {
             queryString += $"&maxVolume={MaxVolume}";

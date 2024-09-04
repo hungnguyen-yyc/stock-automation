@@ -23,7 +23,7 @@ namespace Stock.Data
             LogCreated?.Invoke(new EventArgs.LogEventArg(message));
         }
         
-        public async Task<IReadOnlyCollection<OptionsScreeningResult>> GetOptionsScreeningResults(OptionsScreeningParams requestParams)
+        public async Task<IReadOnlyCollection<OptionsScreeningResult>> GetOptionsScreeningResults(OptionsScreeningParams requestParams, bool eod)
         {
             try
             {
@@ -32,8 +32,8 @@ namespace Stock.Data
                 var results = new List<OptionsScreeningResult>();
                 var urls = new List<string>()
                 {
-                    $"{endPoint}{requestParams.ToQueryString(OptionsScreeningParams.INSTRUMENT_TYPE_STOCKS)}",
-                    $"{endPoint}{requestParams.ToQueryString(OptionsScreeningParams.INSTRUMENT_TYPE_ETF)}"
+                    $"{endPoint}{requestParams.ToQueryString(OptionsScreeningParams.INSTRUMENT_TYPE_STOCKS, eod)}",
+                    $"{endPoint}{requestParams.ToQueryString(OptionsScreeningParams.INSTRUMENT_TYPE_ETF, eod)}"
                 };
                 
                 foreach (var url in urls)

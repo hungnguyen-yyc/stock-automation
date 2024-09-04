@@ -510,10 +510,11 @@ namespace Stock.UI.Components
         {
             while (true)
             {
-                var minuteModule = DateTime.Now.Minute % 10;
+                var minutesToWait = 10;
+                var minuteModule = DateTime.Now.Minute % minutesToWait;
                 if (minuteModule != 0)
                 {
-                    var timeToDelay = Math.Max(10 - minuteModule, 0);
+                    var timeToDelay = Math.Max(minutesToWait - minuteModule, 0);
                     await Task.Delay(TimeSpan.FromMinutes(timeToDelay));
                 }
                 
@@ -533,6 +534,9 @@ namespace Stock.UI.Components
                         _strategy.AlertCreated += Strategy_AlertCreated;
                         _strategy.TrendLineCreated += Strategy_TrendLineCreated;
                         _strategy.PivotLevelCreated += Strategy_PivotLevelCreated;
+                        
+                        var highChangeInOpenInterestStrategy = new HighChangeInOpenInterestStrategy(_repo);
+                        highChangeInOpenInterestStrategy.AlertCreated += Strategy_AlertCreated;
 
                         Logs.Add(new LogEventArg($"Started running strategy at {DateTime.Now}"));
 
@@ -553,18 +557,25 @@ namespace Stock.UI.Components
                             _tickerAndPrices[ticker] = prices;
                             UpdateFilteredTrendLines(ticker);
 
-                            await Task.Run( async () => {
+                            await Task.Run(() => {
                                 _strategy.CheckForTopBottomTouch(ticker, prices.ToList(), swingPointStrategyParameter);
-                                
-                                if (timeframe is Timeframe.Minute15 or Timeframe.Minute30)
-                                {
-                                    var lowTimeframePrices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddMonths(-3), DateTime.Now);
-                                    _strategy.CheckForTouchingDownTrendLine(ticker, lowTimeframePrices.ToList(), swingPointStrategyParameter);
-                                    _strategy.CheckForTouchingUpTrendLine(ticker, lowTimeframePrices.ToList(), swingPointStrategyParameter);
-                                }
+
+                                var screeningParams = OptionsScreeningParams.Default;
+                                screeningParams.MinVolume = 1000;
+                                screeningParams.MinOpenInterest = 10000;
+                                screeningParams.MinExpirationDays = 5;
+                                highChangeInOpenInterestStrategy.Run(screeningParams, 5.0);
                             });
 
                         }
+                        
+                        await Task.Run(() => {
+                            var screeningParams = OptionsScreeningParams.Default;
+                            screeningParams.MinVolume = 1000;
+                            screeningParams.MinOpenInterest = 10000;
+                            screeningParams.MinExpirationDays = 5;
+                            highChangeInOpenInterestStrategy.Run(screeningParams, 5.0);
+                        });
                     }
                 }
                 catch (Exception ex)
@@ -718,7 +729,7 @@ namespace Stock.UI.Components
         
         private async Task GetScreenedOptions(OptionsScreeningParams screeningParams)
         {
-            var optionsScreeningResults = await _repo.GetOptionsScreeningResults(screeningParams);
+            var optionsScreeningResults = await _repo.GetOptionsScreeningResults(screeningParams, false);
             _allOptionsScreeningResults.Clear();
             
             foreach (var result in optionsScreeningResults)
