@@ -17,9 +17,12 @@ public class OptionsScreeningParams
 
     public static OptionsScreeningParams Default => new OptionsScreeningParams
     {
-        MinVolume = 10000,
+        MinVolume = 5000,
+        MaxVolume = 999999,
         MinOpenInterest = 10000,
+        MaxOpenInterest = 999999,
         MinExpirationDays = 5,
+        MaxExpirationDays = 999999,
         Limit = 500
     };
     

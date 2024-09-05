@@ -202,8 +202,7 @@ namespace Stock.UI.Components
 
         private void btnScreeningOptions_Click(object sender, RoutedEventArgs e)
         {
-            var screeningParams = GetOptionsScreeningParams();
-            viewModel.ScreenOptions(screeningParams);
+            viewModel.ScreenOptions();
         }
 
         private OptionsScreeningParams GetOptionsScreeningParams()

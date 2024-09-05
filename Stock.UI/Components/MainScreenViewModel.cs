@@ -25,6 +25,7 @@ namespace Stock.UI.Components
         private string _selectedTimeframe;
         private string _selectedTicker;
         private string _selectedOptionType;
+        private OptionsScreeningParams _screeningParams;
         private ObservableCollection<Alert> _allAlerts;
         private ObservableCollection<Alert> _filteredAlerts;
         private ObservableCollection<string> _allOptionChain;
@@ -53,6 +54,7 @@ namespace Stock.UI.Components
             _filteredAlerts = new ObservableCollection<Alert>();
             _allTrendLines = new ObservableCollection<TrendLine>();
             _filteredTrendLines = new ObservableCollection<TrendLine>();
+            _screeningParams = OptionsScreeningParams.Default;
             BindingOperations.EnableCollectionSynchronization(_filteredTrendLines, _lock);
             BindingOperations.EnableCollectionSynchronization(_filteredAlerts, _lock);
 
@@ -178,6 +180,20 @@ namespace Stock.UI.Components
 
 
                     OnPropertyChanged(nameof(SelectedOptionType));
+                }
+            }
+        }
+        
+        public OptionsScreeningParams ScreeningParams
+        {
+            get { return _screeningParams; }
+            set
+            {
+                if (_screeningParams != value)
+                {
+                    _screeningParams = value;
+
+                    OnPropertyChanged(nameof(ScreeningParams));
                 }
             }
         }
@@ -567,7 +583,7 @@ namespace Stock.UI.Components
                         
                         await Task.Run(() => {
                             var screeningParams = OptionsScreeningParams.Default;
-                            screeningParams.MinVolume = 1000;
+                            screeningParams.MinVolume = 5000;
                             screeningParams.MinOpenInterest = 10000;
                             screeningParams.MinExpirationDays = 5;
                             highChangeInOpenInterestStrategy.Run(screeningParams, 2.0);
@@ -684,11 +700,11 @@ namespace Stock.UI.Components
             OnPropertyChanged(nameof(AllOptionChain));
         }
 
-        public async Task ScreenOptions(OptionsScreeningParams screeningParams)
+        public async Task ScreenOptions()
         {
             OptionScreeningProgressStatus = "Screening...";
             
-            await GetScreenedOptions(screeningParams);
+            await GetScreenedOptions();
             await Task.Run(() =>
             {
                 FilterOptionsScreeningResults();
@@ -723,14 +739,25 @@ namespace Stock.UI.Components
             }
         }
         
-        private async Task GetScreenedOptions(OptionsScreeningParams screeningParams)
+        private async Task GetScreenedOptions()
         {
-            var optionsScreeningResults = await _repo.GetOptionsScreeningResults(screeningParams, false);
+            var optionsScreeningResultsIntraday = await _repo.GetOptionsScreeningResults(ScreeningParams, false);
+            var optionsScreeningResultsEod = await _repo.GetOptionsScreeningResults(ScreeningParams, true);
             _allOptionsScreeningResults.Clear();
-            
-            foreach (var result in optionsScreeningResults)
+
+            foreach (var todayOption in optionsScreeningResultsIntraday)
             {
-                _allOptionsScreeningResults.Add(result);
+                var eodOption = optionsScreeningResultsEod.FirstOrDefault(x 
+                    => x.UnderlyingSymbol == todayOption.UnderlyingSymbol 
+                       && x.ExpirationDate == todayOption.ExpirationDate 
+                       && x.Strike == todayOption.Strike 
+                       && x.Type == todayOption.Type);
+                
+                todayOption.OpenInterestPercentageChange = eodOption != null 
+                    ? (double)(todayOption.OpenInterest - eodOption.OpenInterest) / eodOption.OpenInterest * 100 
+                    : 0;
+                
+                _allOptionsScreeningResults.Add(todayOption);
             }
         }
     }

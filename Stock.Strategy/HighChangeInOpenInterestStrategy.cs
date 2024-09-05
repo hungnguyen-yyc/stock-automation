@@ -36,16 +36,17 @@ public class HighChangeInOpenInterestStrategy
                 continue;
             }
 
-            var change = (todayOption.OpenInterest - eodOption.OpenInterest) / eodOption.OpenInterest * 100;
+            var change = (double)(todayOption.OpenInterest - eodOption.OpenInterest) / eodOption.OpenInterest * 100;
             if (change >= percentageChange)
             {
                 var alert = new Alert();
                 var optionType = todayOption.Type.Equals("call", StringComparison.InvariantCultureIgnoreCase) ? "C" : "P";
-                alert.Ticker = $"{todayOption.UnderlyingSymbol}|{todayOption.ExpirationDateFormatted}|{todayOption.Strike}|{optionType}";
+                var orderPosition = todayOption.Type.Equals("call", StringComparison.InvariantCultureIgnoreCase) ? OrderPosition.Long : OrderPosition.Short;
+                alert.Ticker = $"{todayOption.UnderlyingSymbol}";
                 alert.Timeframe = Timeframe.Daily;
-                alert.CreatedAt = DateTime.Now;
-                alert.OrderPosition = OrderPosition.Long;
-                alert.Message = $"High Change in Open Interest: {todayOption.UnderlyingSymbol} {todayOption.Type} {todayOption.Strike} {todayOption.ExpirationDateFormatted} {change}%";
+                alert.CreatedAt = DateTime.Now.Date;
+                alert.OrderPosition = orderPosition;
+                alert.Message = $"{todayOption.UnderlyingSymbol}|{todayOption.ExpirationDateFormatted}|{todayOption.Strike}{optionType}: Open Interest: {todayOption.OpenInterest} ({Math.Round(change, 2)}%)";
                 AlertCreated?.Invoke(this, new AlertEventArgs(alert));
             }
         }

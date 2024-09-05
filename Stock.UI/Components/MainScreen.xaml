@@ -136,29 +136,32 @@
                 <Label Grid.Column="0" Grid.Row="0">Min Volume</Label>
                 <TextBox Grid.Column="1" Grid.Row="0" Name="txtMinVolume"
                          Width="50"
-                         Text="10000"
+                         Text="{Binding ScreeningParams.MinVolume, Mode=TwoWay}"
                          Margin="5 10 5 0"/>
                 <Label Grid.Column="2" Grid.Row="0">Max Volume</Label>
                 <TextBox Grid.Column="3" Grid.Row="0" Name="txtMaxVolume"
                          Width="50" 
+                         Text="{Binding ScreeningParams.MaxVolume, Mode=TwoWay}"
                          Margin="5 10 5 0"/>
                 <Label Grid.Column="0" Grid.Row="1">Min Open Interest</Label>
                 <TextBox Grid.Column="1" Grid.Row="1" Name="txtMinOpenInterest"
                          Width="50"
-                         Text="10000"
+                         Text="{Binding ScreeningParams.MinOpenInterest, Mode=TwoWay}"
                          Margin="5 10 5 0"/>
                 <Label Grid.Column="2" Grid.Row="1">Max Open Interest</Label>
                 <TextBox Grid.Column="3" Grid.Row="1" Name="txtMaxOpenInterest"
                          Width="50" 
+                         Text="{Binding ScreeningParams.MaxOpenInterest, Mode=TwoWay}"
                          Margin="5 10 5 0"/>
                 <Label Grid.Column="0" Grid.Row="2">Min DTE</Label>
                 <TextBox Grid.Column="1" Grid.Row="2" Name="txtMinDTE"
                          Width="50"
-                         Text="5"
+                         Text="{Binding ScreeningParams.MinExpirationDays, Mode=TwoWay}"
                          Margin="5 10 5 0"/>
                 <Label Grid.Column="2" Grid.Row="2">Max DTE</Label>
                 <TextBox Grid.Column="3" Grid.Row="2" Name="txtMaxDTE"
                          Width="50" 
+                         Text="{Binding ScreeningParams.MaxExpirationDays, Mode=TwoWay}"
                          Margin="5 10 5 0"/>
                 <Button Grid.Column="0" Grid.Row="3" Grid.ColumnSpan="2" 
                         Name="btnScreeningOptions"
@@ -211,9 +214,9 @@
                                         <GridViewColumnHeader Tag="OpenInterest" Click="lsvScreenedOptions_Click">OpenInterest</GridViewColumnHeader>
                                     </GridViewColumn.Header>
                                 </GridViewColumn>
-                                <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding VolumeOpenInterestRatio}">
+                                <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding OpenInterestPercentageChange}">
                                     <GridViewColumn.Header>
-                                        <GridViewColumnHeader Tag="VolumeOpenInterestRatio" Click="lsvScreenedOptions_Click">VOIR</GridViewColumnHeader>
+                                        <GridViewColumnHeader Tag="OpenInterestPercentageChange" Click="lsvScreenedOptions_Click">OI Change</GridViewColumnHeader>
                                     </GridViewColumn.Header>
                                 </GridViewColumn>
                                 <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding TradeTimeFormatted}">
