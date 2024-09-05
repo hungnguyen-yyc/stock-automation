@@ -162,7 +162,6 @@ namespace Stock.UI.Components
 
                     UpdateFilteredAlerts();
                     UpdateFilteredTrendLines(_selectedTicker);
-                    FilterOptionsScreeningResults();
 
                     OnPropertyChanged(nameof(SelectedTicker));
                 }
@@ -700,27 +699,27 @@ namespace Stock.UI.Components
             OnPropertyChanged(nameof(AllOptionChain));
         }
 
-        public async Task ScreenOptions()
+        public async Task ScreenOptions(string ticker)
         {
             OptionScreeningProgressStatus = "Screening...";
             
             await GetScreenedOptions();
             await Task.Run(() =>
             {
-                FilterOptionsScreeningResults();
+                FilterOptionsScreeningResults(ticker);
             
-                OptionScreeningProgressStatus = $"Completed. Found {_filteredOptionsScreeningResults.Count} options.";
+                OptionScreeningProgressStatus = $"Completed. Found {_allOptionsScreeningResults.Count} options.";
             
                 OnPropertyChanged(nameof(OptionScreeningProgressStatus));
             });
         }
         
-        private void FilterOptionsScreeningResults()
+        public void FilterOptionsScreeningResults(string ticker)
         {
             _filteredOptionsScreeningResults.Clear();
             var optionsScreeningResults = _allOptionsScreeningResults.ToList();
             
-            if (_selectedTicker == ALL)
+            if (string.IsNullOrWhiteSpace(ticker))
             {
                 foreach (var result in optionsScreeningResults)
                 {
@@ -731,7 +730,7 @@ namespace Stock.UI.Components
             {
                 foreach (var result in optionsScreeningResults)
                 {
-                    if (result.UnderlyingSymbol == _selectedTicker)
+                    if (result.UnderlyingSymbol.Contains(ticker, StringComparison.InvariantCultureIgnoreCase))
                     {
                         _filteredOptionsScreeningResults.Add(result);
                     }

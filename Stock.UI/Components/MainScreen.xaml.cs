@@ -202,38 +202,7 @@ namespace Stock.UI.Components
 
         private void btnScreeningOptions_Click(object sender, RoutedEventArgs e)
         {
-            viewModel.ScreenOptions();
-        }
-
-        private OptionsScreeningParams GetOptionsScreeningParams()
-        {
-            var screeningParams = OptionsScreeningParams.Default;
-            if (txtMinVolume.Text.Trim().Length > 0 && int.TryParse(txtMinVolume.Text, out var minVolume))
-            {
-                screeningParams.MinVolume = minVolume;
-            }
-            if (txtMaxVolume.Text.Trim().Length > 0 && int.TryParse(txtMaxVolume.Text, out var maxVolume))
-            {
-                screeningParams.MaxVolume = maxVolume;
-            }
-            if (txtMinOpenInterest.Text.Trim().Length > 0 && int.TryParse(txtMinOpenInterest.Text, out var minOpenInterest))
-            {
-                screeningParams.MinOpenInterest = minOpenInterest;
-            }
-            if (txtMaxOpenInterest.Text.Trim().Length > 0 && int.TryParse(txtMaxOpenInterest.Text, out var maxOpenInterest))
-            {
-                screeningParams.MaxOpenInterest = maxOpenInterest;
-            }
-            if (txtMinDTE.Text.Trim().Length > 0 && int.TryParse(txtMinDTE.Text, out var minDte))
-            {
-                screeningParams.MinExpirationDays = minDte;
-            }
-            if (txtMaxDTE.Text.Trim().Length > 0 && int.TryParse(txtMaxDTE.Text, out var maxDte))
-            {
-                screeningParams.MaxExpirationDays = maxDte;
-            }
-            
-            return screeningParams;
+            viewModel.ScreenOptions(txtFilterScreeningByTicker.Text);
         }
 
         private void lsvScreenedOptions_DoubleClick(object sender, MouseButtonEventArgs e)
@@ -243,6 +212,11 @@ namespace Stock.UI.Components
             var optionType = option.Type.Contains("call", StringComparison.InvariantCultureIgnoreCase) ? OptionTypeEnum.C : OptionTypeEnum.P;
             var optionString = $"{option.UnderlyingSymbol}|{option.ExpirationDate:yyyyMMdd}|{option.Strike}{optionType}";
             viewModel.GetOptionPrice(optionString);
+        }
+
+        private void txtFilterScreeningByTicker_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            viewModel.FilterOptionsScreeningResults(txtFilterScreeningByTicker.Text);
         }
     }
 }
