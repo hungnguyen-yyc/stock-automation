@@ -753,7 +753,7 @@ namespace Stock.UI.Components
                        && x.Type == todayOption.Type);
                 
                 todayOption.OpenInterestPercentageChange = eodOption != null 
-                    ? (double)(todayOption.OpenInterest - eodOption.OpenInterest) / eodOption.OpenInterest * 100 
+                    ? Math.Round((double)(todayOption.OpenInterest - eodOption.OpenInterest) / eodOption.OpenInterest * 100, 2) 
                     : 0;
                 
                 _allOptionsScreeningResults.Add(todayOption);
