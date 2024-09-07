@@ -106,22 +106,10 @@ namespace Stock.UI.Components
 
         private void lsvAlerts_DoubleClick(object sender, MouseButtonEventArgs e)
         {
-            var alert = ((FrameworkElement)e.OriginalSource).DataContext as Alert;
-            if (alert != null)
+            if (((FrameworkElement)e.OriginalSource).DataContext is HighChangeInOpenInterestStrategyAlert alert)
             {
-                var ticker = alert.Ticker;
-                var date = alert.CreatedAt;
-                var fridayNextWeek = date.AddDays((int)DayOfWeek.Friday - (int)date.DayOfWeek + 7);
-                viewModel.GetOptionChain(ticker, date, fridayNextWeek);
-            }
-        }
-
-        private void lsvOptionChain_DoubleClick(object sender, MouseButtonEventArgs e)
-        {
-            var alert = ((FrameworkElement)e.OriginalSource).DataContext as string;
-            if (alert != null)
-            {
-                viewModel.GetOptionPrice(alert);
+                var optionTicker = alert.OptionTicker;
+                viewModel.GetOptionPrice(optionTicker);
             }
         }
         

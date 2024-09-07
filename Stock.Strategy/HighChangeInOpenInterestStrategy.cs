@@ -39,13 +39,15 @@ public class HighChangeInOpenInterestStrategy
             var change = (double)(todayOption.OpenInterest - eodOption.OpenInterest) / eodOption.OpenInterest * 100;
             if (change >= percentageChange)
             {
-                var alert = new Alert();
+                var alert = new HighChangeInOpenInterestStrategyAlert();
                 var optionType = todayOption.Type.Equals("call", StringComparison.InvariantCultureIgnoreCase) ? "C" : "P";
+                var optionTicker = $"{todayOption.UnderlyingSymbol}|{todayOption.ExpirationDateFormatted}|{todayOption.Strike}{optionType}";
                 var orderPosition = todayOption.Type.Equals("call", StringComparison.InvariantCultureIgnoreCase) ? OrderPosition.Long : OrderPosition.Short;
                 alert.Ticker = $"{todayOption.UnderlyingSymbol}";
                 alert.Timeframe = Timeframe.Daily;
                 alert.CreatedAt = DateTime.Now.Date;
                 alert.OrderPosition = orderPosition;
+                alert.OptionTicker = optionTicker;
                 alert.Message = $"{todayOption.UnderlyingSymbol}|{todayOption.ExpirationDateFormatted}|{todayOption.Strike}{optionType}: Open Interest: {todayOption.OpenInterest} ({Math.Round(change, 2)}%)";
                 AlertCreated?.Invoke(this, new AlertEventArgs(alert));
             }

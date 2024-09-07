@@ -44,7 +44,7 @@ namespace Stock.Shared.Models
         [JsonProperty("expirationDate")]
         public DateTimeOffset ExpirationDate { get; set; }
         
-        public string ExpirationDateFormatted => ExpirationDate.ToString("yyyy-MM-dd");
+        public string ExpirationDateFormatted => ExpirationDate.ToString("yyyyMMdd");
 
         [JsonProperty("lastPrice")]
         public decimal LastPrice { get; set; }
