@@ -22,6 +22,7 @@ namespace Stock.UI.Components
         private readonly StockDataRepository _repo;
         private ISwingPointStrategy _strategy;
         private string _optionScreeningProgressStatus;
+        private string _quickOptionSearchStatus;
         private string _selectedTimeframe;
         private string _selectedTicker;
         private string _selectedOptionType;
@@ -105,6 +106,7 @@ namespace Stock.UI.Components
             };
 
             OptionScreeningProgressStatus = "Idle.";
+            QuickOptionSearchProgressStatus = "Idle.";
             StartStrategy();
         }
         
@@ -128,6 +130,19 @@ namespace Stock.UI.Components
                 {
                     _optionScreeningProgressStatus = value;
                     OnPropertyChanged(nameof(OptionScreeningProgressStatus));
+                }
+            }
+        }
+
+        public string QuickOptionSearchProgressStatus
+        {
+            get => _quickOptionSearchStatus;
+            set
+            {
+                if (_quickOptionSearchStatus != value)
+                {
+                    _quickOptionSearchStatus = value;
+                    OnPropertyChanged(nameof(QuickOptionSearchProgressStatus));
                 }
             }
         }
@@ -228,6 +243,7 @@ namespace Stock.UI.Components
 
         public async Task GetOptionPrice(string optionDetailByBarChart)
         {
+            QuickOptionSearchProgressStatus = "Searching...";
             var optionPrice = await _repo.GetOptionPriceAsync(optionDetailByBarChart);
 
             if (optionPrice == null)
@@ -245,6 +261,7 @@ namespace Stock.UI.Components
             }
 
             OnPropertyChanged(nameof(OptionPrices));
+            QuickOptionSearchProgressStatus = "Idle.";
         }
         
         public async Task GetLevels()

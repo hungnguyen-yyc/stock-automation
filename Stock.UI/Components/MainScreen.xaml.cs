@@ -206,5 +206,19 @@ namespace Stock.UI.Components
         {
             viewModel.FilterOptionsScreeningResults(txtFilterScreeningByTicker.Text);
         }
+
+        private void btnQuickOptionSearch_Click(object sender, RoutedEventArgs e)
+        {
+            var option = $"{txtQuickOptionSearchTicker.Text}|{txtQuickOptionSearchExpiry.Text}|{txtQuickOptionSearchStrike.Text}{txtQuickOptionSearchPutCall.Text}";
+            viewModel.GetOptionPrice(option.ToUpper());
+        }
+
+        private void btnClearQuickOptionSearch_Click(object sender, RoutedEventArgs e)
+        {
+            txtQuickOptionSearchExpiry.Text = String.Empty;
+            txtQuickOptionSearchTicker.Text = String.Empty;
+            txtQuickOptionSearchStrike.Text = String.Empty;
+            txtQuickOptionSearchPutCall.Text = String.Empty;
+        }
     }
 }

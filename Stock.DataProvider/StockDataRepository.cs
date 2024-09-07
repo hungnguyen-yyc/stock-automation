@@ -81,17 +81,10 @@ namespace Stock.Data
                 var optionDetail = optionDetailByBarChart.Split('|');
                 var symbol = optionDetail[0];
                 var expiryDate = optionDetail[1];
-                var strikePrice = Decimal.Parse(optionDetail[2].Substring(0, optionDetail[2].Length - 1));
+                var strikePrice = Decimal.Parse(optionDetail[2].Substring(0, optionDetail[2].Length - 1)).ToString("F2");
                 var optionType = optionDetail[2].Substring(optionDetail[2].Length - 1);
-                var option = new Option
-                {
-                    Ticker = symbol,
-                    ExpiryDate = DateTime.ParseExact(expiryDate, "yyyyMMdd", CultureInfo.InvariantCulture),
-                    StrikePrice = strikePrice,
-                    OptionType = optionType
-                };
-                var url = "https://webapp-proxy.aws.barchart.com/v1/ondemand/getEquityOptionsHistory.json?symbol={0}%7C{1}%7C{2}&fields=volatility,theoretical,delta,gamma,theta,vega,rho,openInterest,volume,trades";
-                var formattedUrl = string.Format(url, symbol, optionDetail[1], optionDetail[2]);
+                var url = "https://webapp-proxy.aws.barchart.com/v1/ondemand/getEquityOptionsHistory.json?symbol={0}%7C{1}%7C{2}{3}&fields=volatility,theoretical,delta,gamma,theta,vega,rho,openInterest,volume,trades";
+                var formattedUrl = string.Format(url, symbol, expiryDate, strikePrice, optionType);
                 var response = await httpClient.GetAsync(formattedUrl);
                 OptionPriceList options = null;
 
@@ -100,7 +93,7 @@ namespace Stock.Data
                     string content = await response.Content.ReadAsStringAsync();
                     var optionPrice = OptionPriceResponse.FromJson(content);
 
-                    if (optionPrice == null)
+                    if (optionPrice?.OptionPrice == null)
                     {
                         return null;
                     }
