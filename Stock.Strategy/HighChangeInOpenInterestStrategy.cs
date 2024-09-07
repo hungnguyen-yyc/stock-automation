@@ -41,7 +41,7 @@ public class HighChangeInOpenInterestStrategy
             {
                 var alert = new HighChangeInOpenInterestStrategyAlert();
                 var optionType = todayOption.Type.Equals("call", StringComparison.InvariantCultureIgnoreCase) ? "C" : "P";
-                var optionTicker = $"{todayOption.UnderlyingSymbol}|{todayOption.ExpirationDateFormatted}|{todayOption.Strike}{optionType}";
+                var optionTicker = $"{todayOption.UnderlyingSymbol}|{todayOption.ExpirationDate:yyyyMMdd}|{todayOption.Strike}{optionType}";
                 var orderPosition = todayOption.Type.Equals("call", StringComparison.InvariantCultureIgnoreCase) ? OrderPosition.Long : OrderPosition.Short;
                 alert.Ticker = $"{todayOption.UnderlyingSymbol}";
                 alert.Timeframe = Timeframe.Daily;

@@ -248,6 +248,7 @@ namespace Stock.UI.Components
 
             if (optionPrice == null)
             {
+                QuickOptionSearchProgressStatus = "Idle.";
                 return;
             }
 
