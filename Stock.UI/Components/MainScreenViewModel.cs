@@ -22,6 +22,7 @@ namespace Stock.UI.Components
         private readonly StockDataRepository _repo;
         private ISwingPointStrategy _strategy;
         private string _optionScreeningProgressStatus;
+        private bool _optionScreeningAutoEnabled;
         private string _quickOptionSearchStatus;
         private string _selectedTimeframe;
         private string _selectedTicker;
@@ -134,6 +135,19 @@ namespace Stock.UI.Components
             }
         }
 
+        public bool OptionScreeningAutoEnabled
+        {
+            get => _optionScreeningAutoEnabled;
+            set
+            {
+                if (_optionScreeningAutoEnabled != value)
+                {
+                    _optionScreeningAutoEnabled = value;
+                    OnPropertyChanged(nameof(OptionScreeningAutoEnabled));
+                }
+            }
+        }
+
         public string QuickOptionSearchProgressStatus
         {
             get => _quickOptionSearchStatus;
@@ -146,8 +160,6 @@ namespace Stock.UI.Components
                 }
             }
         }
-        
-        public ObservableCollection<OptionsScreeningResult> OptionsScreeningResults => _filteredOptionsScreeningResults;
 
         public string SelectedTimeframe
         {
@@ -211,6 +223,8 @@ namespace Stock.UI.Components
                 }
             }
         }
+        
+        public ObservableCollection<OptionsScreeningResult> OptionsScreeningResults => _filteredOptionsScreeningResults;
 
         public ObservableCollection<Alert> Alerts => _filteredAlerts;
         public ObservableCollection<TrendLine> TrendLines => _filteredTrendLines;
@@ -719,17 +733,22 @@ namespace Stock.UI.Components
 
         public async Task ScreenOptions(string ticker)
         {
-            OptionScreeningProgressStatus = "Screening...";
-            
-            await GetScreenedOptions();
-            await Task.Run(() =>
+            do
             {
-                FilterOptionsScreeningResults(ticker);
-            
-                OptionScreeningProgressStatus = $"Completed. Found {_allOptionsScreeningResults.Count} options.";
-            
-                OnPropertyChanged(nameof(OptionScreeningProgressStatus));
-            });
+                OptionScreeningProgressStatus = "Screening...";
+
+                await GetScreenedOptions();
+                await Task.Run(() =>
+                {
+                    FilterOptionsScreeningResults(ticker);
+
+                    OptionScreeningProgressStatus = $"Completed. Found {_allOptionsScreeningResults.Count} options.";
+
+                    OnPropertyChanged(nameof(OptionScreeningProgressStatus));
+                });
+
+                await Task.Delay(TimeSpan.FromMinutes(5));
+            } while (OptionScreeningAutoEnabled);
         }
         
         public void FilterOptionsScreeningResults(string ticker)
