@@ -73,6 +73,9 @@ namespace Stock.Shared.Models
         [JsonProperty("volumeOpenInterestRatio")]
         public decimal VolumeOpenInterestRatio { get; set; }
         
+        [JsonProperty("volatility")]
+        public decimal Volatility { get; set; }
+        
         public double OpenInterestPercentageChange { get; set; }
     }
 

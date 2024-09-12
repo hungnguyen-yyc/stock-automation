@@ -8,6 +8,7 @@ using Stock.Strategies;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
+using System.Text;
 using System.Windows.Data;
 using Microsoft.Toolkit.Uwp.Notifications;
 using Stock.Shared.Models.Parameters;
@@ -27,6 +28,7 @@ namespace Stock.UI.Components
         private string _selectedTimeframe;
         private string _selectedTicker;
         private string _selectedOptionType;
+        private string _selectedTickerOptionFlowOverview;
         private OptionsScreeningParams _screeningParams;
         private ObservableCollection<Alert> _allAlerts;
         private ObservableCollection<Alert> _filteredAlerts;
@@ -122,6 +124,19 @@ namespace Stock.UI.Components
         public ObservableCollection<string> Tickers { get; }
 
         public ObservableCollection<LogEventArg> Logs { get; }
+        
+        public string SelectedTickerOptionFlowOverview
+        {
+            get => _selectedTickerOptionFlowOverview;
+            set
+            {
+                if (_selectedTickerOptionFlowOverview != value)
+                {
+                    _selectedTickerOptionFlowOverview = value;
+                    OnPropertyChanged(nameof(SelectedTickerOptionFlowOverview));
+                }
+            }
+        }
         
         public string OptionScreeningProgressStatus { 
             get => _optionScreeningProgressStatus;
@@ -613,11 +628,8 @@ namespace Stock.UI.Components
                         }
                         
                         await Task.Run(() => {
-                            var screeningParams = OptionsScreeningParams.Default;
-                            screeningParams.MinVolume = 5000;
-                            screeningParams.MinOpenInterest = 10000;
-                            screeningParams.MinExpirationDays = 5;
-                            highChangeInOpenInterestStrategy.Run(screeningParams, 2.0);
+                            var screeningParams = HighChangeInOpenInterestStrategy.OptionsScreeningParams;
+                            highChangeInOpenInterestStrategy.Run(screeningParams, 5);
                         });
                     }
                 }
@@ -795,6 +807,54 @@ namespace Stock.UI.Components
                 
                 _allOptionsScreeningResults.Add(todayOption);
             }
+        }
+        
+        public async Task GetSelectedTickerOptionFlowOverview(string ticker, OptionsScreeningParams screeningParams)
+        {
+            var overview = new StringBuilder();
+            var separator = "----------------------------------";
+            overview.AppendLine($"Overview for {ticker}");
+            overview.AppendLine($"Screening Parameters: Min. Volume: {screeningParams.MinVolume}, Min. Open Interest: {screeningParams.MinOpenInterest}, Min. Expiration Date: {screeningParams.MinExpirationDays}");
+            
+            var optionsScreeningResultsIntraday = await _repo.GetOptionsScreeningResults(HighChangeInOpenInterestStrategy.OptionsScreeningParams, false);
+            var optionResults = optionsScreeningResultsIntraday.Where(x => x.UnderlyingSymbol == ticker).ToList();
+            var callOptions = optionResults.Where(x => x.Type.Contains("call", StringComparison.InvariantCultureIgnoreCase)).ToList();
+            var putOptions = optionResults.Where(x => x.Type.Contains("put", StringComparison.InvariantCultureIgnoreCase)).ToList();
+            
+            // Calculate put call ratio
+            var callOptionOpenInterestSum = callOptions.Sum(o => o.OpenInterest);
+            var putOptionOpenInterestSum = putOptions.Sum(o => o.OpenInterest);
+            
+            var putCallRatio = callOptionOpenInterestSum == 0 || putOptionOpenInterestSum == 0
+                ? 100.0m
+                : Math.Round((decimal)putOptionOpenInterestSum / callOptionOpenInterestSum, 2);
+            
+            overview.AppendLine($"- Total Put Open Interest: {putOptionOpenInterestSum:N0}");
+            overview.AppendLine($"- Total Call Open Interest: {callOptionOpenInterestSum:N0}");
+            overview.AppendLine($"- Put/Call Open Interest Ratio: {putCallRatio}");
+
+            overview.AppendLine(separator);
+            
+            // Calculate put call volume
+            var callOptionVolumeSum = callOptions.Sum(o => o.Volume);
+            var putOptionVolumeSum = putOptions.Sum(o => o.Volume);
+            
+            var putCallVolumeRatio = callOptionVolumeSum == 0 || putOptionVolumeSum == 0
+                ? 100.0
+                : Math.Round(putOptionVolumeSum / callOptionVolumeSum, 2);
+            
+            overview.AppendLine($"- Total Put Volume: {putOptionVolumeSum:N0}");
+            overview.AppendLine($"- Total Call Volume: {callOptionVolumeSum:N0}");
+            overview.AppendLine($"- Put/Call Volume Ratio: {putCallVolumeRatio}");
+            
+            // Calculate put call net premium
+            var callOptionTotalNetPremium = callOptions.Sum(callOption => callOption.OptionPrice * (decimal)callOption.Volume * 100);
+            var putOptionTotalNetPremium = putOptions.Sum(putOption => putOption.OptionPrice * (decimal)putOption.Volume * 100);
+            
+            overview.AppendLine($"- Total Put Net Premium: {putOptionTotalNetPremium:C}");
+            overview.AppendLine($"- Total Call Net Premium: {callOptionTotalNetPremium:C}");
+            
+            SelectedTickerOptionFlowOverview = overview.ToString();
         }
     }
 }

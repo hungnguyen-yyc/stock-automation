@@ -9,6 +9,8 @@ namespace Stock.Strategies;
 public class HighChangeInOpenInterestStrategy
 {
     private readonly StockDataRepository _stockDataRepository;
+    
+    public static OptionsScreeningParams OptionsScreeningParams = OptionsScreeningParams.Default;
 
     public HighChangeInOpenInterestStrategy(StockDataRepository stockDataRepository)
     {

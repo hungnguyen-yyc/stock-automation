@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
 using Stock.Shared.Models.Parameters;
+using Stock.Strategies;
 
 namespace Stock.UI.Components
 {
@@ -110,6 +111,7 @@ namespace Stock.UI.Components
             {
                 var optionTicker = alert.OptionTicker;
                 viewModel.GetOptionPrice(optionTicker);
+                viewModel.GetSelectedTickerOptionFlowOverview(alert.Ticker, HighChangeInOpenInterestStrategy.OptionsScreeningParams);
             }
         }
         
@@ -200,6 +202,7 @@ namespace Stock.UI.Components
             var optionType = option.Type.Contains("call", StringComparison.InvariantCultureIgnoreCase) ? OptionTypeEnum.C : OptionTypeEnum.P;
             var optionString = $"{option.UnderlyingSymbol}|{option.ExpirationDate:yyyyMMdd}|{option.Strike}{optionType}";
             viewModel.GetOptionPrice(optionString);
+            viewModel.GetSelectedTickerOptionFlowOverview(option.UnderlyingSymbol, viewModel.ScreeningParams);
         }
 
         private void txtFilterScreeningByTicker_TextChanged(object sender, TextChangedEventArgs e)

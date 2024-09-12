@@ -325,48 +325,61 @@
                    VerticalContentAlignment="Center"
                    Name="lblQuickOptionSearchStatus"
                    Content="{Binding QuickOptionSearchProgressStatus}"></Label>
-            <ListView Grid.Column="0" Grid.Row="4" Grid.ColumnSpan="4"
-                Name="lsvOptionPrice"
-                ItemsSource="{Binding OptionPrices}" 
-                VerticalAlignment="Stretch"
-                HorizontalAlignment="Stretch"
-                Width="auto"
-                Margin="5 10 5 0">
-                <ListView.View>
-                    <GridView>
-                        <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Symbol}">
-                            <GridViewColumn.Header>
-                                <GridViewColumnHeader>Symbol</GridViewColumnHeader>
-                            </GridViewColumn.Header>
-                        </GridViewColumn>
-                        <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding DateFormatted}" >
-                            <GridViewColumn.Header>
-                                <GridViewColumnHeader>Date</GridViewColumnHeader>
-                            </GridViewColumn.Header>
-                        </GridViewColumn>
-                        <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Close}" >
-                            <GridViewColumn.Header>
-                                <GridViewColumnHeader>Price</GridViewColumnHeader>
-                            </GridViewColumn.Header>
-                        </GridViewColumn>
-                        <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding VolumeChangeSummary}">
-                            <GridViewColumn.Header>
-                                <GridViewColumnHeader>Volume</GridViewColumnHeader>
-                            </GridViewColumn.Header>
-                        </GridViewColumn>
-                        <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding OpenInterestChangeSummary}">
-                            <GridViewColumn.Header>
-                                <GridViewColumnHeader>OI</GridViewColumnHeader>
-                            </GridViewColumn.Header>
-                        </GridViewColumn>
-                        <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding VolumeChangeOpenInterestChangeRatio}">
-                            <GridViewColumn.Header>
-                                <GridViewColumnHeader>VOIR</GridViewColumnHeader>
-                            </GridViewColumn.Header>
-                        </GridViewColumn>
-                    </GridView>
-                </ListView.View>
-            </ListView>
+            <Grid Grid.Column="0" Grid.Row="4" Grid.ColumnSpan="4">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="100*"></RowDefinition>
+                    <RowDefinition Height="Auto"></RowDefinition>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="100*"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+                    <ListView Grid.Column="0" Grid.Row="0"
+                              Name="lsvOptionPrice"
+                              ItemsSource="{Binding OptionPrices}" 
+                              VerticalAlignment="Stretch"
+                              HorizontalAlignment="Stretch"
+                              Width="auto"
+                              Margin="5 10 5 0">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Symbol}">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader>Symbol</GridViewColumnHeader>
+                                    </GridViewColumn.Header>
+                                </GridViewColumn>
+                                <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding DateFormatted}" >
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader>Date</GridViewColumnHeader>
+                                    </GridViewColumn.Header>
+                                </GridViewColumn>
+                                <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Close}" >
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader>Price</GridViewColumnHeader>
+                                    </GridViewColumn.Header>
+                                </GridViewColumn>
+                                <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding VolumeChangeSummary}">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader>Volume</GridViewColumnHeader>
+                                    </GridViewColumn.Header>
+                                </GridViewColumn>
+                                <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding OpenInterestChangeSummary}">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader>OI</GridViewColumnHeader>
+                                    </GridViewColumn.Header>
+                                </GridViewColumn>
+                                <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding VolumeChangeOpenInterestChangeRatio}">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader>VOIR</GridViewColumnHeader>
+                                    </GridViewColumn.Header>
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                    <TextBlock Grid.Column="0" Grid.Row="1" 
+                               Margin="5 10 5 0"
+                               FontSize="12"
+                               Text="{Binding SelectedTickerOptionFlowOverview}"></TextBlock>
+            </Grid>
         </Grid>
         <GridSplitter Grid.Column="2" Grid.Row="0" Grid.RowSpan="2" Background="LightGray"  Width="3" VerticalAlignment="Stretch" />
         <StackPanel

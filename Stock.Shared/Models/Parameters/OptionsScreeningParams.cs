@@ -13,13 +13,13 @@ public class OptionsScreeningParams
     public int? MaxExpirationDays { get; set; }
     public int Limit { get; set; }
     
-    public string Fields => "openInterest,volumeOpenInterestRatio,volume,delta";
+    public string Fields => "openInterest,volumeOpenInterestRatio,volume,delta,volatility";
 
     public static OptionsScreeningParams Default => new OptionsScreeningParams
     {
-        MinVolume = 5000,
+        MinVolume = 1000,
         MaxVolume = 999999,
-        MinOpenInterest = 10000,
+        MinOpenInterest = 5000,
         MaxOpenInterest = 999999,
         MinExpirationDays = 5,
         MaxExpirationDays = 999999,
