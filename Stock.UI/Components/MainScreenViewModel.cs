@@ -204,6 +204,7 @@ namespace Stock.UI.Components
 
                     UpdateFilteredAlerts();
                     UpdateFilteredTrendLines(_selectedTicker);
+                    GetSelectedTickerOptionFlowOverview(_selectedTicker, ScreeningParams);
 
                     OnPropertyChanged(nameof(SelectedTicker));
                 }

@@ -107,11 +107,14 @@ namespace Stock.UI.Components
 
         private void lsvAlerts_DoubleClick(object sender, MouseButtonEventArgs e)
         {
-            if (((FrameworkElement)e.OriginalSource).DataContext is HighChangeInOpenInterestStrategyAlert alert)
+            if (((FrameworkElement)e.OriginalSource).DataContext is Alert alert)
             {
-                var optionTicker = alert.OptionTicker;
-                viewModel.GetOptionPrice(optionTicker);
                 viewModel.GetSelectedTickerOptionFlowOverview(alert.Ticker, HighChangeInOpenInterestStrategy.OptionsScreeningParams);
+            }
+            if (((FrameworkElement)e.OriginalSource).DataContext is HighChangeInOpenInterestStrategyAlert highChangeInOpenInterestStrategyAlert)
+            {
+                var optionTicker = highChangeInOpenInterestStrategyAlert.OptionTicker;
+                viewModel.GetOptionPrice(optionTicker);
             }
         }
         
