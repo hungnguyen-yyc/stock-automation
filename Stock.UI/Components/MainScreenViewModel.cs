@@ -843,17 +843,89 @@ namespace Stock.UI.Components
                 ? 100.0
                 : Math.Round(putOptionVolumeSum / callOptionVolumeSum, 2);
             
-            overview.AppendLine($"- Total Put Volume: {putOptionVolumeSum:N0}");
-            overview.AppendLine($"- Total Call Volume: {callOptionVolumeSum:N0}");
+            overview.AppendLine($"- Intraday Total Put Volume: {putOptionVolumeSum:N0}");
+            overview.AppendLine($"- Intraday Total Call Volume: {callOptionVolumeSum:N0}");
             overview.AppendLine($"- Put/Call Volume Ratio: {putCallVolumeRatio}");
             
             // Calculate put call net premium
             var callOptionTotalNetPremium = callOptions.Sum(callOption => callOption.OptionPrice * (decimal)callOption.Volume * 100);
             var putOptionTotalNetPremium = putOptions.Sum(putOption => putOption.OptionPrice * (decimal)putOption.Volume * 100);
             
-            overview.AppendLine($"- Total Put Net Premium: {putOptionTotalNetPremium:C}");
-            overview.AppendLine($"- Total Call Net Premium: {callOptionTotalNetPremium:C}");
+            overview.AppendLine($"- Intraday Total Put Net Premium: {putOptionTotalNetPremium:C}");
+            overview.AppendLine($"- Intraday Total Call Net Premium: {callOptionTotalNetPremium:C}");
+
+            overview.AppendLine(separator);
             
+            // Calculate put call volume and net premium by expiration date
+            var callOptionsByExpirationDate = callOptions.GroupBy(x => x.ExpirationDate).ToList();
+            var putOptionsByExpirationDate = putOptions.GroupBy(x => x.ExpirationDate).ToList();
+
+            var largerList = callOptionsByExpirationDate.Count >= putOptionsByExpirationDate.Count
+                ? callOptionsByExpirationDate.OrderBy(x => x.Key).ToList()
+                : putOptionsByExpirationDate.OrderBy(x => x.Key).ToList();
+
+            var smallerList = callOptionsByExpirationDate.Count < putOptionsByExpirationDate.Count
+                ? callOptionsByExpirationDate
+                : putOptionsByExpirationDate;
+
+            var isCallLarger = callOptionsByExpirationDate.Count >= putOptionsByExpirationDate.Count;
+
+            foreach (var optionGroup in largerList)
+            {
+                var expirationDate = optionGroup.Key;
+                var largerGroupList = optionGroup.ToList();
+                var smallerGroupList = smallerList.FirstOrDefault(x => x.Key == expirationDate)?.ToList();
+
+                var largerGroupVolume = largerGroupList.Sum(x => x.Volume);
+                var smallerGroupVolume = smallerGroupList?.Sum(x => x.Volume) ?? 0;
+
+                // Adjust the calculation logic based on which list is larger
+                var callOptionVolume = isCallLarger ? largerGroupVolume : smallerGroupVolume;
+                var putOptionVolume = isCallLarger ? smallerGroupVolume : largerGroupVolume;
+                var putCallVolumeRatioByExpirationDate = callOptionVolume == 0 || putOptionVolume == 0
+                    ? 100.0
+                    : Math.Round(putOptionVolume / callOptionVolume, 2);
+
+                var callOptionNetPremium = isCallLarger
+                    ? largerGroupList.Sum(x => x.OptionPrice * (decimal)x.Volume * 100)
+                    : smallerGroupList?.Sum(x => x.OptionPrice * (decimal)x.Volume * 100) ?? 0;
+
+                var putOptionNetPremium = isCallLarger
+                    ? smallerGroupList?.Sum(x => x.OptionPrice * (decimal)x.Volume * 100) ?? 0
+                    : largerGroupList.Sum(x => x.OptionPrice * (decimal)x.Volume * 100);
+                
+                var avgCallVolatility = isCallLarger
+                    ? largerGroupList.Average(x => x.Volatility)
+                    : smallerGroupList?.Average(x => x.Volatility) ?? 0;
+                var avgPutVolatility = isCallLarger
+                    ? smallerGroupList?.Average(x => x.Volatility) ?? 0
+                    : largerGroupList.Average(x => x.Volatility);
+                
+                var callOpenInterest = isCallLarger
+                    ? largerGroupList.Sum(x => x.OpenInterest)
+                    : smallerGroupList?.Sum(x => x.OpenInterest) ?? 0;
+                var putOpenInterest = isCallLarger
+                    ? smallerGroupList?.Sum(x => x.OpenInterest) ?? 0
+                    : largerGroupList.Sum(x => x.OpenInterest);
+                var putCallOpenInterestRatioByExpirationDate = callOpenInterest == 0 || putOpenInterest == 0
+                    ? 100.0m
+                    : Math.Round((decimal)putOpenInterest / callOpenInterest, 2);
+
+                overview.AppendLine($"- Expiration Date: {expirationDate:yyyy-MM-dd}");
+                overview.AppendLine($"- Put Volume: {putOptionVolume:N0}");
+                overview.AppendLine($"- Call Volume: {callOptionVolume:N0}");
+                overview.AppendLine($"- Put/Call Volume Ratio: {putCallVolumeRatioByExpirationDate}");
+                overview.AppendLine($"- Put Net Premium: {putOptionNetPremium:C}");
+                overview.AppendLine($"- Call Net Premium: {callOptionNetPremium:C}");
+                overview.AppendLine($"- Put Average Volatility: {avgPutVolatility:F}");
+                overview.AppendLine($"- Call Average Volatility: {avgCallVolatility:F}");
+                overview.AppendLine($"- Put Open Interest: {putOpenInterest:N0}");
+                overview.AppendLine($"- Call Open Interest: {callOpenInterest:N0}");
+                overview.AppendLine($"- Put/Call Open Interest Ratio: {putCallOpenInterestRatioByExpirationDate}");
+                
+                overview.AppendLine(separator);
+            }
+
             SelectedTickerOptionFlowOverview = overview.ToString();
         }
     }
