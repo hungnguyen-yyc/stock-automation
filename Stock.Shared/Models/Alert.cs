@@ -62,4 +62,9 @@ namespace Stock.Shared.Models
             return $"{Ticker},{Timeframe},{CreatedAt},{Message},{Strategy},{PriceClosed},{OrderPosition},{PositionAction},{High},{Low},{Center},{ATR}";
         }
     }
+
+    public class HighChangeInOpenInterestStrategyAlert : Alert
+    {
+        public string OptionTicker { get; set; }
+    }
 }

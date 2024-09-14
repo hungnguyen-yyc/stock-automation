@@ -8,8 +8,10 @@ using Stock.Strategies;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
+using System.Text;
 using System.Windows.Data;
 using Microsoft.Toolkit.Uwp.Notifications;
+using Stock.Shared.Models.Parameters;
 using Stock.Strategies.EventArgs;
 
 namespace Stock.UI.Components
@@ -20,20 +22,27 @@ namespace Stock.UI.Components
 
         private readonly StockDataRepository _repo;
         private ISwingPointStrategy _strategy;
+        private string _optionScreeningProgressStatus;
+        private bool _optionScreeningAutoEnabled;
+        private string _quickOptionSearchStatus;
         private string _selectedTimeframe;
         private string _selectedTicker;
         private string _selectedOptionType;
+        private string _selectedTickerOptionFlowOverview;
+        private OptionsScreeningParams _screeningParams;
         private ObservableCollection<Alert> _allAlerts;
         private ObservableCollection<Alert> _filteredAlerts;
         private ObservableCollection<string> _allOptionChain;
         private ObservableCollection<string> _filteredOptionChain;
-        private ObservableCollection<string> _optionPrice;
+        private ObservableCollection<OptionPrice> _optionPrices;
         private readonly object _lock = new();
         private ObservableCollection<CompletedOrderMessage> _completedOrders;
         private ObservableCollection<Tuple<string, string>> _accountSummary;
         private ObservableCollection<PositionMessage> _accountPosition;
         private ObservableCollection<TrendLine> _allTrendLines;
         private ObservableCollection<TrendLine> _filteredTrendLines;
+        private ObservableCollection<OptionsScreeningResult> _allOptionsScreeningResults;
+        private ObservableCollection<OptionsScreeningResult> _filteredOptionsScreeningResults;
 
         private Dictionary<string, IReadOnlyCollection<Price>> _tickerAndPrices;
 
@@ -49,6 +58,7 @@ namespace Stock.UI.Components
             _filteredAlerts = new ObservableCollection<Alert>();
             _allTrendLines = new ObservableCollection<TrendLine>();
             _filteredTrendLines = new ObservableCollection<TrendLine>();
+            _screeningParams = OptionsScreeningParams.Default;
             BindingOperations.EnableCollectionSynchronization(_filteredTrendLines, _lock);
             BindingOperations.EnableCollectionSynchronization(_filteredAlerts, _lock);
 
@@ -57,9 +67,9 @@ namespace Stock.UI.Components
 
             _allOptionChain = new ObservableCollection<string>();
             _filteredOptionChain = new ObservableCollection<string>();
-            _optionPrice = new ObservableCollection<string>();
+            _optionPrices = new ObservableCollection<OptionPrice>();
             BindingOperations.EnableCollectionSynchronization(_filteredOptionChain, _lock);
-            BindingOperations.EnableCollectionSynchronization(_optionPrice, _lock);
+            BindingOperations.EnableCollectionSynchronization(_optionPrices, _lock);
 
             _accountSummary = new ObservableCollection<Tuple<string, string>>();
             _accountPosition = new ObservableCollection<PositionMessage>();
@@ -69,6 +79,10 @@ namespace Stock.UI.Components
 
             _completedOrders = new ObservableCollection<CompletedOrderMessage>();
             BindingOperations.EnableCollectionSynchronization(_completedOrders, _lock);
+            
+            _allOptionsScreeningResults = new ObservableCollection<OptionsScreeningResult>();
+            _filteredOptionsScreeningResults = new ObservableCollection<OptionsScreeningResult>();
+            BindingOperations.EnableCollectionSynchronization(_filteredOptionsScreeningResults, _lock);
 
             _repo.LogCreated += (message) =>
             {
@@ -94,6 +108,8 @@ namespace Stock.UI.Components
                 Timeframe.Daily.ToString()
             };
 
+            OptionScreeningProgressStatus = "Idle.";
+            QuickOptionSearchProgressStatus = "Idle.";
             StartStrategy();
         }
         
@@ -101,13 +117,64 @@ namespace Stock.UI.Components
         
         public ObservableCollection<string> AllOptionChain => _filteredOptionChain;
 
-        public ObservableCollection<string> OptionPrice => _optionPrice;
+        public ObservableCollection<OptionPrice> OptionPrices => _optionPrices;
 
         public ObservableCollection<string> Timeframes { get; }
 
         public ObservableCollection<string> Tickers { get; }
 
         public ObservableCollection<LogEventArg> Logs { get; }
+        
+        public string SelectedTickerOptionFlowOverview
+        {
+            get => _selectedTickerOptionFlowOverview;
+            set
+            {
+                if (_selectedTickerOptionFlowOverview != value)
+                {
+                    _selectedTickerOptionFlowOverview = value;
+                    OnPropertyChanged(nameof(SelectedTickerOptionFlowOverview));
+                }
+            }
+        }
+        
+        public string OptionScreeningProgressStatus { 
+            get => _optionScreeningProgressStatus;
+            set
+            {
+                if (_optionScreeningProgressStatus != value)
+                {
+                    _optionScreeningProgressStatus = value;
+                    OnPropertyChanged(nameof(OptionScreeningProgressStatus));
+                }
+            }
+        }
+
+        public bool OptionScreeningAutoEnabled
+        {
+            get => _optionScreeningAutoEnabled;
+            set
+            {
+                if (_optionScreeningAutoEnabled != value)
+                {
+                    _optionScreeningAutoEnabled = value;
+                    OnPropertyChanged(nameof(OptionScreeningAutoEnabled));
+                }
+            }
+        }
+
+        public string QuickOptionSearchProgressStatus
+        {
+            get => _quickOptionSearchStatus;
+            set
+            {
+                if (_quickOptionSearchStatus != value)
+                {
+                    _quickOptionSearchStatus = value;
+                    OnPropertyChanged(nameof(QuickOptionSearchProgressStatus));
+                }
+            }
+        }
 
         public string SelectedTimeframe
         {
@@ -137,6 +204,7 @@ namespace Stock.UI.Components
 
                     UpdateFilteredAlerts();
                     UpdateFilteredTrendLines(_selectedTicker);
+                    GetSelectedTickerOptionFlowOverview(_selectedTicker, ScreeningParams);
 
                     OnPropertyChanged(nameof(SelectedTicker));
                 }
@@ -157,6 +225,22 @@ namespace Stock.UI.Components
                 }
             }
         }
+        
+        public OptionsScreeningParams ScreeningParams
+        {
+            get { return _screeningParams; }
+            set
+            {
+                if (_screeningParams != value)
+                {
+                    _screeningParams = value;
+
+                    OnPropertyChanged(nameof(ScreeningParams));
+                }
+            }
+        }
+        
+        public ObservableCollection<OptionsScreeningResult> OptionsScreeningResults => _filteredOptionsScreeningResults;
 
         public ObservableCollection<Alert> Alerts => _filteredAlerts;
         public ObservableCollection<TrendLine> TrendLines => _filteredTrendLines;
@@ -189,21 +273,26 @@ namespace Stock.UI.Components
 
         public async Task GetOptionPrice(string optionDetailByBarChart)
         {
+            QuickOptionSearchProgressStatus = "Searching...";
             var optionPrice = await _repo.GetOptionPriceAsync(optionDetailByBarChart);
 
             if (optionPrice == null)
             {
+                QuickOptionSearchProgressStatus = "Idle.";
                 return;
             }
 
-            _optionPrice.Clear();
-
-            foreach (var option in optionPrice)
+            _optionPrices.Clear();
+            var ordered = optionPrice.ToList();
+            ordered = ordered.OrderByDescending(o => o.DateFormatted).ToList();
+            
+            foreach (var option in ordered)
             {
-                _optionPrice.Add(option);
+                _optionPrices.Add(option);
             }
 
-            OnPropertyChanged(nameof(OptionPrice));
+            OnPropertyChanged(nameof(OptionPrices));
+            QuickOptionSearchProgressStatus = "Idle.";
         }
         
         public async Task GetLevels()
@@ -353,7 +442,7 @@ namespace Stock.UI.Components
         private async Task StartStrategy()
         {
 #if DEBUG
-            await RunInDebug();
+            // await RunInDebug();
 #else
             await RunInRelease();
 #endif
@@ -392,7 +481,6 @@ namespace Stock.UI.Components
                         }
                         
                         var priceToStartTesting = prices.First(x => x.Date >= DateTime.Now.AddMonths(-2));
-                        prices = prices.Where(x => x.Date <= new DateTime(2024, 07, 22)).ToList();
                         
                         var index = 0;
                         for (int i = 0; i < prices.Count; i++)
@@ -487,10 +575,12 @@ namespace Stock.UI.Components
         {
             while (true)
             {
-                var minuteModule = DateTime.Now.Minute % 10;
+                var minutesToWait = 10;
+                var minuteModule = DateTime.Now.Minute % minutesToWait;
                 if (minuteModule != 0)
                 {
-                    await Task.Delay(TimeSpan.FromMinutes(5 - minuteModule));
+                    var timeToDelay = Math.Max(minutesToWait - minuteModule, 0);
+                    await Task.Delay(TimeSpan.FromMinutes(timeToDelay));
                 }
                 
                 try
@@ -509,6 +599,9 @@ namespace Stock.UI.Components
                         _strategy.AlertCreated += Strategy_AlertCreated;
                         _strategy.TrendLineCreated += Strategy_TrendLineCreated;
                         _strategy.PivotLevelCreated += Strategy_PivotLevelCreated;
+                        
+                        var highChangeInOpenInterestStrategy = new HighChangeInOpenInterestStrategy(_repo);
+                        highChangeInOpenInterestStrategy.AlertCreated += Strategy_AlertCreated;
 
                         Logs.Add(new LogEventArg($"Started running strategy at {DateTime.Now}"));
 
@@ -529,18 +622,16 @@ namespace Stock.UI.Components
                             _tickerAndPrices[ticker] = prices;
                             UpdateFilteredTrendLines(ticker);
 
-                            await Task.Run( async () => {
+                            await Task.Run(() => {
                                 _strategy.CheckForTopBottomTouch(ticker, prices.ToList(), swingPointStrategyParameter);
-                                
-                                if (timeframe is Timeframe.Minute15 or Timeframe.Minute30)
-                                {
-                                    var lowTimeframePrices = await _repo.GetStockData(ticker, timeframe, DateTime.Now.AddMonths(-3), DateTime.Now);
-                                    _strategy.CheckForTouchingDownTrendLine(ticker, lowTimeframePrices.ToList(), swingPointStrategyParameter);
-                                    _strategy.CheckForTouchingUpTrendLine(ticker, lowTimeframePrices.ToList(), swingPointStrategyParameter);
-                                }
                             });
 
                         }
+                        
+                        await Task.Run(() => {
+                            var screeningParams = HighChangeInOpenInterestStrategy.OptionsScreeningParams;
+                            highChangeInOpenInterestStrategy.Run(screeningParams, 5);
+                        });
                     }
                 }
                 catch (Exception ex)
@@ -651,6 +742,194 @@ namespace Stock.UI.Components
             }
             
             OnPropertyChanged(nameof(AllOptionChain));
+        }
+
+        public async Task ScreenOptions(string ticker)
+        {
+            do
+            {
+                OptionScreeningProgressStatus = "Screening...";
+
+                await GetScreenedOptions();
+                await Task.Run(() =>
+                {
+                    FilterOptionsScreeningResults(ticker);
+
+                    OptionScreeningProgressStatus = $"Completed. Found {_allOptionsScreeningResults.Count} options.";
+
+                    OnPropertyChanged(nameof(OptionScreeningProgressStatus));
+                });
+
+                await Task.Delay(TimeSpan.FromMinutes(5));
+            } while (OptionScreeningAutoEnabled);
+        }
+        
+        public void FilterOptionsScreeningResults(string ticker)
+        {
+            _filteredOptionsScreeningResults.Clear();
+            var optionsScreeningResults = _allOptionsScreeningResults.ToList();
+            
+            if (string.IsNullOrWhiteSpace(ticker))
+            {
+                foreach (var result in optionsScreeningResults)
+                {
+                    _filteredOptionsScreeningResults.Add(result);
+                }
+            }
+            else
+            {
+                foreach (var result in optionsScreeningResults)
+                {
+                    if (result.UnderlyingSymbol.Contains(ticker, StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        _filteredOptionsScreeningResults.Add(result);
+                    }
+                }
+            }
+        }
+        
+        private async Task GetScreenedOptions()
+        {
+            var optionsScreeningResultsIntraday = await _repo.GetOptionsScreeningResults(ScreeningParams, false);
+            var optionsScreeningResultsEod = await _repo.GetOptionsScreeningResults(ScreeningParams, true);
+            _allOptionsScreeningResults.Clear();
+
+            foreach (var todayOption in optionsScreeningResultsIntraday)
+            {
+                var eodOption = optionsScreeningResultsEod.FirstOrDefault(x 
+                    => x.UnderlyingSymbol == todayOption.UnderlyingSymbol 
+                       && x.ExpirationDate == todayOption.ExpirationDate 
+                       && x.Strike == todayOption.Strike 
+                       && x.Type == todayOption.Type);
+                
+                todayOption.OpenInterestPercentageChange = eodOption != null 
+                    ? Math.Round((double)(todayOption.OpenInterest - eodOption.OpenInterest) / eodOption.OpenInterest * 100, 2) 
+                    : 0;
+                
+                _allOptionsScreeningResults.Add(todayOption);
+            }
+        }
+        
+        public async Task GetSelectedTickerOptionFlowOverview(string ticker, OptionsScreeningParams screeningParams)
+        {
+            SelectedTickerOptionFlowOverview = $"Gathering {ticker} option data for overview...";
+            
+            var overview = new StringBuilder();
+            var separator = "----------------------------------";
+            overview.AppendLine($"Overview for {ticker}");
+            overview.AppendLine($"Screening Parameters: Min. Volume: {screeningParams.MinVolume}, Min. Open Interest: {screeningParams.MinOpenInterest}, Min. Expiration Date: {screeningParams.MinExpirationDays}");
+            
+            var optionsScreeningResultsIntraday = await _repo.GetOptionsScreeningResults(HighChangeInOpenInterestStrategy.OptionsScreeningParams, false);
+            var optionResults = optionsScreeningResultsIntraday.Where(x => x.UnderlyingSymbol == ticker).ToList();
+            var callOptions = optionResults.Where(x => x.Type.Contains("call", StringComparison.InvariantCultureIgnoreCase)).ToList();
+            var putOptions = optionResults.Where(x => x.Type.Contains("put", StringComparison.InvariantCultureIgnoreCase)).ToList();
+            
+            // Calculate put call ratio
+            var callOptionOpenInterestSum = callOptions.Sum(o => o.OpenInterest);
+            var putOptionOpenInterestSum = putOptions.Sum(o => o.OpenInterest);
+            
+            var putCallRatio = callOptionOpenInterestSum == 0 || putOptionOpenInterestSum == 0
+                ? 100.0m
+                : Math.Round((decimal)putOptionOpenInterestSum / callOptionOpenInterestSum, 2);
+            
+            overview.AppendLine($"- Total Put Open Interest: {putOptionOpenInterestSum:N0}");
+            overview.AppendLine($"- Total Call Open Interest: {callOptionOpenInterestSum:N0}");
+            overview.AppendLine($"- Put/Call Open Interest Ratio: {putCallRatio}");
+
+            overview.AppendLine(separator);
+            
+            // Calculate put call volume
+            var callOptionVolumeSum = callOptions.Sum(o => o.Volume);
+            var putOptionVolumeSum = putOptions.Sum(o => o.Volume);
+            
+            var putCallVolumeRatio = callOptionVolumeSum == 0 || putOptionVolumeSum == 0
+                ? 100.0
+                : Math.Round(putOptionVolumeSum / callOptionVolumeSum, 2);
+            
+            overview.AppendLine($"- Intraday Total Put Volume: {putOptionVolumeSum:N0}");
+            overview.AppendLine($"- Intraday Total Call Volume: {callOptionVolumeSum:N0}");
+            overview.AppendLine($"- Put/Call Volume Ratio: {putCallVolumeRatio}");
+            
+            // Calculate put call net premium
+            var callOptionTotalNetPremium = callOptions.Sum(callOption => callOption.OptionPrice * (decimal)callOption.Volume * 100);
+            var putOptionTotalNetPremium = putOptions.Sum(putOption => putOption.OptionPrice * (decimal)putOption.Volume * 100);
+            
+            overview.AppendLine($"- Intraday Total Put Net Premium: {putOptionTotalNetPremium:C}");
+            overview.AppendLine($"- Intraday Total Call Net Premium: {callOptionTotalNetPremium:C}");
+
+            overview.AppendLine(separator);
+            
+            // Calculate put call volume and net premium by expiration date
+            var callOptionsByExpirationDate = callOptions.GroupBy(x => x.ExpirationDate).ToList();
+            var putOptionsByExpirationDate = putOptions.GroupBy(x => x.ExpirationDate).ToList();
+
+            var largerList = callOptionsByExpirationDate.Count >= putOptionsByExpirationDate.Count
+                ? callOptionsByExpirationDate.OrderBy(x => x.Key).ToList()
+                : putOptionsByExpirationDate.OrderBy(x => x.Key).ToList();
+
+            var smallerList = callOptionsByExpirationDate.Count < putOptionsByExpirationDate.Count
+                ? callOptionsByExpirationDate
+                : putOptionsByExpirationDate;
+
+            var isCallLarger = callOptionsByExpirationDate.Count >= putOptionsByExpirationDate.Count;
+
+            foreach (var optionGroup in largerList)
+            {
+                var expirationDate = optionGroup.Key;
+                var largerGroupList = optionGroup.ToList();
+                var smallerGroupList = smallerList.FirstOrDefault(x => x.Key == expirationDate)?.ToList();
+
+                var largerGroupVolume = largerGroupList.Sum(x => x.Volume);
+                var smallerGroupVolume = smallerGroupList?.Sum(x => x.Volume) ?? 0;
+
+                // Adjust the calculation logic based on which list is larger
+                var callOptionVolume = isCallLarger ? largerGroupVolume : smallerGroupVolume;
+                var putOptionVolume = isCallLarger ? smallerGroupVolume : largerGroupVolume;
+                var putCallVolumeRatioByExpirationDate = callOptionVolume == 0 || putOptionVolume == 0
+                    ? 100.0
+                    : Math.Round(putOptionVolume / callOptionVolume, 2);
+
+                var callOptionNetPremium = isCallLarger
+                    ? largerGroupList.Sum(x => x.OptionPrice * (decimal)x.Volume * 100)
+                    : smallerGroupList?.Sum(x => x.OptionPrice * (decimal)x.Volume * 100) ?? 0;
+
+                var putOptionNetPremium = isCallLarger
+                    ? smallerGroupList?.Sum(x => x.OptionPrice * (decimal)x.Volume * 100) ?? 0
+                    : largerGroupList.Sum(x => x.OptionPrice * (decimal)x.Volume * 100);
+                
+                var avgCallVolatility = isCallLarger
+                    ? largerGroupList.Average(x => x.Volatility)
+                    : smallerGroupList?.Average(x => x.Volatility) ?? 0;
+                var avgPutVolatility = isCallLarger
+                    ? smallerGroupList?.Average(x => x.Volatility) ?? 0
+                    : largerGroupList.Average(x => x.Volatility);
+                
+                var callOpenInterest = isCallLarger
+                    ? largerGroupList.Sum(x => x.OpenInterest)
+                    : smallerGroupList?.Sum(x => x.OpenInterest) ?? 0;
+                var putOpenInterest = isCallLarger
+                    ? smallerGroupList?.Sum(x => x.OpenInterest) ?? 0
+                    : largerGroupList.Sum(x => x.OpenInterest);
+                var putCallOpenInterestRatioByExpirationDate = callOpenInterest == 0 || putOpenInterest == 0
+                    ? 100.0m
+                    : Math.Round((decimal)putOpenInterest / callOpenInterest, 2);
+
+                overview.AppendLine($"- Expiration Date: {expirationDate:yyyy-MM-dd}");
+                overview.AppendLine($"- Put Volume: {putOptionVolume:N0}");
+                overview.AppendLine($"- Call Volume: {callOptionVolume:N0}");
+                overview.AppendLine($"- Put/Call Volume Ratio: {putCallVolumeRatioByExpirationDate}");
+                overview.AppendLine($"- Put Net Premium: {putOptionNetPremium:C}");
+                overview.AppendLine($"- Call Net Premium: {callOptionNetPremium:C}");
+                overview.AppendLine($"- Put Average Volatility: {avgPutVolatility:F}");
+                overview.AppendLine($"- Call Average Volatility: {avgCallVolatility:F}");
+                overview.AppendLine($"- Put Open Interest: {putOpenInterest:N0}");
+                overview.AppendLine($"- Call Open Interest: {callOpenInterest:N0}");
+                overview.AppendLine($"- Put/Call Open Interest Ratio: {putCallOpenInterestRatioByExpirationDate}");
+                
+                overview.AppendLine(separator);
+            }
+
+            SelectedTickerOptionFlowOverview = overview.ToString();
         }
     }
 }

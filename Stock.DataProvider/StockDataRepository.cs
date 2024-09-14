@@ -5,6 +5,7 @@ using Stock.Shared.Models;
 using Stock.Shared.Models.IBKR.Messages;
 using System.Diagnostics;
 using System.Globalization;
+using Stock.Shared.Models.Parameters;
 
 namespace Stock.Data
 {
@@ -21,8 +22,58 @@ namespace Stock.Data
             Console.WriteLine(message);
             LogCreated?.Invoke(new EventArgs.LogEventArg(message));
         }
+        
+        public async Task<IReadOnlyCollection<OptionsScreeningResult>> GetOptionsScreeningResults(OptionsScreeningParams requestParams, bool eod)
+        {
+            try
+            {
+                using var httpClient = new HttpClient();
+                var endPoint = "https://webapp-proxy.aws.barchart.com/v1/ondemand/getOptionsScreener.json";
+                var results = new List<OptionsScreeningResult>();
+                var urls = new List<string>()
+                {
+                    $"{endPoint}{requestParams.ToQueryString(OptionsScreeningParams.INSTRUMENT_TYPE_STOCKS, eod)}",
+                    $"{endPoint}{requestParams.ToQueryString(OptionsScreeningParams.INSTRUMENT_TYPE_ETF, eod)}"
+                };
+                
+                foreach (var url in urls)
+                {
+                    var page = 1;
+                    while (true)
+                    {
+                        var pagedUrl = $"{url}&page={page}";
+                        var response = await httpClient.GetAsync(pagedUrl);
+                        if (response.IsSuccessStatusCode)
+                        {
+                            var content = await response.Content.ReadAsStringAsync();
+                            var optionsScreeningResponse = OptionsScreeningResponse.FromJson(content);
+                        
+                            if (optionsScreeningResponse.Results == null)
+                            {
+                                break;
+                            }
+                        
+                            results.AddRange(optionsScreeningResponse.Results);
+                            page++;
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                }
 
-        public async Task<string[]?> GetOptionPriceAsync(string optionDetailByBarChart)
+                return results;
+            }
+            catch (Exception ex)
+            {
+                Log(ex.Message);
+            }
+
+            return new List<OptionsScreeningResult>();
+        }
+
+        public async Task<OptionPriceList?> GetOptionPriceAsync(string optionDetailByBarChart)
         {
             try
             {
@@ -30,36 +81,29 @@ namespace Stock.Data
                 var optionDetail = optionDetailByBarChart.Split('|');
                 var symbol = optionDetail[0];
                 var expiryDate = optionDetail[1];
-                var strikePrice = Decimal.Parse(optionDetail[2].Substring(0, optionDetail[2].Length - 1));
+                var strikePrice = Decimal.Parse(optionDetail[2].Substring(0, optionDetail[2].Length - 1)).ToString("F2");
                 var optionType = optionDetail[2].Substring(optionDetail[2].Length - 1);
-                var option = new Option
-                {
-                    Ticker = symbol,
-                    ExpiryDate = DateTime.ParseExact(expiryDate, "yyyyMMdd", CultureInfo.InvariantCulture),
-                    StrikePrice = strikePrice,
-                    OptionType = optionType
-                };
-                var url = "https://webapp-proxy.aws.barchart.com/v1/ondemand/getEquityOptionsHistory.json?symbol={0}%7C{1}%7C{2}&fields=volatility,theoretical,delta,gamma,theta,vega,rho";
-                var formattedUrl = string.Format(url, symbol, optionDetail[1], optionDetail[2]);
+                var url = "https://webapp-proxy.aws.barchart.com/v1/ondemand/getEquityOptionsHistory.json?symbol={0}%7C{1}%7C{2}{3}&fields=volatility,theoretical,delta,gamma,theta,vega,rho,openInterest,volume,trades";
+                var formattedUrl = string.Format(url, symbol, expiryDate, strikePrice, optionType);
                 var response = await httpClient.GetAsync(formattedUrl);
-                string[]? options = null;
+                OptionPriceList options = null;
 
                 if (response.IsSuccessStatusCode)
                 {
                     string content = await response.Content.ReadAsStringAsync();
                     var optionPrice = OptionPriceResponse.FromJson(content);
 
-                    if (optionPrice == null)
+                    if (optionPrice?.OptionPrice == null)
+                    {
+                        return null;
+                    }
+                    
+                    if (optionPrice.OptionPrice.Length == 0)
                     {
                         return null;
                     }
 
-                    // TODO: improve optimal option price before continue
-                    Price? latestPrice = null;
-                    
-                    options = latestPrice == null ? 
-                        optionPrice.OptionPrice.Select(x => x.ToString()).ToArray() :
-                        optionPrice.OptionPrice.Select(x => x.ToString(option, latestPrice.Close)).ToArray();
+                    options = new OptionPriceList(optionPrice.OptionPrice);
                 }
 
                 return options;
@@ -79,7 +123,14 @@ namespace Stock.Data
                 var expiredDateStr = expiredDate.ToString("yyyyMMdd");
                 var strikeStr = strike.ToString("0.00");
                 strikeStr += optionRight;
-                return await GetOptionPriceAsync($"{ticker}|{expiredDateStr}|{strikeStr}");
+                var optionPrices = await GetOptionPriceAsync($"{ticker}|{expiredDateStr}|{strikeStr}");
+                
+                if (optionPrices == null)
+                {
+                    return null;
+                }
+                
+                return optionPrices.Select(o => o.ToStringV2()).ToArray();
             }
             catch (Exception ex)
             {

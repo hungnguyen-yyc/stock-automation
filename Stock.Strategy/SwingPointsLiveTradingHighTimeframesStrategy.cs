@@ -72,7 +72,7 @@ namespace Stock.Strategies
                 var levelSecondLastPriceTouched = pivotLevels
                     .Where(x =>
                     {
-                        var center = x.Level.HL2;
+                        var center = x.Level.OHLC4;
                         var centerOffset = center * OFFSET;
                         var centerPoint = new NumericRange(center - centerOffset, center + centerOffset);
                         return secondLastPrice.CandleRange.Intersect(centerPoint);
@@ -87,7 +87,7 @@ namespace Stock.Strategies
                     
                     var levelLow = latestLevel.Level.Low;
                     var levelHigh = latestLevel.Level.High;
-                    var center = latestLevel.Level.HL2;
+                    var center = latestLevel.Level.OHLC4;
                     var centerOffset = center * OFFSET;
                     var centerPoint = new NumericRange(center - centerOffset, center + centerOffset);
 
@@ -102,7 +102,7 @@ namespace Stock.Strategies
                         && priceIntersectSecondLastPrice
                         && priceNotIntersectCenterLevelPoint)
                     {
-                        var message = $"Price {price.Close} ({price.Date:s}) > {centerPoint.High} ({levelLow} - {levelHigh}), points: {levelSecondLastPriceTouched.Count}, big body candle: {price.IsContentCandle}";
+                        var message = $"Price {price.Close} ({price.Date:s}) > {centerPoint.High} ({levelLow} - {levelHigh})";
 
                         if (hmVolumeCheck && isValidCandleForLong)
                         {
@@ -143,7 +143,7 @@ namespace Stock.Strategies
                         && priceIntersectSecondLastPrice
                         && priceNotIntersectCenterLevelPoint)
                     {
-                        var message = $"Price {price.Close} ({price.Date:s}) < {centerPoint.Low} ({levelLow} - {levelHigh}), points: {levelSecondLastPriceTouched.Count}, big body candle: {price.IsContentCandle}";
+                        var message = $"Price {price.Close} ({price.Date:s}) < {centerPoint.Low} ({levelLow} - {levelHigh})";
 
                         if (hmVolumeCheck && isValidCandleForShort)
                         {

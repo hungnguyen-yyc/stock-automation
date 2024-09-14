@@ -1,11 +1,12 @@
-﻿<Page x:Class="Stock.UI.Components.MainScreen"
+﻿<Window x:Class="Stock.UI.Components.MainScreen"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      WindowState="Maximized"
       xmlns:local="clr-namespace:Stock.UI.Components"
       mc:Ignorable="d" 
-      d:DesignHeight="450" d:DesignWidth="800"
+      d:DesignHeight="450" d:DesignWidth="1600"
       Title="MainScreen">
     <Grid Margin="0,0,0,0">
 
@@ -16,9 +17,9 @@
 
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="10*"/>
-            <ColumnDefinition Width="65*"/>
+            <ColumnDefinition Width="55*"/>
+            <ColumnDefinition Width="25*"/>
             <ColumnDefinition Width="10*"/>
-            <ColumnDefinition Width="15*"/>
         </Grid.ColumnDefinitions>
         <Grid Grid.Column="0" Grid.Row="0" Height="Auto">
             <Grid.RowDefinitions>
@@ -69,51 +70,182 @@
             </ListView.View>
         </ListView>
         <GridSplitter Grid.Column="0" Grid.Row="0" Grid.RowSpan="2" Background="LightGray" Width="3" VerticalAlignment="Stretch" />
-        <ListView 
-            Name="lsvAlerts" 
-            Grid.Column="1" 
-            Grid.Row="0" 
-            Height="auto" 
-            Width="auto" 
-            ItemsSource="{Binding Alerts}" 
+        <Grid Grid.Column="1" Grid.Row="0" VerticalAlignment="Stretch">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="100*"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="60*"/>
+                <ColumnDefinition Width="40*"/>
+            </Grid.ColumnDefinitions>
+            <ScrollViewer Grid.Column="0" Grid.Row="0" Width="auto" VerticalScrollBarVisibility="Auto">
+                <ListView 
+                    Name="lsvAlerts"
+                    Height="auto" 
+                    Width="auto" 
+                    ItemsSource="{Binding Alerts}" 
+                    Margin="5 10 5 0"
+                    MouseDoubleClick="lsvAlerts_DoubleClick">
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Ticker}">
+                                <GridViewColumn.Header>
+                                    <GridViewColumnHeader Tag="Ticker" Click="lsvAlertsColumnHeader_Click">Ticker</GridViewColumnHeader>
+                                </GridViewColumn.Header>
+                            </GridViewColumn>
+                            <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding CreatedAt}" >
+                                <GridViewColumn.Header>
+                                    <GridViewColumnHeader Tag="CreatedAt" Click="lsvAlertsColumnHeader_Click">Time</GridViewColumnHeader>
+                                </GridViewColumn.Header>
+                            </GridViewColumn>
+                            <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Timeframe}">
+                                <GridViewColumn.Header>
+                                    <GridViewColumnHeader Tag="Timeframe" Click="lsvAlertsColumnHeader_Click">Timeframe</GridViewColumnHeader>
+                                </GridViewColumn.Header>
+                            </GridViewColumn>
+                            <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding OrderPosition}">
+                                <GridViewColumn.Header>
+                                    <GridViewColumnHeader Tag="OrderType" Click="lsvAlertsColumnHeader_Click">Order Type</GridViewColumnHeader>
+                                </GridViewColumn.Header>
+                            </GridViewColumn>
+                            <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Message}">
+                                <GridViewColumn.Header>
+                                    <GridViewColumnHeader Tag="Message" Click="lsvAlertsColumnHeader_Click">Message</GridViewColumnHeader>
+                                </GridViewColumn.Header>
+                            </GridViewColumn>
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+            </ScrollViewer>
+            <GridSplitter Grid.Column="0" Grid.Row="0" Background="LightGray" Width="3" VerticalAlignment="Stretch" />
+            <Grid Grid.Column="1" Grid.Row="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="100*"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="100*"/>
+                </Grid.ColumnDefinitions>
+                <Label Grid.Column="0" Grid.Row="0">Min Volume</Label>
+                <TextBox Grid.Column="1" Grid.Row="0" Name="txtMinVolume"
+                         Width="50"
+                         Text="{Binding ScreeningParams.MinVolume, Mode=TwoWay}"
+                         Margin="5 10 5 0"/>
+                <Label Grid.Column="2" Grid.Row="0">Max Volume</Label>
+                <TextBox Grid.Column="3" Grid.Row="0" Name="txtMaxVolume"
+                         Width="50" 
+                         Text="{Binding ScreeningParams.MaxVolume, Mode=TwoWay}"
+                         Margin="5 10 5 0"/>
+                <Label Grid.Column="0" Grid.Row="1">Min Open Interest</Label>
+                <TextBox Grid.Column="1" Grid.Row="1" Name="txtMinOpenInterest"
+                         Width="50"
+                         Text="{Binding ScreeningParams.MinOpenInterest, Mode=TwoWay}"
+                         Margin="5 10 5 0"/>
+                <Label Grid.Column="2" Grid.Row="1">Max Open Interest</Label>
+                <TextBox Grid.Column="3" Grid.Row="1" Name="txtMaxOpenInterest"
+                         Width="50" 
+                         Text="{Binding ScreeningParams.MaxOpenInterest, Mode=TwoWay}"
+                         Margin="5 10 5 0"/>
+                <Label Grid.Column="0" Grid.Row="2">Min DTE</Label>
+                <TextBox Grid.Column="1" Grid.Row="2" Name="txtMinDTE"
+                         Width="50"
+                         Text="{Binding ScreeningParams.MinExpirationDays, Mode=TwoWay}"
+                         Margin="5 10 5 0"/>
+                <Label Grid.Column="2" Grid.Row="2">Max DTE</Label>
+                <TextBox Grid.Column="3" Grid.Row="2" Name="txtMaxDTE"
+                         Width="50" 
+                         Text="{Binding ScreeningParams.MaxExpirationDays, Mode=TwoWay}"
+                         Margin="5 10 5 0"/>
+                <Button Grid.Column="0" Grid.Row="3" Grid.ColumnSpan="2" 
+                        Name="btnScreeningOptions"
+                        Click="btnScreeningOptions_Click"
+                        Margin="5 10 5 0">Screen Options</Button>
+                <Button Grid.Column="2" Grid.Row="3" Grid.ColumnSpan="2" 
+                        Name="btnScreeningOptionsClearSorting"
+                        Click="btnScreeningOptionsClearSorting_Click"
+                        Margin="5 10 5 0">Clear Sorting</Button>
+                <Label Grid.Column="4" Grid.Row="3"
+                       Name="lblOptionScreeningStatus"
+                       Content="{Binding OptionScreeningProgressStatus}"></Label>
+                <Label Grid.Column="0" Grid.Row="4"
+                       Content="Filter by ticker"></Label>
+                <TextBox Grid.Column="1" Grid.Row="4"
+                         Name="txtFilterScreeningByTicker"
+                         Width="50" 
+                         TextChanged="txtFilterScreeningByTicker_TextChanged"
+                         Margin="5 10 5 0"/>
+                <Label Grid.Column="2" Grid.Row="4"
+                       Content="Screen every 5 mins"></Label>
+                <CheckBox Grid.Column="3" Grid.Row="4" VerticalAlignment="Center" IsChecked="{Binding OptionScreeningAutoEnabled}"></CheckBox>
+                <ScrollViewer Grid.Column="0" Grid.Row="5" Grid.ColumnSpan="5" VerticalScrollBarVisibility="Auto">
+                    <ListView 
+                        Name="lsvScreenedOptions"
+                        Height="auto" 
+                        Width="auto" 
+                        ItemsSource="{Binding OptionsScreeningResults}" 
+                        MouseDoubleClick="lsvScreenedOptions_DoubleClick"
+                        Margin="5 10 5 0">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding UnderlyingSymbol}">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader HorizontalAlignment="Stretch" Tag="UnderlyingSymbol" Click="lsvScreenedOptions_Click">Ticker</GridViewColumnHeader>
+                                    </GridViewColumn.Header>
+                                </GridViewColumn>
+                                <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Type}" >
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Tag="Type" Click="lsvScreenedOptions_Click">Type</GridViewColumnHeader>
+                                    </GridViewColumn.Header>
+                                </GridViewColumn>
+                                <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Strike}">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Tag="Strike" Click="lsvScreenedOptions_Click">Strike</GridViewColumnHeader>
+                                    </GridViewColumn.Header>
+                                </GridViewColumn>
+                                <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding ExpirationDateFormatted}">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Tag="ExpirationDateFormatted" Click="lsvScreenedOptions_Click">Expiration</GridViewColumnHeader>
+                                    </GridViewColumn.Header>
+                                </GridViewColumn>
+                                <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Volume}">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Tag="Volume" Click="lsvScreenedOptions_Click">Volume</GridViewColumnHeader>
+                                    </GridViewColumn.Header>
+                                </GridViewColumn>
+                                <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding OpenInterest}">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Tag="OpenInterest" Click="lsvScreenedOptions_Click">OpenInterest</GridViewColumnHeader>
+                                    </GridViewColumn.Header>
+                                </GridViewColumn>
+                                <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding OpenInterestPercentageChange}">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Tag="OpenInterestPercentageChange" Click="lsvScreenedOptions_Click">OI Change</GridViewColumnHeader>
+                                    </GridViewColumn.Header>
+                                </GridViewColumn>
+                                <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding TradeTimeFormatted}">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Tag="TradeTimeFormatted" Click="lsvScreenedOptions_Click">Trade time</GridViewColumnHeader>
+                                    </GridViewColumn.Header>
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                </ScrollViewer>
+            </Grid>
+        </Grid>
+        <ListView Name="lsvTrendLines"
+            Grid.Column="1" Grid.Row="1" Height="auto" 
+            ItemsSource="{Binding TrendLines}" 
             VerticalAlignment="Stretch" 
-            Margin="5 10 5 0"
-            MouseDoubleClick="lsvAlerts_DoubleClick">
-            <ListView.View>
-                <GridView>
-                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Ticker}">
-                        <GridViewColumn.Header>
-                            <GridViewColumnHeader Tag="Ticker" Click="lsvAlertsColumnHeader_Click">Ticker</GridViewColumnHeader>
-                        </GridViewColumn.Header>
-                    </GridViewColumn>
-                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding CreatedAt}" >
-                        <GridViewColumn.Header>
-                            <GridViewColumnHeader Tag="CreatedAt" Click="lsvAlertsColumnHeader_Click">Time</GridViewColumnHeader>
-                        </GridViewColumn.Header>
-                    </GridViewColumn>
-                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Timeframe}">
-                        <GridViewColumn.Header>
-                            <GridViewColumnHeader Tag="Timeframe" Click="lsvAlertsColumnHeader_Click">Timeframe</GridViewColumnHeader>
-                        </GridViewColumn.Header>
-                    </GridViewColumn>
-                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding OrderPosition}">
-                        <GridViewColumn.Header>
-                            <GridViewColumnHeader Tag="OrderType" Click="lsvAlertsColumnHeader_Click">Order Type</GridViewColumnHeader>
-                        </GridViewColumn.Header>
-                    </GridViewColumn>
-                    <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Message}">
-                        <GridViewColumn.Header>
-                            <GridViewColumnHeader Tag="Message" Click="lsvAlertsColumnHeader_Click">Message</GridViewColumnHeader>
-                        </GridViewColumn.Header>
-                    </GridViewColumn>
-                </GridView>
-            </ListView.View>
-        </ListView>
-        <ListView Name="lsvTrendLines" 
-          Grid.Column="1" Grid.Row="1" Height="auto" 
-          ItemsSource="{Binding TrendLines}" 
-          VerticalAlignment="Stretch" 
-          Margin="5 10 5 0">
+            Margin="5 10 5 0">
             <ListView.View>
                 <GridView>
                     <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Ticker}">
@@ -155,55 +287,106 @@
             </ListView.View>
         </ListView>
         <GridSplitter Grid.Column="1" Grid.Row="0" Grid.RowSpan="2"  Background="LightGray" Width="3" VerticalAlignment="Stretch" />
-        <ScrollViewer HorizontalScrollBarVisibility="Auto"
-                      Grid.Column="2" Grid.Row="0" Height="auto">
-            <StackPanel
-                VerticalAlignment="Top"
-                HorizontalAlignment="Left">
-                <Label>Option historical price for date</Label>
-                <Calendar 
-                    Name="CalOptionDate" 
-                    SelectedDatesChanged="CalOptionDate_DateSelected"/>
-                <ComboBox Name="cbxOptionType"
-                          ItemsSource="{Binding AllOptionTypes}"
-                          SelectedItem="{Binding SelectedOptionType, Mode=TwoWay}"
-                          SelectionChanged="OptionTypeComboBox_SelectionChanged"/>
-                <ListView Name="lsvOptionChain"
-                          ItemsSource="{Binding AllOptionChain}" 
-                          VerticalAlignment="Stretch" 
-                          Margin="5 10 5 0"
-                          HorizontalAlignment="Stretch"
-                          Width="auto"
-                          MouseDoubleClick="lsvOptionChain_DoubleClick">
-                    <ListView.View>
-                        <GridView>
-                            <GridViewColumn>
-                                <GridViewColumn.Header>
-                                    <GridViewColumnHeader Tag="options">Option Chain</GridViewColumnHeader>
-                                </GridViewColumn.Header>
-                            </GridViewColumn>
-                        </GridView>
-                    </ListView.View>
-                </ListView>
-            </StackPanel>
-        </ScrollViewer>
-        <ListView Name="lsvOptionPrice" 
-            Grid.Column="2" Grid.Row="1"
-            ItemsSource="{Binding OptionPrice}" 
-            VerticalAlignment="Stretch"
-            HorizontalAlignment="Stretch"
-            Width="auto"
-            Margin="5 10 5 0">
-            <ListView.View>
-                <GridView>
-                    <GridViewColumn Width="Auto">
-                        <GridViewColumn.Header>
-                            <GridViewColumnHeader Tag="option-price">Historical Price</GridViewColumnHeader>
-                        </GridViewColumn.Header>
-                    </GridViewColumn>
-                </GridView>
-            </ListView.View>
-        </ListView>
+        <Grid Grid.Column="2" Grid.Row="0" Grid.RowSpan="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"></RowDefinition>
+                <RowDefinition Height="Auto"></RowDefinition>
+                <RowDefinition Height="Auto"></RowDefinition>
+                <RowDefinition Height="Auto"></RowDefinition>
+                <RowDefinition Height="100*"></RowDefinition>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"></ColumnDefinition>
+                <ColumnDefinition Width="Auto"></ColumnDefinition>
+                <ColumnDefinition Width="Auto"></ColumnDefinition>
+                <ColumnDefinition Width="100*"></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+            <Label Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="4">Quick option search</Label>
+            <Label Grid.Column="0" Grid.Row="1">Ticker</Label>
+            <TextBox Grid.Column="0" Grid.Row="2" Name="txtQuickOptionSearchTicker" Height="20" Margin="5 0 0 0"/>
+            <Label Grid.Column="1" Grid.Row="1">Expiry</Label>
+            <TextBox Grid.Column="1" Grid.Row="2" Name="txtQuickOptionSearchExpiry" Height="20" Width="100" Margin="5 0 0 0"/>
+            <Label Grid.Column="2" Grid.Row="1">Strike</Label>
+            <TextBox Grid.Column="2" Grid.Row="2" Name="txtQuickOptionSearchStrike" Height="20" Width="50" Margin="5 0 0 0"/>
+            <Label Grid.Column="3" Grid.Row="1">P/C (Put/Call)</Label>
+            <TextBox Grid.Column="3" Grid.Row="2" Name="txtQuickOptionSearchPutCall" Height="20" Width="50" Margin="5 0 0 0" HorizontalAlignment="Left"/>
+            <Button Grid.Column="0" Grid.Row="3" Grid.ColumnSpan="3"
+                    Click="btnQuickOptionSearch_Click"
+                    Margin="5 10 5 0"
+                    HorizontalAlignment="Left"
+                    Width="75">Search</Button>
+            <Button Grid.Column="3" Grid.Row="3"
+                    Click="btnClearQuickOptionSearch_Click"
+                    Margin="5 10 5 0"
+                    HorizontalAlignment="Right"
+                    Width="75">Clear</Button>
+            <Label Grid.Column="0" Grid.Row="3" Grid.ColumnSpan="2"
+                   HorizontalAlignment="Right"
+                   VerticalContentAlignment="Center"
+                   Name="lblQuickOptionSearchStatus"
+                   Content="{Binding QuickOptionSearchProgressStatus}"></Label>
+            <Grid Grid.Column="0" Grid.Row="4" Grid.ColumnSpan="4">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="60*"></RowDefinition>
+                    <RowDefinition Height="40*"></RowDefinition>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="100*"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+                    <ListView Grid.Column="0" Grid.Row="0"
+                              Name="lsvOptionPrice"
+                              ItemsSource="{Binding OptionPrices}" 
+                              VerticalAlignment="Stretch"
+                              HorizontalAlignment="Stretch"
+                              Width="auto"
+                              Margin="5 10 5 0">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Symbol}">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader>Symbol</GridViewColumnHeader>
+                                    </GridViewColumn.Header>
+                                </GridViewColumn>
+                                <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding DateFormatted}" >
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader>Date</GridViewColumnHeader>
+                                    </GridViewColumn.Header>
+                                </GridViewColumn>
+                                <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Close}" >
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader>Price</GridViewColumnHeader>
+                                    </GridViewColumn.Header>
+                                </GridViewColumn>
+                                <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding VolumeChangeSummary}">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader>Volume</GridViewColumnHeader>
+                                    </GridViewColumn.Header>
+                                </GridViewColumn>
+                                <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding OpenInterestChangeSummary}">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader>OI</GridViewColumnHeader>
+                                    </GridViewColumn.Header>
+                                </GridViewColumn>
+                                <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding VolumeChangeOpenInterestChangeRatio}">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader>VOIR</GridViewColumnHeader>
+                                    </GridViewColumn.Header>
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                    <ScrollViewer Grid.Column="0" Grid.Row="1"
+                        VerticalScrollBarVisibility="Auto">
+                        <Border BorderThickness="1" BorderBrush="DimGray" 
+                                Margin="5 10 5 0">
+                            <TextBlock
+                                FontSize="12"
+                                TextWrapping="Wrap"
+                                Text="{Binding SelectedTickerOptionFlowOverview}"></TextBlock>
+                        </Border>
+                    </ScrollViewer>
+            </Grid>
+        </Grid>
         <GridSplitter Grid.Column="2" Grid.Row="0" Grid.RowSpan="2" Background="LightGray"  Width="3" VerticalAlignment="Stretch" />
         <StackPanel
             Grid.Column="3"
@@ -242,4 +425,4 @@
             </ListView>
         </StackPanel>
     </Grid>
-</Page>
+</Window>
