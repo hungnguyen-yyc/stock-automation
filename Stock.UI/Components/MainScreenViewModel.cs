@@ -812,6 +812,8 @@ namespace Stock.UI.Components
         
         public async Task GetSelectedTickerOptionFlowOverview(string ticker, OptionsScreeningParams screeningParams)
         {
+            SelectedTickerOptionFlowOverview = $"Gathering {ticker} option data for overview...";
+            
             var overview = new StringBuilder();
             var separator = "----------------------------------";
             overview.AppendLine($"Overview for {ticker}");
