@@ -107,30 +107,6 @@ namespace Stock.Data
             }
         }
 
-        public async Task<string[]?> GetOptionPriceAsync(string ticker, DateTime expiredDate, decimal strike, char optionRight)
-        {
-            try
-            {
-                using var httpClient = new HttpClient();
-                var expiredDateStr = expiredDate.ToString("yyyyMMdd");
-                var strikeStr = strike.ToString("0.00");
-                strikeStr += optionRight;
-                var optionPrices = await GetOptionPriceAsync($"{ticker}|{expiredDateStr}|{strikeStr}");
-                
-                if (optionPrices == null)
-                {
-                    return null;
-                }
-                
-                return optionPrices.Select(o => o.ToStringV2()).ToArray();
-            }
-            catch (Exception ex)
-            {
-                Log(ex.Message);
-                return null;
-            }
-        }
-
         public async Task<Options?> GetOptionChainAsync(string ticker, DateTime fromDate, DateTime toDate)
         {
             try
