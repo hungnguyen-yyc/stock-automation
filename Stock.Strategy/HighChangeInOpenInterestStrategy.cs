@@ -2,11 +2,11 @@
 using Stock.Shared.Models;
 using Stock.Shared.Models.Parameters;
 using Stock.Strategies.EventArgs;
+using Stock.Strategy;
 
 namespace Stock.Strategies;
 
-// TODO: fix and consolidate strategy interface
-public class HighChangeInOpenInterestStrategy
+public sealed class HighChangeInOpenInterestStrategy : IStrategy
 {
     private readonly StockDataRetrievalService _stockDataRetrievalService;
     
