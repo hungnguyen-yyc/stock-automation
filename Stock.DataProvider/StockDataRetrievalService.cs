@@ -1,6 +1,5 @@
 ﻿using Newtonsoft.Json;
 using Stock.Shared.Models;
-using System.Diagnostics;
 using Stock.Shared.Models.Parameters;
 
 namespace Stock.Data
