@@ -9,7 +9,7 @@ using Stock.Shared.Models.Parameters;
 
 namespace Stock.Data
 {
-    public class StockDataRepository
+    public class StockDataRetrievalService
     {
         private const string _dbPath = @"C:\Users\hngde\source\repos\hungnguyen-yyc\stock-automation-db\stock.db";
 

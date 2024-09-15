@@ -8,13 +8,13 @@ namespace Stock.Strategies;
 // TODO: fix and consolidate strategy interface
 public class HighChangeInOpenInterestStrategy
 {
-    private readonly StockDataRepository _stockDataRepository;
+    private readonly StockDataRetrievalService _stockDataRetrievalService;
     
     public static OptionsScreeningParams OptionsScreeningParams = OptionsScreeningParams.Default;
 
-    public HighChangeInOpenInterestStrategy(StockDataRepository stockDataRepository)
+    public HighChangeInOpenInterestStrategy(StockDataRetrievalService stockDataRetrievalService)
     {
-        _stockDataRepository = stockDataRepository;
+        _stockDataRetrievalService = stockDataRetrievalService;
     }
     
     public string Description => "High Change in Open Interest";
@@ -23,8 +23,8 @@ public class HighChangeInOpenInterestStrategy
     
     public async Task Run(OptionsScreeningParams requestParams, double percentageChange)
     {
-        var todayOptions = await _stockDataRepository.GetOptionsScreeningResults(requestParams, false); // intraday
-        var eodOptions = await _stockDataRepository.GetOptionsScreeningResults(requestParams, true); // end of day
+        var todayOptions = await _stockDataRetrievalService.GetOptionsScreeningResults(requestParams, false); // intraday
+        var eodOptions = await _stockDataRetrievalService.GetOptionsScreeningResults(requestParams, true); // end of day
         
         foreach (var todayOption in todayOptions)
         {

@@ -20,7 +20,7 @@ namespace Stock.UI.Components
     {
         private const string ALL = "All";
 
-        private readonly StockDataRepository _repo;
+        private readonly StockDataRetrievalService _repo;
         private ISwingPointStrategy _strategy;
         private string _optionScreeningProgressStatus;
         private bool _optionScreeningAutoEnabled;
@@ -46,7 +46,7 @@ namespace Stock.UI.Components
 
         private Dictionary<string, IReadOnlyCollection<Price>> _tickerAndPrices;
 
-        public MainScreenViewModel(StockDataRepository repo, ISwingPointStrategy strategy)
+        public MainScreenViewModel(StockDataRetrievalService repo, ISwingPointStrategy strategy)
         {
             _repo = repo;
             _strategy = strategy;
