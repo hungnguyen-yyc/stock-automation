@@ -139,48 +139,6 @@ namespace Stock.Data
             }
         }
         
-        public async Task<Price?> GetLatestPrice(string ticker)
-        {
-            try
-            {
-                var today = DateTime.Now.ToString("yyyyMMdd");
-                var tomorrow = DateTime.Now.AddDays(1).ToString("yyyyMMdd");
-                var url = "https://ds01.ddfplus.com/historical/queryminutes.ashx?symbol={0}&start={1}&end={2}&contractroll=combined&order=Descending&interval=1&fromt=false&username=randacchub%40gmail.com&password=_placeholder_";
-                var formattedUrl = string.Format(url, ticker, today, tomorrow);
-                
-                using var httpClient = new HttpClient();
-                var response = await httpClient.GetAsync(formattedUrl);
-                if (response.IsSuccessStatusCode)
-                {
-                    var content = await response.Content.ReadAsStringAsync();
-                    var lines = content.Split('\n');
-                    var latest = lines.Last();
-                    var price = new Price();
-                    var values = latest.Split(',');
-
-                    price.Date = Convert.ToDateTime(values[0]);
-                    price.Open = Convert.ToDecimal(values[2]);
-                    price.High = Convert.ToDecimal(values[3]);
-                    price.Low = Convert.ToDecimal(values[4]);
-                    price.Close = Convert.ToDecimal(values[5]);
-                    price.Volume = Convert.ToInt64(values[6]);
-
-                    if (!price.isValid)
-                    {
-                        throw new Exception($"Invalid price {JsonConvert.SerializeObject(price)}");
-                    }
-                    return price;
-                }
-            }
-            catch (Exception ex)
-            {
-                Log(ex.ToString());
-                throw new Exception($"Error getting data for ticker {ticker}", ex);
-            }
-            
-            return null;
-        }
-        
         public async Task<IReadOnlyCollection<Price>> GetStockDataForHighTimeframesAsc(string ticker, Timeframe timeframe, DateTime from, DateTime to)
         {
             try
@@ -261,13 +219,6 @@ namespace Stock.Data
             }
             
             return new List<Price>();
-        }
-
-        private DateTime GetEasternTime(DateTime time)
-        {
-            var easternZone = TimeZoneInfo.FindSystemTimeZoneById("Eastern Standard Time");
-            var easternTime = TimeZoneInfo.ConvertTime(time, easternZone);
-            return easternTime;
         }
     }
 }
