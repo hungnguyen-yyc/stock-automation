@@ -63,6 +63,8 @@ namespace Stock.Shared.Models
         [JsonProperty("delta")]
         public decimal Delta { get; set; }
 
+        public string DeltaFormatted => $"{Delta:P2}";
+
         [JsonProperty("volume")]
         public double Volume { get; set; }
 

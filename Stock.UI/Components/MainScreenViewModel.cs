@@ -819,7 +819,7 @@ namespace Stock.UI.Components
             overview.AppendLine($"Overview for {ticker}");
             overview.AppendLine($"Screening Parameters: Min. Volume: {screeningParams.MinVolume}, Min. Open Interest: {screeningParams.MinOpenInterest}, Min. Expiration Date: {screeningParams.MinExpirationDays}");
             
-            var optionsScreeningResultsIntraday = await _repo.GetOptionsScreeningResults(HighChangeInOpenInterestStrategy.OptionsScreeningParams, false);
+            var optionsScreeningResultsIntraday = await _repo.GetOptionsScreeningResults(screeningParams, false);
             var optionResults = optionsScreeningResultsIntraday.Where(x => x.UnderlyingSymbol == ticker).ToList();
             var callOptions = optionResults.Where(x => x.Type.Contains("call", StringComparison.InvariantCultureIgnoreCase)).ToList();
             var putOptions = optionResults.Where(x => x.Type.Contains("put", StringComparison.InvariantCultureIgnoreCase)).ToList();
@@ -904,6 +904,13 @@ namespace Stock.UI.Components
                     ? smallerGroupList?.Average(x => x.Volatility) ?? 0
                     : largerGroupList.Average(x => x.Volatility);
                 
+                var avgCallDelta = isCallLarger 
+                    ? largerGroupList.Average(x => x.Delta) 
+                    : smallerGroupList?.Average(x => x.Delta) ?? 0;
+                var avgPutDelta = isCallLarger
+                    ? smallerGroupList?.Average(x => x.Delta) ?? 0
+                    : largerGroupList.Average(x => x.Delta);
+                
                 var callOpenInterest = isCallLarger
                     ? largerGroupList.Sum(x => x.OpenInterest)
                     : smallerGroupList?.Sum(x => x.OpenInterest) ?? 0;
@@ -922,6 +929,8 @@ namespace Stock.UI.Components
                 overview.AppendLine($"- Call Net Premium: {callOptionNetPremium:C}");
                 overview.AppendLine($"- Put Average Volatility: {avgPutVolatility:F}");
                 overview.AppendLine($"- Call Average Volatility: {avgCallVolatility:F}");
+                overview.AppendLine($"- Put Average Delta: {avgPutDelta:P2}");
+                overview.AppendLine($"- Call Average Delta: {avgCallDelta:P2}");
                 overview.AppendLine($"- Put Open Interest: {putOpenInterest:N0}");
                 overview.AppendLine($"- Call Open Interest: {callOpenInterest:N0}");
                 overview.AppendLine($"- Put/Call Open Interest Ratio: {putCallOpenInterestRatioByExpirationDate}");

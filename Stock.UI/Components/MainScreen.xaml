@@ -230,6 +230,11 @@
                                         <GridViewColumnHeader Tag="OpenInterestPercentageChange" Click="lsvScreenedOptions_Click">OI Change</GridViewColumnHeader>
                                     </GridViewColumn.Header>
                                 </GridViewColumn>
+                                <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding DeltaFormatted}">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Tag="DeltaFormatted" Click="lsvScreenedOptions_Click">Delta</GridViewColumnHeader>
+                                    </GridViewColumn.Header>
+                                </GridViewColumn>
                                 <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding TradeTimeFormatted}">
                                     <GridViewColumn.Header>
                                         <GridViewColumnHeader Tag="TradeTimeFormatted" Click="lsvScreenedOptions_Click">Trade time</GridViewColumnHeader>
