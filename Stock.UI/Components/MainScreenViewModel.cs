@@ -1,9 +1,7 @@
-﻿using IBApi;
-using Stock.Data;
+﻿using Stock.Data;
 using Stock.Data.EventArgs;
 using Stock.Shared;
 using Stock.Shared.Models;
-using Stock.Shared.Models.IBKR.Messages;
 using Stock.Strategies;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -20,7 +18,7 @@ namespace Stock.UI.Components
     {
         private const string ALL = "All";
 
-        private readonly StockDataRepository _repo;
+        private readonly StockDataRetrievalService _repo;
         private ISwingPointStrategy _strategy;
         private string _optionScreeningProgressStatus;
         private bool _optionScreeningAutoEnabled;
@@ -36,9 +34,6 @@ namespace Stock.UI.Components
         private ObservableCollection<string> _filteredOptionChain;
         private ObservableCollection<OptionPrice> _optionPrices;
         private readonly object _lock = new();
-        private ObservableCollection<CompletedOrderMessage> _completedOrders;
-        private ObservableCollection<Tuple<string, string>> _accountSummary;
-        private ObservableCollection<PositionMessage> _accountPosition;
         private ObservableCollection<TrendLine> _allTrendLines;
         private ObservableCollection<TrendLine> _filteredTrendLines;
         private ObservableCollection<OptionsScreeningResult> _allOptionsScreeningResults;
@@ -46,7 +41,7 @@ namespace Stock.UI.Components
 
         private Dictionary<string, IReadOnlyCollection<Price>> _tickerAndPrices;
 
-        public MainScreenViewModel(StockDataRepository repo, ISwingPointStrategy strategy)
+        public MainScreenViewModel(StockDataRetrievalService repo, ISwingPointStrategy strategy)
         {
             _repo = repo;
             _strategy = strategy;
@@ -71,15 +66,6 @@ namespace Stock.UI.Components
             BindingOperations.EnableCollectionSynchronization(_filteredOptionChain, _lock);
             BindingOperations.EnableCollectionSynchronization(_optionPrices, _lock);
 
-            _accountSummary = new ObservableCollection<Tuple<string, string>>();
-            _accountPosition = new ObservableCollection<PositionMessage>();
-
-            BindingOperations.EnableCollectionSynchronization(_accountSummary, _lock);
-            BindingOperations.EnableCollectionSynchronization(_accountPosition, _lock);
-
-            _completedOrders = new ObservableCollection<CompletedOrderMessage>();
-            BindingOperations.EnableCollectionSynchronization(_completedOrders, _lock);
-            
             _allOptionsScreeningResults = new ObservableCollection<OptionsScreeningResult>();
             _filteredOptionsScreeningResults = new ObservableCollection<OptionsScreeningResult>();
             BindingOperations.EnableCollectionSynchronization(_filteredOptionsScreeningResults, _lock);
