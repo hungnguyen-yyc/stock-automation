@@ -50,7 +50,7 @@ public sealed class HighChangeInOpenInterestStrategy : IStrategy
                 alert.CreatedAt = DateTime.Now.Date;
                 alert.OrderPosition = orderPosition;
                 alert.OptionTicker = optionTicker;
-                alert.Message = $"{todayOption.UnderlyingSymbol}|{todayOption.ExpirationDateFormatted}|{todayOption.Strike}{optionType}: Open Interest: {todayOption.OpenInterest} ({Math.Round(change, 2)}%)";
+                alert.Message = $"{todayOption.UnderlyingSymbol}|{todayOption.ExpirationDateFormatted}|{todayOption.Strike}{optionType}: Open Interest: {todayOption.OpenInterest} ({Math.Round(change, 2)}%) | Trade time: {todayOption.TradeTime}";
                 AlertCreated?.Invoke(this, new AlertEventArgs(alert));
             }
         }
