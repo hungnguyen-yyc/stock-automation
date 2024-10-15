@@ -45,12 +45,15 @@ public sealed class HighChangeInOpenInterestStrategy : IStrategy
                 var optionType = todayOption.Type.Equals("call", StringComparison.InvariantCultureIgnoreCase) ? "C" : "P";
                 var optionTicker = $"{todayOption.UnderlyingSymbol}|{todayOption.ExpirationDate:yyyyMMdd}|{todayOption.Strike}{optionType}";
                 var orderPosition = todayOption.Type.Equals("call", StringComparison.InvariantCultureIgnoreCase) ? OrderPosition.Long : OrderPosition.Short;
+                
+                var newYorkTimeString = $"{todayOption.TradeTime:yyyy-MM-dd HH:mm:ss} (EST)";
+                
                 alert.Ticker = $"{todayOption.UnderlyingSymbol}";
                 alert.Timeframe = Timeframe.Daily;
                 alert.CreatedAt = DateTime.Now.Date;
                 alert.OrderPosition = orderPosition;
                 alert.OptionTicker = optionTicker;
-                alert.Message = $"{todayOption.UnderlyingSymbol}|{todayOption.ExpirationDateFormatted}|{todayOption.Strike}{optionType}: Open Interest: {todayOption.OpenInterest} ({Math.Round(change, 2)}%) | Trade time: {todayOption.TradeTime}";
+                alert.Message = $"{todayOption.UnderlyingSymbol}|{todayOption.ExpirationDateFormatted}|{todayOption.Strike}{optionType}: Open Interest: {todayOption.OpenInterest} ({Math.Round(change, 2)}%) | Trade time: {newYorkTimeString}";
                 AlertCreated?.Invoke(this, new AlertEventArgs(alert));
             }
         }
