@@ -616,7 +616,7 @@ namespace Stock.UI.Components
                         
                         await Task.Run(() => {
                             var screeningParams = HighChangeInOpenInterestStrategy.OptionsScreeningParams;
-                            highChangeInOpenInterestStrategy.Run(screeningParams, 10);
+                            highChangeInOpenInterestStrategy.Run(screeningParams, 20);
                         });
                     }
                 }
