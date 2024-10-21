@@ -28,7 +28,7 @@ public class HmaEmaPriceStrategy : IStrategy
         var priceAboveHma = price.IsGreenCandle && price.Close > (decimal)hmas.Last();
         var priceAboveEma = price.IsGreenCandle && price.Close > (decimal)emas.Last();
 
-        var lastNHmas = hmas.TakeLast(6).ToList();
+        var lastNHmas = hmas.TakeLast(5).ToList();
         var lastNHmasIncreasing = false;
         var hmaDowntrendBeforeReversal = lastNHmas[0] > lastNHmas[1]; 
         for (var i = 2; i < lastNHmas.Count; i++)
@@ -88,10 +88,10 @@ public class HmaEmaPriceStrategy : IStrategy
         var priceBelowHma = !price.IsGreenCandle && price.Close < (decimal)hmas.Last();
         var priceBelowEma = !price.IsGreenCandle && price.Close < (decimal)emas.Last();
         
-        var lastNHmas = hmas.TakeLast(6).ToList();
+        var lastNHmas = hmas.TakeLast(5).ToList();
         var lastNHmasDecreasing = false;
         var hmaUptrendBeforeReversal = lastNHmas[0] < lastNHmas[1];
-        for (var i = 3; i < lastNHmas.Count; i++)
+        for (var i = 2; i < lastNHmas.Count; i++)
         {
             if (lastNHmas[i] < lastNHmas[i - 1])
             {
