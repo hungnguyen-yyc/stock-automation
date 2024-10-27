@@ -11,6 +11,7 @@ using System.Windows.Data;
 using Microsoft.Toolkit.Uwp.Notifications;
 using Stock.Shared.Models.Parameters;
 using Stock.Strategies.EventArgs;
+using Stock.Strategies.Parameters;
 
 namespace Stock.UI.Components
 {
@@ -428,7 +429,7 @@ namespace Stock.UI.Components
         private async Task StartStrategy()
         {
 #if DEBUG
-            // await RunInDebug();
+            await RunInDebug();
 #else
             await RunInRelease();
 #endif
@@ -438,6 +439,9 @@ namespace Stock.UI.Components
         {
             var tickers = TickersWithoutAll;
             var timeframes = new[] { Timeframe.Daily };
+            var hmaEmaStrategy = new HmaEmaPriceStrategy();
+            hmaEmaStrategy.AlertCreated += Strategy_AlertCreated;
+            
             foreach (var timeframe in timeframes)
             {
                 _strategy.AlertCreated -= Strategy_AlertCreated;
@@ -466,7 +470,7 @@ namespace Stock.UI.Components
                             prices = await _repo.GetStockDataForHighTimeframesAsc(ticker, timeframe, DateTime.Now.AddYears(-5), DateTime.Now.AddDays(1));
                         }
                         
-                        var priceToStartTesting = prices.First(x => x.Date >= DateTime.Now.AddMonths(-2));
+                        var priceToStartTesting = prices.First(x => x.Date >= DateTime.Now.AddMonths(-3));
                         
                         var index = 0;
                         for (int i = 0; i < prices.Count; i++)
@@ -483,9 +487,15 @@ namespace Stock.UI.Components
                         {
                             _tickerAndPrices[ticker] = prices.Take(i).ToList();
                             UpdateFilteredTrendLines(ticker);
+                            var hmaEmaStrategyParameter = new HmaEmaPriceStrategyParameter
+                            {
+                                Timeframe = timeframe,
+                            };
                             
-                            await Task.Run(() => {
-                                _strategy.CheckForTopBottomTouch(ticker, prices.Take(i).ToList(), swingPointStrategyParameter);
+                            await Task.Run(() =>
+                            {
+                                hmaEmaStrategy.Run(ticker, prices.Take(i).ToList(), hmaEmaStrategyParameter);
+                                //_strategy.CheckForTopBottomTouch(ticker, prices.Take(i).ToList(), swingPointStrategyParameter);
                                 //_strategy.CheckForTouchingDownTrendLine(ticker, prices.Take(i).ToList(), swingPointStrategyParameter);
                                 //_strategy.CheckForTouchingUpTrendLine(ticker, prices.Take(i).ToList(), swingPointStrategyParameter);
                             });
@@ -559,6 +569,11 @@ namespace Stock.UI.Components
 
         private async Task RunInRelease()
         {
+            var highChangeInOpenInterestStrategy = new HighChangeInOpenInterestStrategy(_repo);
+            highChangeInOpenInterestStrategy.AlertCreated += Strategy_AlertCreated;
+            
+            var hmaEmaStrategy = new HmaEmaPriceStrategy();
+            hmaEmaStrategy.AlertCreated += Strategy_AlertCreated;
             while (true)
             {
                 var minutesToWait = 10;
@@ -585,15 +600,16 @@ namespace Stock.UI.Components
                         _strategy.AlertCreated += Strategy_AlertCreated;
                         _strategy.TrendLineCreated += Strategy_TrendLineCreated;
                         _strategy.PivotLevelCreated += Strategy_PivotLevelCreated;
-                        
-                        var highChangeInOpenInterestStrategy = new HighChangeInOpenInterestStrategy(_repo);
-                        highChangeInOpenInterestStrategy.AlertCreated += Strategy_AlertCreated;
 
                         Logs.Add(new LogEventArg($"Started running strategy at {DateTime.Now}"));
 
                         foreach (var ticker in tickers)
                         {
                             var swingPointStrategyParameter = SwingPointParametersProvider.GetSwingPointStrategyParameter(ticker, timeframe);
+                            var hmaEmaStrategyParameter = new HmaEmaPriceStrategyParameter
+                            {
+                                Timeframe = timeframe,
+                            };
 
                             IReadOnlyCollection<Price> prices;
                             if (timeframe == Timeframe.Daily)
@@ -610,15 +626,16 @@ namespace Stock.UI.Components
 
                             await Task.Run(() => {
                                 _strategy.CheckForTopBottomTouch(ticker, prices.ToList(), swingPointStrategyParameter);
+                                hmaEmaStrategy.Run(ticker, prices.ToList(), hmaEmaStrategyParameter);
                             });
 
                         }
-                        
-                        await Task.Run(() => {
-                            var screeningParams = HighChangeInOpenInterestStrategy.OptionsScreeningParams;
-                            highChangeInOpenInterestStrategy.Run(screeningParams, 20);
-                        });
                     }
+                        
+                    await Task.Run(() => {
+                        var screeningParams = HighChangeInOpenInterestStrategy.OptionsScreeningParams;
+                        highChangeInOpenInterestStrategy.Run(screeningParams, 20);
+                    });
                 }
                 catch (Exception ex)
                 {
