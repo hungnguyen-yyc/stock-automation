@@ -26,27 +26,48 @@ public class ChainedHighOpenInterestAndLevelStrategyParameters
 
 public class ChainedHighOpenInterestAndLevelStrategy : IStrategy
 {
+    private readonly StockDataRetrievalService _stockDataRetrievalService;
     private HighChangeInOpenInterestStrategy _highChangeInOpenInterestStrategy;
     private SwingPointsLiveTradingHighTimeframesStrategy _swingPointsLiveTradingHighTimeframesStrategy;
     
     public string Description => "Chained High Open Interest and Level Strategy";
     public event AlertEventHandler? AlertCreated;
-    
-    public async Task Run(StockDataRetrievalService stockDataRetrievalService, ChainedHighOpenInterestAndLevelStrategyParameters requestParams)
+
+    public ChainedHighOpenInterestAndLevelStrategy(StockDataRetrievalService stockDataRetrievalService,
+        HighChangeInOpenInterestStrategy highChangeInOpenInterestStrategy)
     {
-        if (_highChangeInOpenInterestStrategy != null)
-        {
-            _highChangeInOpenInterestStrategy.AlertCreated -= HighChangeInOpenInterestStrategyOnAlertCreated;
-        }
+        _stockDataRetrievalService = stockDataRetrievalService;
+        _highChangeInOpenInterestStrategy = highChangeInOpenInterestStrategy;
+        _swingPointsLiveTradingHighTimeframesStrategy = new SwingPointsLiveTradingHighTimeframesStrategy();
         
-        if (_swingPointsLiveTradingHighTimeframesStrategy != null)
+        _highChangeInOpenInterestStrategy.AlertCreated += HighChangeInOpenInterestStrategyOnAlertCreated;
+        _swingPointsLiveTradingHighTimeframesStrategy.AlertCreated += SwingPointsLiveTradingHighTimeframesStrategyOnAlertCreated;
+    }
+
+    private void SwingPointsLiveTradingHighTimeframesStrategyOnAlertCreated(object sender, AlertEventArgs e)
+    {
+        var alert = new Alert
         {
-            _swingPointsLiveTradingHighTimeframesStrategy.AlertCreated -= HighChangeInOpenInterestStrategyOnAlertCreated;
-        }
+            Ticker = e.Alert.Ticker,
+            Timeframe = e.Alert.Timeframe,
+            CreatedAt = e.Alert.CreatedAt,
+            OrderPosition = e.Alert.OrderPosition,
+            Message = $"{nameof(ChainedHighOpenInterestAndLevelStrategy)}: High Option Interest With {e.Alert.Message}"
+        };
+        AlertCreated?.Invoke(this, new AlertEventArgs(alert));
     }
 
     private void HighChangeInOpenInterestStrategyOnAlertCreated(object sender, AlertEventArgs e)
     {
-        throw new NotImplementedException();
+        if (e.Alert is not HighChangeInOpenInterestStrategyAlert highChangeInOpenInterestStrategyAlert) return;
+        
+        var ticker = highChangeInOpenInterestStrategyAlert.Ticker;
+        var timeframe = highChangeInOpenInterestStrategyAlert.Timeframe;
+        
+        Task.Run(async () => {
+            var prices = await _stockDataRetrievalService.GetStockDataForHighTimeframesAsc(ticker, timeframe, DateTime.Now.AddYears(-10), DateTime.Now.AddDays(1));
+            var swingPointStrategyParameter = SwingPointParametersProvider.GetSwingPointStrategyParameter(ticker, timeframe);
+            _swingPointsLiveTradingHighTimeframesStrategy.CheckForTopBottomTouch(ticker, prices.ToList(), swingPointStrategyParameter);
+        });
     }
 }

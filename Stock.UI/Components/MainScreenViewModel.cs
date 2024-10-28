@@ -574,6 +574,9 @@ namespace Stock.UI.Components
             
             var hmaEmaStrategy = new HmaEmaPriceStrategy();
             hmaEmaStrategy.AlertCreated += Strategy_AlertCreated;
+            
+            var chainedHighOpenInterestAndLevelStrategy = new ChainedHighOpenInterestAndLevelStrategy(_repo, highChangeInOpenInterestStrategy);
+            chainedHighOpenInterestAndLevelStrategy.AlertCreated += Strategy_AlertCreated;
             while (true)
             {
                 var minutesToWait = 10;
