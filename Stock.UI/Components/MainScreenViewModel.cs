@@ -689,7 +689,7 @@ namespace Stock.UI.Components
         {
             try
             {
-                var documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                var documents = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Documents");
                 var stockAlertPath = Path.Combine(documents, "StockAlerts", $"{DateTime.Now:yyyyMMddThhmmss}");
                 if (!Directory.Exists(stockAlertPath))
                 {
