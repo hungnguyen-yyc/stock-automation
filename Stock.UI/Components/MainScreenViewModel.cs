@@ -574,6 +574,9 @@ namespace Stock.UI.Components
             
             var hmaEmaStrategy = new HmaEmaPriceStrategy();
             hmaEmaStrategy.AlertCreated += Strategy_AlertCreated;
+            
+            var chainedHighOpenInterestAndLevelStrategy = new ChainedHighOpenInterestAndLevelStrategy(_repo, highChangeInOpenInterestStrategy);
+            chainedHighOpenInterestAndLevelStrategy.AlertCreated += Strategy_AlertCreated;
             while (true)
             {
                 var minutesToWait = 10;
@@ -686,7 +689,7 @@ namespace Stock.UI.Components
         {
             try
             {
-                var documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                var documents = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Documents");
                 var stockAlertPath = Path.Combine(documents, "StockAlerts", $"{DateTime.Now:yyyyMMddThhmmss}");
                 if (!Directory.Exists(stockAlertPath))
                 {
