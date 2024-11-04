@@ -470,7 +470,7 @@ namespace Stock.UI.Components
                             prices = await _repo.GetStockDataForHighTimeframesAsc(ticker, timeframe, DateTime.Now.AddYears(-5), DateTime.Now.AddDays(1));
                         }
                         
-                        var priceToStartTesting = prices.First(x => x.Date >= DateTime.Now.AddMonths(-3));
+                        var priceToStartTesting = prices.First(x => x.Date >= DateTime.Now.AddMonths(-5));
                         
                         var index = 0;
                         for (int i = 0; i < prices.Count; i++)
@@ -494,10 +494,10 @@ namespace Stock.UI.Components
                             
                             await Task.Run(() =>
                             {
-                                hmaEmaStrategy.Run(ticker, prices.Take(i).ToList(), hmaEmaStrategyParameter);
-                                //_strategy.CheckForTopBottomTouch(ticker, prices.Take(i).ToList(), swingPointStrategyParameter);
-                                //_strategy.CheckForTouchingDownTrendLine(ticker, prices.Take(i).ToList(), swingPointStrategyParameter);
-                                //_strategy.CheckForTouchingUpTrendLine(ticker, prices.Take(i).ToList(), swingPointStrategyParameter);
+                                // hmaEmaStrategy.Run(ticker, prices.Take(i).ToList(), hmaEmaStrategyParameter);
+                                // _strategy.CheckForTopBottomTouch(ticker, prices.Take(i).ToList(), swingPointStrategyParameter);
+                                _strategy.CheckForTouchingDownTrendLine(ticker, prices.Take(i).ToList(), swingPointStrategyParameter);
+                                _strategy.CheckForTouchingUpTrendLine(ticker, prices.Take(i).ToList(), swingPointStrategyParameter);
                             });
                         }
                         Logs.Add(new LogEventArg($"Finished running strategy for {ticker} {timeframe} at {DateTime.Now}"));
@@ -629,6 +629,8 @@ namespace Stock.UI.Components
 
                             await Task.Run(() => {
                                 _strategy.CheckForTopBottomTouch(ticker, prices.ToList(), swingPointStrategyParameter);
+                                _strategy.CheckForTouchingDownTrendLine(ticker, prices.ToList(), swingPointStrategyParameter);
+                                _strategy.CheckForTouchingUpTrendLine(ticker, prices.ToList(), swingPointStrategyParameter);
                                 hmaEmaStrategy.Run(ticker, prices.ToList(), hmaEmaStrategyParameter);
                             });
 
