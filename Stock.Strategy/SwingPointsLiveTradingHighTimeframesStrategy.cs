@@ -240,7 +240,10 @@ namespace Stock.Strategies
                     candleBetweenLastEndpointToCurrentPriceNotIntersectTrendLine = bodyRange.All(x => !SwingPointAnalyzer.DoLinesIntersect(lineEndPoint, new Point(thirdLastPriceIndex, projectedYForThirdLastPriceLine), x.Start, x.End));
                 }
 
-                var priceNotIntersectAnyTops = !nTops.Where(x => x.Value.Count >= 2).Any(x => price.CandleRange.Intersect(x.Key.CandleRange));
+                var priceNotIntersectAnyTops = nTops
+                    .Where(x => x.Value.Count >= 2)
+                    .Where(x => price.CandleRange.Intersect(x.Key.CandleRange))
+                    .ToList();
 
                 // checking for break above down trend line
                 if (crossSecondLastPrice 
@@ -248,13 +251,18 @@ namespace Stock.Strategies
                     && priceAboveLine 
                     && priceCloseAboveSecondLastPrice
                     && lastPriceIntersectSecondLastPrice
-                    && candleBetweenLastEndpointToCurrentPriceNotIntersectTrendLine
-                    && priceNotIntersectAnyTops)
+                    && candleBetweenLastEndpointToCurrentPriceNotIntersectTrendLine)
                 {
+                    var message = $"Price {price.Close} ({price.Date:s}) is breaking above down trend line {lineStart.High} ({lineEnds.Item1.Date:s}) - {lineEnd.High} ({lineEnds.Item2.Date:s})";
+                    if (priceNotIntersectAnyTops.Any())
+                    {
+                        var level = priceNotIntersectAnyTops.First();
+                        message = $"Price {price.Close} ({price.Date:s}) is breaking above down trend line {lineStart.High} ({lineEnds.Item1.Date:s}) - {lineEnd.High} ({lineEnds.Item2.Date:s}) and intersecting with previous tops {level.Key.Close}";
+                    }
                     alert = new Alert
                     {
                         Ticker = ticker,
-                        Message = $"Price {price.Close} ({price.Date:s}) is breaking above down trend line {lineStart.High} ({lineEnds.Item1.Date:s}) - {lineEnd.High} ({lineEnds.Item2.Date:s})",
+                        Message = message,
                         CreatedAt = price.Date,
                         Strategy = "SwingPointsLiveTradingStrategy",
                         OrderPosition = OrderPosition.Long,
@@ -276,13 +284,20 @@ namespace Stock.Strategies
                         && notCrossCurrentPrice 
                         && crossSecondLastPrice
                         && candleBetweenLastEndpointToCurrentPriceNotIntersectTrendLine
-                        && priceNotIntersectAnyTops
                         && priceGreaterThanProjectedPrice)
                     {
+                        var message =
+                            $"Price {price.Close} ({price.Date:s}) is rebounding on down trend line {lineStart.High} ({lineEnds.Item1.Date:s}) - {lineEnd.High} ({lineEnds.Item2.Date:s})";
+                        if (priceNotIntersectAnyTops.Any())
+                        {
+                            var level = priceNotIntersectAnyTops.First();
+                            message = $"Price {price.Close} ({price.Date:s}) is rebounding on down trend line {lineStart.High} ({lineEnds.Item1.Date:s}) - {lineEnd.High} ({lineEnds.Item2.Date:s}) and intersecting with previous tops {level.Key.Close}";
+                        }
+                        
                         alert = new Alert
                         {
                             Ticker = ticker,
-                            Message = $"Price {price.Close} ({price.Date:s}) is rebounding on down trend line {lineStart.High} ({lineEnds.Item1.Date:s}) - {lineEnd.High} ({lineEnds.Item2.Date:s})",
+                            Message = message,
                             CreatedAt = price.Date,
                             Strategy = "SwingPointsLiveTradingStrategy",
                             OrderPosition = OrderPosition.Long,
@@ -357,20 +372,29 @@ namespace Stock.Strategies
                     candleBetweenLastEndpointToCurrentPriceNotIntersectTrendLine = bodyRange.All(x => !SwingPointAnalyzer.DoLinesIntersect(lineEndPoint, new Point(thirdLastPriceIndex, projectedYForThirdLastPriceLine), x.Start, x.End));
                 }
                 
-                var priceNotIntersectAnyBottoms = !nBottoms.Where(x => x.Value.Count >= 2).Any(x => price.CandleRange.Intersect(x.Key.CandleRange));
+                var priceIntersectAnyBottoms = nBottoms
+                    .Where(x => x.Value.Count >= 2)
+                    .Where(x => price.CandleRange.Intersect(x.Key.CandleRange))
+                    .ToList();
 
                 if (crossSecondLastPrice 
                     && notCrossCurrentPrice 
                     && priceBelowLine
                     && priceBelowSecondLastPrice
                     && lastPriceIntersectSecondLastPrice
-                    && candleBetweenLastEndpointToCurrentPriceNotIntersectTrendLine
-                    && priceNotIntersectAnyBottoms)
+                    && candleBetweenLastEndpointToCurrentPriceNotIntersectTrendLine)
                 {
+                    var message = $"Price {price.Close} ({price.Date:s}) is breaking below up trend line {lineStart.Low} ({lineEnds.Item1.Date:s}) - {lineEnd.Low} ({lineEnds.Item2.Date:s})";
+                    if (priceIntersectAnyBottoms.Any())
+                    {
+                        var level = priceIntersectAnyBottoms.First();
+                        message = $"Price {price.Close} ({price.Date:s}) is breaking below up trend line {lineStart.Low} ({lineEnds.Item1.Date:s}) - {lineEnd.Low} ({lineEnds.Item2.Date:s}) and intersecting with previous bottoms {level.Key.Close}";
+                    }
+                    
                     alert = new Alert
                     {
                         Ticker = ticker,
-                        Message = $"Price {price.Close} ({price.Date:s}) is breaking below up trend line {lineStart.Low} ({lineEnds.Item1.Date:s}) - {lineEnd.Low} ({lineEnds.Item2.Date:s})",
+                        Message = message,
                         CreatedAt = price.Date,
                         Strategy = "SwingPointsLiveTradingStrategy",
                         OrderPosition = OrderPosition.Short,
@@ -390,14 +414,21 @@ namespace Stock.Strategies
                         && priceLowerThanSecondLastPrice
                         && notCrossCurrentPrice
                         && candleBetweenLastEndpointToCurrentPriceNotIntersectTrendLine
-                        && priceNotIntersectAnyBottoms
                         && crossSecondLastPrice
                         && priceLowerThanProjectedPrice)
                     {
+                        var message =
+                            $"Price {price.Close} ({price.Date:s}) is touching from below up trend line {lineStart.Low} ({lineEnds.Item1.Date:s}) - {lineEnd.Low} ({lineEnds.Item2.Date:s})";
+                        if (priceIntersectAnyBottoms.Any())
+                        {
+                            var level = priceIntersectAnyBottoms.First();
+                            message = $"Price {price.Close} ({price.Date:s}) is touching from below up trend line {lineStart.Low} ({lineEnds.Item1.Date:s}) - {lineEnd.Low} ({lineEnds.Item2.Date:s}) and intersecting with previous bottoms {level.Key.Close}";
+                        }
+                        
                         alert = new Alert
                         {
                             Ticker = ticker,
-                            Message = $"Price {price.Close} ({price.Date:s}) is touching from below up trend line {lineStart.Low} ({lineEnds.Item1.Date:s}) - {lineEnd.Low} ({lineEnds.Item2.Date:s})",
+                            Message = message,
                             CreatedAt = price.Date,
                             Strategy = "SwingPointsLiveTradingStrategy",
                             OrderPosition = OrderPosition.Short,
