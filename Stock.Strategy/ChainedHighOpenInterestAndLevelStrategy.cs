@@ -67,6 +67,8 @@ public class ChainedHighOpenInterestAndLevelStrategy : IStrategy
             var prices = await _stockDataRetrievalService.GetStockDataForHighTimeframesAsc(ticker, timeframe, DateTime.Now.AddYears(-10), DateTime.Now.AddDays(1));
             var swingPointStrategyParameter = SwingPointParametersProvider.GetSwingPointStrategyParameter(ticker, timeframe);
             _swingPointsLiveTradingHighTimeframesStrategy.CheckForTopBottomTouch(ticker, prices.ToList(), swingPointStrategyParameter);
+            _swingPointsLiveTradingHighTimeframesStrategy.CheckForTouchingDownTrendLine(ticker, prices.ToList(), swingPointStrategyParameter);
+            _swingPointsLiveTradingHighTimeframesStrategy.CheckForTouchingUpTrendLine(ticker, prices.ToList(), swingPointStrategyParameter);
             
             var hmaEmaStrategyParameter = new HmaEmaPriceStrategyParameter
             {
