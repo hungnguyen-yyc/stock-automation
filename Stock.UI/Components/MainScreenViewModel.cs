@@ -493,7 +493,6 @@ namespace Stock.UI.Components
         private async Task RunInRelease()
         {
             var highChangeInOpenInterestStrategy = new HighChangeInOpenInterestStrategy(_repo);
-            highChangeInOpenInterestStrategy.AlertCreated += Strategy_AlertCreated;
             
             var hmaEmaStrategy = new HmaEmaPriceStrategy();
             hmaEmaStrategy.AlertCreated += Strategy_AlertCreated;
