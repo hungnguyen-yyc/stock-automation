@@ -81,7 +81,7 @@ namespace Stock.UI.Components
                 ALL
             };
 
-            foreach (var ticker in TickersToTrade.POPULAR_TICKERS)
+            foreach (var ticker in CryptosToTrade.BarchartCryptoNames)
             {
                 Tickers.Add(ticker);
             }
@@ -493,13 +493,13 @@ namespace Stock.UI.Components
         private async Task RunInRelease()
         {
             var highChangeInOpenInterestStrategy = new HighChangeInOpenInterestStrategy(_repo);
-            highChangeInOpenInterestStrategy.AlertCreated += Strategy_AlertCreated;
+            highChangeInOpenInterestStrategy.EntryAlertCreated += StrategyEntryAlertCreated;
             
             var hmaEmaStrategy = new HmaEmaPriceStrategy();
-            hmaEmaStrategy.AlertCreated += Strategy_AlertCreated;
+            hmaEmaStrategy.EntryAlertCreated += StrategyEntryAlertCreated;
             
             var chainedHighOpenInterestAndLevelStrategy = new ChainedHighOpenInterestAndLevelStrategy(_repo, highChangeInOpenInterestStrategy);
-            chainedHighOpenInterestAndLevelStrategy.AlertCreated += Strategy_AlertCreated;
+            chainedHighOpenInterestAndLevelStrategy.EntryAlertCreated += StrategyEntryAlertCreated;
             while (true)
             {
                 var minutesToWait = 10;
@@ -517,13 +517,11 @@ namespace Stock.UI.Components
 
                     foreach (var timeframe in timeframes)
                     {
-                        _strategy.AlertCreated -= Strategy_AlertCreated;
                         _strategy.TrendLineCreated -= Strategy_TrendLineCreated;
                         _strategy.PivotLevelCreated -= Strategy_PivotLevelCreated;
                         
                         _strategy = new SwingPointsLiveTradingHighTimeframesStrategy();
                         
-                        _strategy.AlertCreated += Strategy_AlertCreated;
                         _strategy.TrendLineCreated += Strategy_TrendLineCreated;
                         _strategy.PivotLevelCreated += Strategy_PivotLevelCreated;
 
@@ -581,7 +579,7 @@ namespace Stock.UI.Components
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
-        private void Strategy_AlertCreated(object sender, AlertEventArgs e)
+        private void StrategyEntryAlertCreated(object sender, AlertEventArgs e)
         {
             lock (_lock)
             {

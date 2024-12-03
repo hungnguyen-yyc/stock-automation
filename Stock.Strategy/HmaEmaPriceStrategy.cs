@@ -2,7 +2,6 @@ using Skender.Stock.Indicators;
 using Stock.Shared.Models;
 using Stock.Strategies.EventArgs;
 using Stock.Strategies.Parameters;
-using Stock.Strategy;
 
 namespace Stock.Strategies;
 
@@ -11,7 +10,8 @@ public class HmaEmaPriceStrategy : IStrategy
     public string Description => "To heck Price At Close with Hull Moving Average and Exponential Moving Average."  +
                                  "If Price At Close Above HMA and EMA AND HMA & EMA increasing in last 5 days, then bullish. " +
                                  "And vice versa.";
-    public event AlertEventHandler? AlertCreated;
+    public event AlertEventHandler? EntryAlertCreated;
+    public event AlertEventHandler? ExitAlertCreated;
 
     public void Run(string ticker, List<Price> ascSortedByDatePrice, IStrategyParameter parameter)
     {
@@ -75,7 +75,7 @@ public class HmaEmaPriceStrategy : IStrategy
                 Timeframe = parameter.Timeframe
             };
             
-            AlertCreated?.Invoke(this, new AlertEventArgs(alert));
+            EntryAlertCreated?.Invoke(this, new AlertEventArgs(alert));
         }
     }
 
@@ -135,7 +135,7 @@ public class HmaEmaPriceStrategy : IStrategy
                 Timeframe = parameter.Timeframe
             };
             
-            AlertCreated?.Invoke(this, new AlertEventArgs(alert));
+            EntryAlertCreated?.Invoke(this, new AlertEventArgs(alert));
         }
     }
 }

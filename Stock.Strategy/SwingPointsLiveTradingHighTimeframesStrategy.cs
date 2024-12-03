@@ -17,11 +17,18 @@ namespace Stock.Strategies
             _volumeCheckingHelper = new VolumeCheckingHelper();
         }
         
-        public event AlertEventHandler AlertCreated;
+        public event AlertEventHandler EntryAlertCreated;
         
+        public event AlertEventHandler? ExitAlertCreated;
+
         public event TrendLineEventHandler TrendLineCreated;
         
         public event PivotLevelEventHandler PivotLevelCreated;
+        
+        public void Run(string ticker, IReadOnlyCollection<Price> prices, IStrategyParameter parameter)
+        {
+            throw new NotImplementedException();
+        }
 
         public string Description => "This strategy looks back a number of candles (specified in parameters) and calculates swing highs and lows. \n"
             + "The order then will be created at 2 candles after most recent swing lows or highs found. \n"
@@ -448,7 +455,7 @@ namespace Stock.Strategies
 
         private void OnAlertCreated(AlertEventArgs e)
         {
-            AlertCreated?.Invoke(this, e);
+            EntryAlertCreated?.Invoke(this, e);
         }
     }
 }

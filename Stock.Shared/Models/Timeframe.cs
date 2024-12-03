@@ -2,6 +2,7 @@
 {
     public enum Timeframe
     {
+        Minute5,
         Minute15,
         Minute30,
         Hour1,

@@ -91,12 +91,16 @@ namespace Stock.Shared.Models
         {
             if (obj is Price price)
             {
-                return Date == price.Date
-                    && Open == price.Open
-                    && High == price.High
-                    && Low == price.Low
-                    && Close == price.Close
-                    && Volume == price.Volume;
+                return Date.Year == price.Date.Year
+                       && Date.Month == price.Date.Month
+                       && Date.Day == price.Date.Day
+                       && Date.Hour == price.Date.Hour
+                       && Date.Minute == price.Date.Minute
+                       && Open == price.Open
+                       && High == price.High
+                       && Low == price.Low
+                       && Close == price.Close
+                       && Volume == price.Volume;
             }
             return false;
         }

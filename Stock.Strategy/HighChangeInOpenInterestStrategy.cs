@@ -2,7 +2,6 @@
 using Stock.Shared.Models;
 using Stock.Shared.Models.Parameters;
 using Stock.Strategies.EventArgs;
-using Stock.Strategy;
 
 namespace Stock.Strategies;
 
@@ -19,8 +18,9 @@ public sealed class HighChangeInOpenInterestStrategy : IStrategy
     
     public string Description => "High Change in Open Interest";
     
-    public event AlertEventHandler AlertCreated;
-    
+    public event AlertEventHandler EntryAlertCreated;
+    public event AlertEventHandler? ExitAlertCreated;
+
     public async Task Run(OptionsScreeningParams requestParams, double percentageChange)
     {
         var todayOptions = await _stockDataRetrievalService.GetOptionsScreeningResults(requestParams, false); // intraday
@@ -54,7 +54,7 @@ public sealed class HighChangeInOpenInterestStrategy : IStrategy
                 alert.OrderPosition = orderPosition;
                 alert.OptionTicker = optionTicker;
                 alert.Message = $"{todayOption.UnderlyingSymbol}|{todayOption.ExpirationDateFormatted}|{todayOption.Strike}{optionType}: Open Interest: {todayOption.OpenInterest} ({Math.Round(change, 2)}%) | Trade time: {newYorkTimeString}";
-                AlertCreated?.Invoke(this, new AlertEventArgs(alert));
+                EntryAlertCreated?.Invoke(this, new AlertEventArgs(alert));
             }
         }
     }

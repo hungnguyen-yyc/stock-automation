@@ -3,7 +3,6 @@ using Stock.Shared.Models;
 using Stock.Shared.Models.Parameters;
 using Stock.Strategies.EventArgs;
 using Stock.Strategies.Parameters;
-using Stock.Strategy;
 
 namespace Stock.Strategies;
 
@@ -15,7 +14,8 @@ public class ChainedHighOpenInterestAndLevelStrategy : IStrategy
     private SwingPointsLiveTradingHighTimeframesStrategy _swingPointsLiveTradingHighTimeframesStrategy;
     
     public string Description => "Chained High Open Interest and Level Strategy";
-    public event AlertEventHandler? AlertCreated;
+    public event AlertEventHandler? EntryAlertCreated;
+    public event AlertEventHandler? ExitAlertCreated;
 
     public ChainedHighOpenInterestAndLevelStrategy(StockDataRetrievalService stockDataRetrievalService,
         HighChangeInOpenInterestStrategy highChangeInOpenInterestStrategy)
@@ -25,9 +25,9 @@ public class ChainedHighOpenInterestAndLevelStrategy : IStrategy
         _swingPointsLiveTradingHighTimeframesStrategy = new SwingPointsLiveTradingHighTimeframesStrategy();
         _hmaEmaPriceStrategy = new HmaEmaPriceStrategy();
         
-        _highChangeInOpenInterestStrategy.AlertCreated += HighChangeInOpenInterestStrategyOnAlertCreated;
-        _swingPointsLiveTradingHighTimeframesStrategy.AlertCreated += SwingPointsLiveTradingHighTimeframesStrategyOnAlertCreated;
-        _hmaEmaPriceStrategy.AlertCreated += HmaEmaPriceStrategyOnAlertCreated;
+        _highChangeInOpenInterestStrategy.EntryAlertCreated += HighChangeInOpenInterestStrategyOnAlertCreated;
+        _swingPointsLiveTradingHighTimeframesStrategy.EntryAlertCreated += SwingPointsLiveTradingHighTimeframesStrategyOnAlertCreated;
+        _hmaEmaPriceStrategy.EntryAlertCreated += HmaEmaPriceStrategyOnAlertCreated;
     }
 
     private void HmaEmaPriceStrategyOnAlertCreated(object sender, AlertEventArgs e)
@@ -40,7 +40,7 @@ public class ChainedHighOpenInterestAndLevelStrategy : IStrategy
             OrderPosition = e.Alert.OrderPosition,
             Message = $"High Option Interest With {e.Alert.Message}"
         };
-        AlertCreated?.Invoke(this, new AlertEventArgs(alert));
+        EntryAlertCreated?.Invoke(this, new AlertEventArgs(alert));
     }
 
     private void SwingPointsLiveTradingHighTimeframesStrategyOnAlertCreated(object sender, AlertEventArgs e)
@@ -53,7 +53,7 @@ public class ChainedHighOpenInterestAndLevelStrategy : IStrategy
             OrderPosition = e.Alert.OrderPosition,
             Message = $"High Option Interest With {e.Alert.Message}"
         };
-        AlertCreated?.Invoke(this, new AlertEventArgs(alert));
+        EntryAlertCreated?.Invoke(this, new AlertEventArgs(alert));
     }
 
     private void HighChangeInOpenInterestStrategyOnAlertCreated(object sender, AlertEventArgs e)

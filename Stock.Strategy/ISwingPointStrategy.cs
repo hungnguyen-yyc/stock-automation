@@ -1,10 +1,9 @@
 using Stock.Shared.Models;
 using Stock.Strategies.Parameters;
-using Stock.Strategy;
 
 namespace Stock.Strategies;
 
-public interface ISwingPointStrategy : IStrategy
+public interface ISwingPointStrategy
 {
     event TrendLineEventHandler TrendLineCreated;
     event PivotLevelEventHandler PivotLevelCreated;
