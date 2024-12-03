@@ -89,7 +89,7 @@ await AnsiConsole.Live(table)
                 }
                 
                 ctx.Refresh();
-                await Task.Delay(1200000);
+                await Task.Delay(1800000);
             }
             catch (Exception e)
             {

@@ -1,6 +1,8 @@
 ﻿using Binance.Net.Enums;
 using Binance.Net.Interfaces.Clients;
+using Binance.Net.Objects.Models.Spot;
 using CryptoExchange.Net.Authentication;
+using CryptoExchange.Net.Objects;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace TestBinanceApi;
@@ -69,7 +71,7 @@ class Program
             {
                 var maxUsdtAvailable = usdtBalance * 0.95m; // this is to make sure we have enough balance for fees
                 var quantity = maxUsdtAvailable / price;
-                quantity = Math.Floor(quantity);
+                quantity = Math.Round(quantity * 0.95m, 2);
                 var buyResult = bc.SpotApi.Trading.PlaceOrderAsync(
                     ticker, 
                     OrderSide.Buy, 
@@ -104,7 +106,7 @@ class Program
                 // find open asset
                 var openBalance = accountBalances.FirstOrDefault(x => x.Asset == ticker.Replace("USDT", ""));
                 var total = openBalance?.Total ?? 0;
-                total = Math.Floor(total);
+                total = total > 1 ? Math.Floor(total) : Math.Floor(total * 100) / 100;;
                 var sellResult = bc.SpotApi.Trading.PlaceOrderAsync(
                     ticker, 
                     OrderSide.Sell, 

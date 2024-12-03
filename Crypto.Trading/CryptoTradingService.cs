@@ -42,7 +42,7 @@ internal class CryptoTradingService : ITradingService
         }
 
         strategy.EntryAlertCreated += async (sender, e) => await StrategyEntryAlertCreated(sender, e);
-        strategy.ExitAlertCreated += async (sender, e) => await StrategyEntryAlertCreated(sender, e);;
+        strategy.ExitAlertCreated += async (sender, e) => await StrategyExitAlertCreated(sender, e);;
     }
     
     public decimal? GetTakeProfitPrice(CryptoToTradeEnum ticker)
@@ -133,10 +133,12 @@ internal class CryptoTradingService : ITradingService
             
             if (order == null)
             {
-                _logger.Information($"No order created for {cryptoName}");
+                _logger.Information($"Failed to sell {cryptoName}");
                 return;
             }
             
+            _logger.Information($"Sold {cryptoName} at {order.Price} with quantity {order.Quantity}");
+            _logger.Information($"Triggered by {e.Alert.Strategy}: {e.Alert.Message}");
             _localTradeRecordHelper.CloseLocalPosition(cryptoEnum, order.Price, order.CreateTime, e.Alert.Message);
         }
         else
@@ -161,10 +163,12 @@ internal class CryptoTradingService : ITradingService
             
             if (order == null)
             {
-                _logger.Information($"No order created for {cryptoName}");
+                _logger.Information($"Failed to buy {cryptoName}");
                 return;
             }
             
+            _logger.Information($"Bought {cryptoName} at {order.Price} with quantity {order.Quantity}");
+            _logger.Information($"Triggered by {e.Alert.Strategy}: {e.Alert.Message}");
             _localTradeRecordHelper.OpenLocalPosition(cryptoEnum, order.Price, order.CreateTime, alert.StopLoss, alert.TakeProfit, e.Alert.Message);
         }
         else

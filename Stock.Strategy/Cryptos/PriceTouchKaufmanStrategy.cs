@@ -38,9 +38,9 @@ public class PriceTouchKaufmanStrategy : ICryptoStrategy
             var alert = new Alert
             {
                 Ticker = ticker,
-                Message = $"{ticker} Enter position at {price.Close} at {price.Date:yyyy-MM-dd HH:mm:ss}",
+                Message = $"{ticker} close ({price.Close}) above Kama14 value {lastKama14} at price's date {price.Date:yyyy-MM-dd HH:mm:ss}",
                 CreatedAt = price.Date,
-                Strategy = nameof(PriceTouchHmaAfterCrossStrategy),
+                Strategy = nameof(PriceTouchKaufmanStrategy),
                 OrderPosition = OrderPosition.Long,
                 PositionAction = PositionAction.Open,
                 Timeframe = parameter.Timeframe,
@@ -79,17 +79,28 @@ public class PriceTouchKaufmanStrategy : ICryptoStrategy
                                             && fifthLastPriceNotTouchedFifthLastKama;
         
         // this is because when we open position, we are looking at the last Kama value to always above Kama14, so we need to check if the price is below the last Kama value
-        var priceCloseBelowKama14 = price.Close < (decimal)kama14s.Last();
+        var lastKama14 = kama14s.Last();
+        var priceCloseBelowKama14 = price.Close < (decimal)lastKama14;
         
         if (lastPriceCrossedBelowLastKama || priceCloseBelowKama14)
         {
             var ticker = CryptosToTrade.CryptoEnumToName[crypto];
+            var message = string.Empty;
+            if (lastPriceCrossedBelowLastKama)
+            {
+                message = $"{ticker} close ({price.Close}) below Kama10 value {lastKama10} at price's date {price.Date:yyyy-MM-dd HH:mm:ss}";
+            }
+            else if (priceCloseBelowKama14)
+            {
+                message = $"{ticker} close ({price.Close}) below Kama14 value {lastKama14} at price's date {price.Date:yyyy-MM-dd HH:mm:ss}";
+            }
+            
             var alert = new Alert
             {
                 Ticker = ticker,
-                Message = $"{ticker} Exit position at {price.Close} at {price.Date:yyyy-MM-dd HH:mm:ss}",
+                Message = message,
                 CreatedAt = price.Date,
-                Strategy = nameof(PriceTouchHmaAfterCrossStrategy),
+                Strategy = nameof(PriceTouchKaufmanStrategy),
                 OrderPosition = OrderPosition.Long,
                 PositionAction = PositionAction.Close,
                 Timeframe = parameter.Timeframe,

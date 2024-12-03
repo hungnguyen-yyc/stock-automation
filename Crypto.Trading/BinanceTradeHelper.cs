@@ -19,7 +19,6 @@ internal class BinanceTradeHelper
     
     internal async Task<BinanceOrder?> CreateBinanceBuyOrder(CryptoToTradeEnum cryptoEnum, decimal tradeLimit)
     {
-        var cryptoName = CryptosToTrade.CryptoEnumToName[cryptoEnum];
         var binanceCrypto = CryptosToTrade.CryptoEnumToBinanceName[cryptoEnum];
         var binanceBalanceResult = await _binanceClient.SpotApi.Account.GetBalancesAsync();
         var binanceBalance = binanceBalanceResult.Data.FirstOrDefault(x => x.Asset == binanceCrypto);
@@ -34,21 +33,21 @@ internal class BinanceTradeHelper
         var usdtBalance = await GetUsdtBalance();
         if (usdtBalance < tradeLimit)
         {
-            _logger.Information($"Not enough balance to open a position for {cryptoName}");
+            _logger.Information($"Not enough balance to open a position for {binanceCrypto}");
         }
         else
         {
-            var currentPriceResult = await _binanceClient.SpotApi.ExchangeData.GetPriceAsync(cryptoName);
+            var currentPriceResult = await _binanceClient.SpotApi.ExchangeData.GetPriceAsync(binanceCrypto);
             if (!currentPriceResult.Success)
             {
-                _logger.Error($"Error getting current price for {cryptoName}: {currentPriceResult.Error}");
+                _logger.Error($"Error getting current price for {binanceCrypto}: {currentPriceResult.Error}");
             }
             else
             {
                 var currentPrice = currentPriceResult.Data.Price;
-                var quantity = usdtBalance / currentPrice;
-                quantity = Math.Floor(quantity);
-                binanceOrder = await PlaceOrder(cryptoName, currentPrice, quantity, OrderSide.Buy);
+                var quantity = (usdtBalance * 0.98m) / currentPrice; // to account for fees
+                quantity = Math.Round(quantity, 2);
+                binanceOrder = await PlaceOrder(cryptoEnum, currentPrice, quantity, OrderSide.Buy);
             }
         }
         return binanceOrder;
@@ -56,10 +55,10 @@ internal class BinanceTradeHelper
     
     internal async Task<BinanceOrder?> CreateBinanceSellOrder(CryptoToTradeEnum cryptoEnum)
     {
-        var cryptoName = CryptosToTrade.CryptoEnumToName[cryptoEnum];
         var binanceCrypto = CryptosToTrade.CryptoEnumToBinanceName[cryptoEnum];
+        var cryptoName = CryptosToTrade.CryptoEnumToName[cryptoEnum];
         var binanceBalanceResult = await _binanceClient.SpotApi.Account.GetBalancesAsync();
-        var binanceBalance = binanceBalanceResult.Data.FirstOrDefault(x => x.Asset == binanceCrypto);
+        var binanceBalance = binanceBalanceResult.Data.FirstOrDefault(x => x.Asset == cryptoName);
         BinanceOrder? binanceOrder = null;
             
         // if there is no open position, do nothing
@@ -68,25 +67,27 @@ internal class BinanceTradeHelper
             return binanceOrder;
         }
         
-        var currentPriceResult = await _binanceClient.SpotApi.ExchangeData.GetPriceAsync(cryptoName);
+        var currentPriceResult = await _binanceClient.SpotApi.ExchangeData.GetPriceAsync(binanceCrypto);
         if (!currentPriceResult.Success)
         {
-            _logger.Error($"Error getting current price for {cryptoName}: {currentPriceResult.Error}");
+            _logger.Error($"Error getting current price for {binanceCrypto}: {currentPriceResult.Error}");
         }
         else
         {
             var currentPrice = currentPriceResult.Data.Price;
-            var total = Math.Floor(binanceBalance.Total);
-            binanceOrder = await PlaceOrder(cryptoName, currentPrice, total, OrderSide.Sell);
+            var total = binanceBalance.Total;
+            total = Math.Floor(total * 100) / 100;;
+            binanceOrder = await PlaceOrder(cryptoEnum, currentPrice, total, OrderSide.Sell);
         }
         return binanceOrder;
     }
     
-    private async Task<BinanceOrder?> PlaceOrder(string ticker, decimal price, decimal quantity, OrderSide side)
+    private async Task<BinanceOrder?> PlaceOrder(CryptoToTradeEnum cryptoToTradeEnum, decimal price, decimal quantity, OrderSide side)
     {
         var orderSide = side == OrderSide.Buy ? "Buy" : "Sell";
+        var binanceCrypto = CryptosToTrade.CryptoEnumToBinanceName[cryptoToTradeEnum];
         var orderResult = await _binanceClient.SpotApi.Trading.PlaceOrderAsync(
-            ticker, 
+            binanceCrypto, 
             side, 
             SpotOrderType.Limit, 
             quantity: quantity,
@@ -95,7 +96,7 @@ internal class BinanceTradeHelper
                 
         if (!orderResult.Success)
         {
-            _logger.Error($"Error placing {orderSide} order: {orderResult.Error}");
+            _logger.Error($"Error placing {orderSide} order for {binanceCrypto}: {orderResult.Error}");
             return null;
         }
 
@@ -109,7 +110,7 @@ internal class BinanceTradeHelper
                && orderStatus != OrderStatus.Expired)
         {
             Thread.Sleep(5000);
-            var binanceOrderResult = await _binanceClient.SpotApi.Trading.GetOrderAsync(ticker, orderResult.Data.Id);
+            var binanceOrderResult = await _binanceClient.SpotApi.Trading.GetOrderAsync(binanceCrypto, orderResult.Data.Id);
             
             if (!binanceOrderResult.Success && tries < 5)
             {
