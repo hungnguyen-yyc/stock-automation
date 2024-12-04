@@ -67,26 +67,36 @@ public class PriceTouchKaufmanStrategy : ICryptoStrategy
         var fourthLastKama10 = kama10s.ElementAt(kama10s.Count - 4);
         var fifthLastKama10 = kama10s.ElementAt(kama10s.Count - 5);
         
-        var lastPriceNotTouchedLastKama = !price.CandleRange.Intersect(new NumericRange((decimal)lastKama10, (decimal)lastKama10)) && price.Close < (decimal)lastKama10;
-        var secondLastPriceTouchedSecondLastKama = secondLastPrice.CandleRange.Intersect(new NumericRange((decimal)secondLastKama10, (decimal)secondLastKama10));
-        var thirdLastPriceNotTouchedThirdLastKama = !thirdLastPrice.CandleRange.Intersect(new NumericRange((decimal)thirdLastKama10, (decimal)thirdLastKama10)) || thirdLastPrice.Close > (decimal)thirdLastKama10;
-        var fourthLastPriceNotTouchedFourthLastKama = !fourthLastPrice.CandleRange.Intersect(new NumericRange((decimal)fourthLastKama10, (decimal)fourthLastKama10)) || fourthLastPrice.Close > (decimal)fourthLastKama10;
-        var fifthLastPriceNotTouchedFifthLastKama = !fifthLastPrice.CandleRange.Intersect(new NumericRange((decimal)fifthLastKama10, (decimal)fifthLastKama10)) || fifthLastPrice.Close > (decimal)fifthLastKama10;
-        var lastPriceCrossedBelowLastKama = lastPriceNotTouchedLastKama
-                                            && secondLastPriceTouchedSecondLastKama
-                                            && thirdLastPriceNotTouchedThirdLastKama
-                                            && fourthLastPriceNotTouchedFourthLastKama
-                                            && fifthLastPriceNotTouchedFifthLastKama;
+        var lastPriceNotTouchedLastKama10 = !price.CandleRange.Intersect(new NumericRange((decimal)lastKama10, (decimal)lastKama10)) && price.Close < (decimal)lastKama10;
+        var secondLastPriceTouchedSecondLastKama10 = secondLastPrice.CandleRange.Intersect(new NumericRange((decimal)secondLastKama10, (decimal)secondLastKama10));
+        var thirdLastPriceNotTouchedThirdLastKama10 = !thirdLastPrice.CandleRange.Intersect(new NumericRange((decimal)thirdLastKama10, (decimal)thirdLastKama10)) || thirdLastPrice.Close > (decimal)thirdLastKama10;
+        var fourthLastPriceNotTouchedFourthLastKama10 = !fourthLastPrice.CandleRange.Intersect(new NumericRange((decimal)fourthLastKama10, (decimal)fourthLastKama10)) || fourthLastPrice.Close > (decimal)fourthLastKama10;
+        var fifthLastPriceNotTouchedFifthLastKama10 = !fifthLastPrice.CandleRange.Intersect(new NumericRange((decimal)fifthLastKama10, (decimal)fifthLastKama10)) || fifthLastPrice.Close > (decimal)fifthLastKama10;
+        var lastPriceCrossedBelowLastKama10 = lastPriceNotTouchedLastKama10
+                                            && secondLastPriceTouchedSecondLastKama10
+                                            && thirdLastPriceNotTouchedThirdLastKama10
+                                            && fourthLastPriceNotTouchedFourthLastKama10
+                                            && fifthLastPriceNotTouchedFifthLastKama10;
         
         // this is because when we open position, we are looking at the last Kama value to always above Kama14, so we need to check if the price is below the last Kama value
         var lastKama14 = kama14s.Last();
-        var priceCloseBelowKama14 = price.Close < (decimal)lastKama14;
+        var secondLastKama14 = kama14s.ElementAt(kama14s.Count - 2);
+        var thirdLastKama14 = kama14s.ElementAt(kama14s.Count - 3);
+        var fourthLastKama14 = kama14s.ElementAt(kama14s.Count - 4);
         
-        if (lastPriceCrossedBelowLastKama || priceCloseBelowKama14)
+        var secondLastPriceTouchSecondLastKama14 = secondLastPrice.CandleRange.Intersect(new NumericRange((decimal)secondLastKama14, (decimal)secondLastKama14)) && secondLastPrice.Close < (decimal)secondLastKama14;
+        var thirdLastPriceNotTouchThirdLastKama14 = !thirdLastPrice.CandleRange.Intersect(new NumericRange((decimal)thirdLastKama14, (decimal)thirdLastKama14)) || thirdLastPrice.Close > (decimal)thirdLastKama14;
+        var fourthLastPriceNotTouchFourthLastKama14 = !fourthLastPrice.CandleRange.Intersect(new NumericRange((decimal)fourthLastKama14, (decimal)fourthLastKama14)) || fourthLastPrice.Close > (decimal)fourthLastKama14;
+        var priceCloseBelowKama14 = price.Close < (decimal)lastKama14
+                                    && secondLastPriceTouchSecondLastKama14
+                                    && thirdLastPriceNotTouchThirdLastKama14
+                                    && fourthLastPriceNotTouchFourthLastKama14;
+        
+        if (lastPriceCrossedBelowLastKama10 || priceCloseBelowKama14)
         {
             var ticker = CryptosToTrade.CryptoEnumToName[crypto];
             var message = string.Empty;
-            if (lastPriceCrossedBelowLastKama)
+            if (lastPriceCrossedBelowLastKama10)
             {
                 message = $"{ticker} close ({price.Close}) below Kama10 value {lastKama10} at price's date {price.Date:yyyy-MM-dd HH:mm:ss}";
             }
