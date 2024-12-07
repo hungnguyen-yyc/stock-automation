@@ -87,7 +87,7 @@ public class PriceTouchKaufmanStrategy : ICryptoStrategy
         var secondLastPriceTouchSecondLastKama14 = secondLastPrice.CandleRange.Intersect(new NumericRange((decimal)secondLastKama14, (decimal)secondLastKama14)) && secondLastPrice.Close < (decimal)secondLastKama14;
         var thirdLastPriceNotTouchThirdLastKama14 = !thirdLastPrice.CandleRange.Intersect(new NumericRange((decimal)thirdLastKama14, (decimal)thirdLastKama14)) || thirdLastPrice.Close > (decimal)thirdLastKama14;
         var fourthLastPriceNotTouchFourthLastKama14 = !fourthLastPrice.CandleRange.Intersect(new NumericRange((decimal)fourthLastKama14, (decimal)fourthLastKama14)) || fourthLastPrice.Close > (decimal)fourthLastKama14;
-        var priceCloseBelowKama14 = price.Close < (decimal)lastKama14
+        var priceCloseBelowKama14 = price.High < (decimal)lastKama14
                                     && secondLastPriceTouchSecondLastKama14
                                     && thirdLastPriceNotTouchThirdLastKama14
                                     && fourthLastPriceNotTouchFourthLastKama14;

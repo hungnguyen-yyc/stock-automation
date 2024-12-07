@@ -8,6 +8,7 @@ namespace Stock.Trading;
 
 internal class BinanceTradeHelper
 {
+    private readonly decimal MaxMultiplier = 0.99m;
     private readonly IBinanceRestClient _binanceClient;
     private readonly ILogger _logger;
 
@@ -45,7 +46,7 @@ internal class BinanceTradeHelper
             else
             {
                 var currentPrice = currentPriceResult.Data.Price;
-                var quantity = (usdtBalance * 0.98m) / currentPrice; // to account for fees
+                var quantity = (usdtBalance * MaxMultiplier) / currentPrice; // to account for fees
                 quantity = Math.Round(quantity, 2);
                 binanceOrder = await PlaceOrder(cryptoEnum, currentPrice, quantity, OrderSide.Buy);
             }

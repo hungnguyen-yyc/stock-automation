@@ -1,4 +1,5 @@
-﻿using Binance.Net.Enums;
+﻿using System.Net;
+using Binance.Net.Enums;
 using Binance.Net.Interfaces.Clients;
 using Serilog;
 using Stock.Shared;
@@ -76,15 +77,13 @@ internal class CryptoTradingService : ITradingService
                     return new CryptoAsset(x.Asset, 1, x.Total, DateTime.Now);
                 }
                 
-                var symbol = x.Asset + "USDT";
-                var averagePriceResult = await _binanceClient.SpotApi.ExchangeData.GetCurrentAvgPriceAsync(symbol);
-                var currentPriceResult = await _binanceClient.SpotApi.ExchangeData.GetPriceAsync(symbol);
-                
-                if (!averagePriceResult.Success)
+                if (!CryptosToTrade.CryptoNameToEnum.TryGetValue(x.Asset, out var cryptoEnum))
                 {
-                    _logger.Error($"Error getting average price for {x.Asset}: {averagePriceResult.Error}");
                     return null;
                 }
+                
+                var binanceAsset = CryptosToTrade.CryptoEnumToBinanceName[cryptoEnum];
+                var currentPriceResult = await _binanceClient.SpotApi.ExchangeData.GetPriceAsync(binanceAsset);
                 
                 if (!currentPriceResult.Success)
                 {
@@ -92,20 +91,55 @@ internal class CryptoTradingService : ITradingService
                     return null;
                 }
                 
-                var orderDateResult = await _binanceClient.SpotApi.Trading.GetOrdersAsync(symbol);
+                var orderDateResult = await _binanceClient.SpotApi.Trading.GetOrdersAsync(binanceAsset);
                 if (!orderDateResult.Success)
                 {
                     _logger.Error($"Error getting order date for {x.Asset}: {orderDateResult.Error}");
                     return null;
                 }
 
+                var totalDepositQuantity = 0.0m;
+                var depositResult = await _binanceClient.SpotApi.Account.GetDepositHistoryAsync(x.Asset);
+                if (depositResult.Success)
+                {
+                    totalDepositQuantity = depositResult.Data
+                        .Where(x => x.Status == DepositStatus.Success)
+                        .Sum(x => x.Quantity);
+                }
+                
+                // Get average of the asset by calculating the average price of all buy orders
+                var averagePrice = 0.0m;
+                var totalOrderedQuantity = 0.0m;
+                for (var i = 0; i < orderDateResult.Data.Count(); i++)
+                {
+                    var order = orderDateResult.Data.ElementAt(i);
+                    if (order is { Side: OrderSide.Buy, Status: OrderStatus.Filled })
+                    {
+                        averagePrice = (averagePrice * totalOrderedQuantity + order.Price * order.Quantity) / (totalOrderedQuantity + order.Quantity);
+                        totalOrderedQuantity += order.Quantity;
+                    }
+                    else if (order is { Side: OrderSide.Sell, Status: OrderStatus.Filled })
+                    {
+                        totalOrderedQuantity -= order.Quantity;
+                    }
+                }
+                
+                var totalQuantity = totalOrderedQuantity + totalDepositQuantity;
+                
+                // update asset balance in usdt in db
+                var cryptoName = CryptosToTrade.CryptoEnumToName[cryptoEnum];
+                _dbRepository.CreateOrUpdateCryptoBalance(cryptoName, totalQuantity * currentPriceResult.Data.Price);
+
                 var lastFilledBuyOrder = orderDateResult.Data
                     .OrderByDescending(x => x.CreateTime)
                     .FirstOrDefault(x => x is { Side: OrderSide.Buy, Status: OrderStatus.Filled });
-                var positionFromDb = _dbRepository.GetOpenPosition(symbol)?.EntryTime;
-                var entryTime = lastFilledBuyOrder?.CreateTime ?? positionFromDb ?? DateTime.Now;
+                var lastDeposit = depositResult.Data
+                    .OrderByDescending(x => x.InsertTime)
+                    .FirstOrDefault(x => x.Status == DepositStatus.Success);
+                var positionFromDb = _dbRepository.GetOpenPosition(binanceAsset)?.EntryTime;
+                var entryTime = lastFilledBuyOrder?.CreateTime ?? lastDeposit?.InsertTime ?? positionFromDb ?? DateTime.Now;
                 
-                var asset = new CryptoAsset(x.Asset, averagePriceResult.Data.Price, x.Total, entryTime)
+                var asset = new CryptoAsset(x.Asset, averagePrice, totalQuantity, entryTime)
                     {
                         CurrentPrice = currentPriceResult.Data.Price
                     };

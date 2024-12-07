@@ -62,7 +62,7 @@ internal class LocalTradeRecordHelper
         }
 
         _dbRepository.ClosePosition(closedPosition);
-        _dbRepository.UpdateCryptoBalance(closedPosition.OpenPosition.Ticker,
+        _dbRepository.CreateOrUpdateCryptoBalance(closedPosition.OpenPosition.Ticker,
             closedPosition.OpenPosition.Quantity * closedPosition.ExitPrice);
         _logger.Information($"{message}");
     }

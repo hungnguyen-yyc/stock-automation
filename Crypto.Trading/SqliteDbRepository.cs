@@ -184,7 +184,39 @@ internal class SqliteDbRepository
         }
     }
     
-    public void UpdateCryptoBalance(string crypto, decimal balance)
+    public void CreateOrUpdateCryptoBalance(string crypto, decimal balance)
+    {
+        try
+        {
+            using var connection = new SQLiteConnection($"Data Source={_sqliteDbInitializer.DbPath};Version=3;");
+            connection.Open();
+        
+            // can't do an upsert in SQLite because of incremental primary key, so we have to check if the record exists first
+            var selectCommand = connection.CreateCommand();
+            selectCommand.CommandText = @"SELECT COUNT(*) FROM Assets WHERE Ticker = @Ticker;";
+            selectCommand.Parameters.AddWithValue("@Ticker", crypto);
+            
+            var count = (long)selectCommand.ExecuteScalar();
+            if (count == 0)
+            {
+                var insertCommand = connection.CreateCommand();
+                insertCommand.CommandText = @"INSERT INTO Assets (Ticker, Balance) VALUES (@Ticker, @Balance);";
+                insertCommand.Parameters.AddWithValue("@Ticker", crypto);
+                insertCommand.Parameters.AddWithValue("@Balance", balance);
+                insertCommand.ExecuteNonQuery();
+            }
+            else
+            {
+                UpdateCryptoBalance(crypto, balance);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Error creating or updating balance in database");
+        }
+    }
+    
+    private void UpdateCryptoBalance(string crypto, decimal balance)
     {
         try
         {
