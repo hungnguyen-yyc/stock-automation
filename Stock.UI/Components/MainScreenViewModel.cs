@@ -500,6 +500,9 @@ namespace Stock.UI.Components
             
             var chainedHighOpenInterestAndLevelStrategy = new ChainedHighOpenInterestAndLevelStrategy(_repo, highChangeInOpenInterestStrategy);
             chainedHighOpenInterestAndLevelStrategy.AlertCreated += Strategy_AlertCreated;
+            
+            var immediateSwingLowStrategy = new ImmediateSwingLowStrategy();
+            immediateSwingLowStrategy.AlertCreated += Strategy_AlertCreated;
             while (true)
             {
                 var minutesToWait = 10;
@@ -564,6 +567,15 @@ namespace Stock.UI.Components
                         var screeningParams = HighChangeInOpenInterestStrategy.OptionsScreeningParams;
                         highChangeInOpenInterestStrategy.Run(screeningParams, 20);
                     });
+                    
+                    // if it's 4:05 PM EST or New York time, we want to export the alerts and close the app
+                    var newYorkTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Eastern Standard Time");
+                    var newYorkTime = TimeZoneInfo.ConvertTime(DateTime.Now, newYorkTimeZone);
+                    if (newYorkTime.Hour == 16 && newYorkTime.Minute == 5)
+                    {
+                        ExportAlertToCsv();
+                        Environment.Exit(0);
+                    }
                 }
                 catch (Exception ex)
                 {

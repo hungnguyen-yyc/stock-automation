@@ -19,6 +19,8 @@ namespace Stock.Shared.Models
         public string Message { get; set; }
         public string Strategy { get; set; }
         public decimal PriceClosed { get; set; }
+        public decimal? StopLoss { get; set; }
+        public decimal? TakeProfit { get; set; }
         public OrderPosition OrderPosition { get; set; }
         public PositionAction PositionAction { get; set; }
 

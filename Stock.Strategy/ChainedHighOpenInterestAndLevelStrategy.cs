@@ -13,7 +13,8 @@ public class ChainedHighOpenInterestAndLevelStrategy : IStrategy
     private HighChangeInOpenInterestStrategy _highChangeInOpenInterestStrategy;
     private HmaEmaPriceStrategy _hmaEmaPriceStrategy;
     private SwingPointsLiveTradingHighTimeframesStrategy _swingPointsLiveTradingHighTimeframesStrategy;
-    
+    private readonly ImmediateSwingLowStrategy _immediateSwingLowStrategy;
+
     public string Description => "Chained High Open Interest and Level Strategy";
     public event AlertEventHandler? AlertCreated;
 
@@ -24,10 +25,25 @@ public class ChainedHighOpenInterestAndLevelStrategy : IStrategy
         _highChangeInOpenInterestStrategy = highChangeInOpenInterestStrategy;
         _swingPointsLiveTradingHighTimeframesStrategy = new SwingPointsLiveTradingHighTimeframesStrategy();
         _hmaEmaPriceStrategy = new HmaEmaPriceStrategy();
+        _immediateSwingLowStrategy = new ImmediateSwingLowStrategy();
         
         _highChangeInOpenInterestStrategy.AlertCreated += HighChangeInOpenInterestStrategyOnAlertCreated;
         _swingPointsLiveTradingHighTimeframesStrategy.AlertCreated += SwingPointsLiveTradingHighTimeframesStrategyOnAlertCreated;
         _hmaEmaPriceStrategy.AlertCreated += HmaEmaPriceStrategyOnAlertCreated;
+        _immediateSwingLowStrategy.AlertCreated += ImmediateSwingLowStrategyOnAlertCreated;
+    }
+
+    private void ImmediateSwingLowStrategyOnAlertCreated(object sender, AlertEventArgs e)
+    {
+        var alert = new Alert
+        {
+            Ticker = e.Alert.Ticker,
+            Timeframe = e.Alert.Timeframe,
+            CreatedAt = e.Alert.CreatedAt,
+            OrderPosition = e.Alert.OrderPosition,
+            Message = $"High Option Interest With {e.Alert.Message}"
+        };
+        AlertCreated?.Invoke(this, new AlertEventArgs(alert));
     }
 
     private void HmaEmaPriceStrategyOnAlertCreated(object sender, AlertEventArgs e)
@@ -69,6 +85,23 @@ public class ChainedHighOpenInterestAndLevelStrategy : IStrategy
             _swingPointsLiveTradingHighTimeframesStrategy.CheckForTopBottomTouch(ticker, prices.ToList(), swingPointStrategyParameter);
             _swingPointsLiveTradingHighTimeframesStrategy.CheckForTouchingDownTrendLine(ticker, prices.ToList(), swingPointStrategyParameter);
             _swingPointsLiveTradingHighTimeframesStrategy.CheckForTouchingUpTrendLine(ticker, prices.ToList(), swingPointStrategyParameter);
+            
+            var immediateSwingLowEntryParameter = new ImmediateSwingLowEntryParameter
+            {
+                NumberOfCandlesticksToLookBack = 10,
+                TemaPeriod = 200,
+                Timeframe = timeframe,
+            };
+            var immediateSwingLowExitParameter = new ImmediateSwingLowExitParameter
+            {
+                NumberOfCandlesticksToLookBack = 100,
+                TemaPeriod = 150,
+                Timeframe = timeframe,
+                StopLoss = 0,
+                TakeProfit = int.MaxValue
+            };
+            _immediateSwingLowStrategy.CheckForBullishEntry(ticker, prices.ToList(), immediateSwingLowEntryParameter);
+            _immediateSwingLowStrategy.CheckForBullishExit(ticker, prices.ToList(), immediateSwingLowExitParameter);
             
             var hmaEmaStrategyParameter = new HmaEmaPriceStrategyParameter
             {
