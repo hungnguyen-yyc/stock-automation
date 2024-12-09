@@ -3,6 +3,7 @@ using Binance.Net.Enums;
 using Binance.Net.Interfaces.Clients;
 using Serilog;
 using Stock.Shared;
+using Stock.Shared.Models;
 using Stock.Strategies;
 using Stock.Strategies.Cryptos;
 using Stock.Strategies.EventArgs;
@@ -46,17 +47,17 @@ internal class CryptoTradingService : ITradingService
         strategy.ExitAlertCreated += async (sender, e) => await StrategyExitAlertCreated(sender, e);;
     }
     
-    public decimal? GetTakeProfitPrice(CryptoToTradeEnum ticker)
+    public async Task<decimal?> GetTakeProfitPrice(CryptoToTradeEnum ticker)
     {
         var cryptoName = CryptosToTrade.CryptoEnumToName[ticker];
-        var currentPriceResult = _dbRepository.GetOpenPosition(cryptoName)?.TakeProfitPrice;
+        var currentPriceResult = (await _dbRepository.GetOpenPosition(cryptoName))?.TakeProfitPrice;
         return currentPriceResult;
     } 
     
-    public decimal? GetStopLossPrice(CryptoToTradeEnum ticker)
+    public async Task<decimal?> GetStopLossPrice(CryptoToTradeEnum ticker)
     {
         var cryptoName = CryptosToTrade.CryptoEnumToName[ticker];
-        var currentPriceResult = _dbRepository.GetOpenPosition(cryptoName)?.StopLossPrice;
+        var currentPriceResult = (await _dbRepository.GetOpenPosition(cryptoName))?.StopLossPrice;
         return currentPriceResult;
     }
 
@@ -128,7 +129,7 @@ internal class CryptoTradingService : ITradingService
                 
                 // update asset balance in usdt in db
                 var cryptoName = CryptosToTrade.CryptoEnumToName[cryptoEnum];
-                _dbRepository.CreateOrUpdateCryptoBalance(cryptoName, totalQuantity * currentPriceResult.Data.Price);
+                await _dbRepository.CreateOrUpdateCryptoBalance(cryptoName, totalQuantity * currentPriceResult.Data.Price);
 
                 var lastFilledBuyOrder = orderDateResult.Data
                     .OrderByDescending(x => x.CreateTime)
@@ -136,7 +137,7 @@ internal class CryptoTradingService : ITradingService
                 var lastDeposit = depositResult.Data
                     .OrderByDescending(x => x.InsertTime)
                     .FirstOrDefault(x => x.Status == DepositStatus.Success);
-                var positionFromDb = _dbRepository.GetOpenPosition(binanceAsset)?.EntryTime;
+                var positionFromDb = (await _dbRepository.GetOpenPosition(binanceAsset))?.EntryTime;
                 var entryTime = lastFilledBuyOrder?.CreateTime ?? lastDeposit?.InsertTime ?? positionFromDb ?? DateTime.Now;
                 
                 var asset = new CryptoAsset(x.Asset, averagePrice, totalQuantity, entryTime)
@@ -173,15 +174,14 @@ internal class CryptoTradingService : ITradingService
             
             _logger.Information($"Sold {cryptoName} at {order.Price} with quantity {order.Quantity}");
             _logger.Information($"Triggered by {e.Alert.Strategy}: {e.Alert.Message}");
-            _localTradeRecordHelper.CloseLocalPosition(cryptoEnum, order.Price, order.CreateTime, e.Alert.Message);
         }
         else
         {
             var priceClosed = alert.PriceClosed;
             var closedTime = alert.CreatedAt;
             var message = e.Alert.Message;
-        
-            _localTradeRecordHelper.CloseLocalPosition(cryptoEnum, priceClosed, closedTime, message);
+            
+            await _localTradeRecordHelper.CloseLocalPosition(cryptoEnum, priceClosed, closedTime, message);
         }
     }
 
@@ -203,7 +203,6 @@ internal class CryptoTradingService : ITradingService
             
             _logger.Information($"Bought {cryptoName} at {order.Price} with quantity {order.Quantity}");
             _logger.Information($"Triggered by {e.Alert.Strategy}: {e.Alert.Message}");
-            _localTradeRecordHelper.OpenLocalPosition(cryptoEnum, order.Price, order.CreateTime, alert.StopLoss, alert.TakeProfit, e.Alert.Message);
         }
         else
         {
@@ -212,8 +211,8 @@ internal class CryptoTradingService : ITradingService
             var takeProfit = alert.TakeProfit;
             var createdTime = alert.CreatedAt;
             var message = e.Alert.Message;
-        
-            _localTradeRecordHelper.OpenLocalPosition(cryptoEnum, priceClosed, createdTime, stopLoss, takeProfit, message);
+            
+            await _localTradeRecordHelper.OpenLocalPosition(cryptoEnum, priceClosed, createdTime, stopLoss, takeProfit, message);
         }
     }
 }

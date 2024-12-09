@@ -86,7 +86,7 @@ public partial class MainScreenViewModel
                             Timeframe = timeframe,
                             HmaPeriod = 50
                         };
-                        await Task.Run(() =>
+                        await Task.Run(async () =>
                         {
                             var entryParam = ImmediateSwingLowParameterProvider.GetEntryParameter(barcharCrypto);
                             var exitParam = ImmediateSwingLowParameterProvider.GetExitParameter(barcharCrypto);
@@ -96,8 +96,8 @@ public partial class MainScreenViewModel
                             {
                                 immediateSwingLowStrategy.CheckForBullishEntry(crypto, hour1Prices.Take(i).ToList(), entryParam);
 
-                                exitParam.StopLoss = tradingService.GetStopLossPrice(crypto) ?? Decimal.MinValue;
-                                exitParam.TakeProfit = tradingService.GetTakeProfitPrice(crypto) ?? Decimal.MaxValue;
+                                exitParam.StopLoss = await tradingService.GetStopLossPrice(crypto) ?? Decimal.MinValue;
+                                exitParam.TakeProfit = await tradingService.GetTakeProfitPrice(crypto) ?? Decimal.MaxValue;
                                 immediateSwingLowStrategy.CheckForBullishExit(crypto, hour1Prices.Take(i).ToList(), exitParam);
                             }
                             else

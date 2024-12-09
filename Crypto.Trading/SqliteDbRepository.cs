@@ -18,11 +18,11 @@ internal class SqliteDbRepository
         _logger = logger;
     }
     
-    public void AddPosition(InHouseOpenPosition openPosition)
+    public async Task AddPosition(InHouseOpenPosition openPosition)
     {
         try
         {
-            using var connection = new SQLiteConnection($"Data Source={_sqliteDbInitializer.DbPath};Version=3;");
+            await using var connection = new SQLiteConnection($"Data Source={_sqliteDbInitializer.DbPath};Version=3;");
             connection.Open();
         
             var insertCommand = connection.CreateCommand();
@@ -53,7 +53,7 @@ internal class SqliteDbRepository
             var insertQuery = $"{baseQuery} {valuesClause};";
 
             insertCommand.CommandText = insertQuery;
-            insertCommand.ExecuteNonQuery();
+            await insertCommand.ExecuteNonQueryAsync();
         }
         catch (Exception ex)
         {
@@ -61,11 +61,11 @@ internal class SqliteDbRepository
         }
     }
     
-    public void ClosePosition(InHouseClosedPosition position)
+    public async Task ClosePosition(InHouseClosedPosition position)
     {
         try
         {
-            using var connection = new SQLiteConnection($"Data Source={_sqliteDbInitializer.DbPath};Version=3;");
+            await using var connection = new SQLiteConnection($"Data Source={_sqliteDbInitializer.DbPath};Version=3;");
             connection.Open();
         
             var updateCommand = connection.CreateCommand();
@@ -76,7 +76,7 @@ internal class SqliteDbRepository
             updateCommand.Parameters.AddWithValue("@ExitDate", position.ExitTime.ToUnixTimeSeconds());
             updateCommand.Parameters.AddWithValue("@EntryDate", position.OpenPosition.EntryTime.ToUnixTimeSeconds());
         
-            updateCommand.ExecuteNonQuery();
+            await updateCommand.ExecuteNonQueryAsync();
         }
         catch (Exception ex)
         {
@@ -84,50 +84,11 @@ internal class SqliteDbRepository
         }
     }
     
-    
-    
-    public InHouseClosedPosition? GetClosedPosition(string ticker)
+    public async Task<InHouseOpenPosition?> GetOpenPosition(string ticker)
     {
         try
         {
-            using var connection = new SQLiteConnection($"Data Source={_sqliteDbInitializer.DbPath};Version=3;");
-            connection.Open();
-        
-            var selectCommand = connection.CreateCommand();
-            selectCommand.CommandText = @"SELECT Ticker, Quantity, AveragePrice, EntryDate, ExitPrice, ExitDate FROM Positions WHERE Ticker = @Ticker;";
-        
-            selectCommand.Parameters.AddWithValue("@Ticker", ticker);
-        
-            using var reader = selectCommand.ExecuteReader();
-            if (!reader.Read())
-            {
-                return null;
-            }
-        
-            var exitPrice = reader.GetDecimal(4);
-            var exitTime = reader.GetInt64(5);
-        
-            return new InHouseClosedPosition(
-                new InHouseOpenPosition(
-                    ticker,
-                    reader.GetDecimal(2),
-                    reader.GetDecimal(1),
-                    DateTimeOffset.FromUnixTimeSeconds(reader.GetInt64(3))),
-                exitPrice,
-                DateTimeOffset.FromUnixTimeSeconds(exitTime));
-        }
-        catch (Exception ex)
-        {
-            _logger.Error(ex, "Error getting closed position from database");
-            return null;
-        }
-    }
-    
-    public InHouseOpenPosition? GetOpenPosition(string ticker)
-    {
-        try
-        {
-            using var connection = new SQLiteConnection($"Data Source={_sqliteDbInitializer.DbPath};Version=3;");
+            await using var connection = new SQLiteConnection($"Data Source={_sqliteDbInitializer.DbPath};Version=3;");
             connection.Open();
         
             var selectCommand = connection.CreateCommand();
@@ -135,9 +96,9 @@ internal class SqliteDbRepository
                 FROM Positions WHERE Ticker = @Ticker AND ExitPrice IS NULL;";
         
             selectCommand.Parameters.AddWithValue("@Ticker", ticker);
-        
-            using var reader = selectCommand.ExecuteReader();
-            if (!reader.Read())
+
+            await using var reader = await selectCommand.ExecuteReaderAsync();
+            if (!await reader.ReadAsync())
             {
                 return null;
             }
@@ -157,20 +118,20 @@ internal class SqliteDbRepository
         }
     }
     
-    public decimal GetCryptoBalance(string crypto)
+    public async Task<decimal> GetCryptoBalance(string crypto)
     {
         try
         {
-            using var connection = new SQLiteConnection($"Data Source={_sqliteDbInitializer.DbPath};Version=3;");
+            await using var connection = new SQLiteConnection($"Data Source={_sqliteDbInitializer.DbPath};Version=3;");
             connection.Open();
         
             var selectCommand = connection.CreateCommand();
             selectCommand.CommandText = @"SELECT Balance FROM Assets WHERE Ticker = @Ticker;";
             
             selectCommand.Parameters.AddWithValue("@Ticker", crypto);
-        
-            using var reader = selectCommand.ExecuteReader();
-            if (!reader.Read())
+
+            await using var reader = await selectCommand.ExecuteReaderAsync();
+            if (!await reader.ReadAsync())
             {
                 return 0;
             }
@@ -184,7 +145,7 @@ internal class SqliteDbRepository
         }
     }
     
-    public void CreateOrUpdateCryptoBalance(string crypto, decimal balance)
+    public async Task CreateOrUpdateCryptoBalance(string crypto, decimal balance)
     {
         try
         {
@@ -203,11 +164,11 @@ internal class SqliteDbRepository
                 insertCommand.CommandText = @"INSERT INTO Assets (Ticker, Balance) VALUES (@Ticker, @Balance);";
                 insertCommand.Parameters.AddWithValue("@Ticker", crypto);
                 insertCommand.Parameters.AddWithValue("@Balance", balance);
-                insertCommand.ExecuteNonQuery();
+                await insertCommand.ExecuteNonQueryAsync();
             }
             else
             {
-                UpdateCryptoBalance(crypto, balance);
+                await UpdateCryptoBalance(crypto, balance);
             }
         }
         catch (Exception ex)
@@ -216,7 +177,7 @@ internal class SqliteDbRepository
         }
     }
     
-    private void UpdateCryptoBalance(string crypto, decimal balance)
+    private async Task UpdateCryptoBalance(string crypto, decimal balance)
     {
         try
         {
@@ -229,41 +190,11 @@ internal class SqliteDbRepository
             updateCommand.Parameters.AddWithValue("@Ticker", crypto);
             updateCommand.Parameters.AddWithValue("@Balance", balance);
         
-            updateCommand.ExecuteNonQuery();
+            await updateCommand.ExecuteNonQueryAsync();
         }
         catch (Exception ex)
         {
             _logger.Error(ex, "Error updating balance in database");
-        }
-    }
-    
-    public CryptoAssets GetCryptoAssets()
-    {
-        try
-        {
-            using var connection = new SQLiteConnection($"Data Source={_sqliteDbInitializer.DbPath};Version=3;");
-            connection.Open();
-        
-            var selectCommand = connection.CreateCommand();
-            selectCommand.CommandText = @"SELECT Ticker, Quantity, AveragePrice, EntryDate FROM Positions WHERE ExitPrice IS NULL;";
-        
-            using var reader = selectCommand.ExecuteReader();
-            var assets = new CryptoAssets();
-            while (reader.Read())
-            {
-                assets.Add(new CryptoAsset(
-                    reader.GetString(0),
-                    reader.GetDecimal(2),
-                    reader.GetDecimal(1),
-                    DateTimeOffset.FromUnixTimeSeconds(reader.GetInt64(3))));
-            }
-        
-            return assets;
-        }
-        catch (Exception ex)
-        {
-            _logger.Error(ex, "Error getting portfolio from database");
-            return new CryptoAssets();
         }
     }
 }

@@ -44,6 +44,13 @@ internal class SqliteDbInitializer
             );";
             createPositionsTableCommand.ExecuteNonQuery();
             
+            var createBinanceOrderWithPivotPoints = connection.CreateCommand();
+            createBinanceOrderWithPivotPoints.CommandText = @"CREATE TABLE BinanceOrdersWithStopLoss (
+                BinanceOrderId INTEGER PRIMARY KEY,
+                PivotPointJson TEXT,
+            );";
+            createBinanceOrderWithPivotPoints.ExecuteNonQuery();
+            
             var createAssetsTableCommand = connection.CreateCommand();
             createAssetsTableCommand.CommandText = @"CREATE TABLE Assets (
                 Id INTEGER PRIMARY KEY AUTOINCREMENT,

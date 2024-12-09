@@ -11,7 +11,7 @@ public interface ITradingService
     
     public void AddStrategy(CryptoToTradeEnum crypto, ICryptoStrategy strategy);
     
-    public decimal? GetTakeProfitPrice(CryptoToTradeEnum ticker);
+    public Task<decimal?> GetTakeProfitPrice(CryptoToTradeEnum ticker);
     
-    public decimal? GetStopLossPrice(CryptoToTradeEnum ticker);
+    public Task<decimal?> GetStopLossPrice(CryptoToTradeEnum ticker);
 }

@@ -15,13 +15,13 @@ internal class LocalTradeRecordHelper
         _logger = logger;
     }
 
-    public void OpenLocalPosition(CryptoToTradeEnum cryptoToTradeEnum, decimal priceClosed, DateTime createdTime,
+    public async Task OpenLocalPosition(CryptoToTradeEnum cryptoToTradeEnum, decimal priceClosed, DateTime createdTime,
         decimal? stopLoss,
         decimal? takeProfit, string message)
     {
         var cryptoName = CryptosToTrade.CryptoEnumToName[cryptoToTradeEnum];
-        var openPosition = _dbRepository.GetOpenPosition(cryptoName);
-        var balance = _dbRepository.GetCryptoBalance(cryptoName);
+        var openPosition = await _dbRepository.GetOpenPosition(cryptoName);
+        var balance = await _dbRepository.GetCryptoBalance(cryptoName);
         var quantity = balance / priceClosed;
         if (openPosition != null)
         {
@@ -34,8 +34,7 @@ internal class LocalTradeRecordHelper
             return;
         }
 
-        // TODO: open Binance position
-        _dbRepository.AddPosition(
+        await _dbRepository.AddPosition(
             new InHouseOpenPosition(
                 cryptoName,
                 priceClosed,
@@ -46,11 +45,11 @@ internal class LocalTradeRecordHelper
         _logger.Information($"Entry signal created: {message}");
     }
 
-    public void CloseLocalPosition(CryptoToTradeEnum cryptoToTradeEnum, decimal priceClosed, DateTime closedTime,
+    public async Task CloseLocalPosition(CryptoToTradeEnum cryptoToTradeEnum, decimal priceClosed, DateTime closedTime,
         string message)
     {
         var cryptoName = CryptosToTrade.CryptoEnumToName[cryptoToTradeEnum];
-        var positionToClose = _dbRepository.GetOpenPosition(cryptoName);
+        var positionToClose = await _dbRepository.GetOpenPosition(cryptoName);
         if (positionToClose == null)
         {
             return;
@@ -61,8 +60,8 @@ internal class LocalTradeRecordHelper
             return;
         }
 
-        _dbRepository.ClosePosition(closedPosition);
-        _dbRepository.CreateOrUpdateCryptoBalance(closedPosition.OpenPosition.Ticker,
+        await _dbRepository.ClosePosition(closedPosition);
+        await _dbRepository.CreateOrUpdateCryptoBalance(closedPosition.OpenPosition.Ticker,
             closedPosition.OpenPosition.Quantity * closedPosition.ExitPrice);
         _logger.Information($"{message}");
     }
