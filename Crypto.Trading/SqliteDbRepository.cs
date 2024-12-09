@@ -177,6 +177,52 @@ internal class SqliteDbRepository
         }
     }
     
+    public async Task CreateBinanceOrderWithPivotPoints(BinanceTradePivotPoint binanceTradePivotPoint)
+    {
+        try
+        {
+            using var connection = new SQLiteConnection($"Data Source={_sqliteDbInitializer.DbPath};Version=3;");
+            connection.Open();
+        
+            var insertCommand = connection.CreateCommand();
+            insertCommand.CommandText = @"INSERT INTO BinanceOrdersWithStopLoss (BinanceOrderId, PivotPointJson) VALUES (@BinanceOrderId, @PivotPointJson);";
+            insertCommand.Parameters.AddWithValue("@BinanceOrderId", binanceTradePivotPoint.BinanceTradeId);
+            insertCommand.Parameters.AddWithValue("@PivotPointJson", binanceTradePivotPoint.TradePivotPoint?.Serialize());
+        
+            await insertCommand.ExecuteNonQueryAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Error creating Binance order with pivot points in database");
+        }
+    }
+    
+    public async Task<BinanceTradePivotPoint?> GetBinanceOrderWithPivotPoints(long binanceOrderId)
+    {
+        try
+        {
+            await using var connection = new SQLiteConnection($"Data Source={_sqliteDbInitializer.DbPath};Version=3;");
+            connection.Open();
+        
+            var selectCommand = connection.CreateCommand();
+            selectCommand.CommandText = @"SELECT PivotPointJson FROM BinanceOrdersWithStopLoss WHERE BinanceOrderId = @BinanceOrderId;";
+            selectCommand.Parameters.AddWithValue("@BinanceOrderId", binanceOrderId);
+        
+            await using var reader = await selectCommand.ExecuteReaderAsync();
+            if (!await reader.ReadAsync())
+            {
+                return null;
+            }
+        
+            return BinanceTradePivotPoint.FromJson(binanceOrderId, reader.GetString(0));
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Error getting Binance order with pivot points from database");
+            return null;
+        }
+    }
+    
     private async Task UpdateCryptoBalance(string crypto, decimal balance)
     {
         try

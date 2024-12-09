@@ -1,18 +1,31 @@
-﻿using Skender.Stock.Indicators;
+﻿using Newtonsoft.Json;
+using Skender.Stock.Indicators;
 
 namespace Stock.Shared.Models
 {
     public class Price : IPrice
     {
+        [JsonProperty("date")]
         public DateTime Date { get; set; }
         
         public string DateAsString => Date.ToString("yyyy-MM-dd HH:mm:ss");
 
+        [JsonProperty("open")]
         public decimal Open { get; set; }
+        
+        [JsonProperty("high")]
         public decimal High { get; set; }
+        
+        [JsonProperty("low")]
         public decimal Low { get; set; }
+        
+        [JsonProperty("close")]
         public decimal Close { get; set; }
+        
+        [JsonProperty("volume")]
         public decimal Volume { get; set; }
+        
+        public long UnixTimestamp => ((DateTimeOffset)Date).ToUnixTimeSeconds();
         
         public decimal OHLC4 => (Open + High + Low + Close) / 4;
         

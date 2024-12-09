@@ -203,6 +203,9 @@ internal class CryptoTradingService : ITradingService
             
             _logger.Information($"Bought {cryptoName} at {order.Price} with quantity {order.Quantity}");
             _logger.Information($"Triggered by {e.Alert.Strategy}: {e.Alert.Message}");
+            
+            var pivotPoint = new BinanceTradePivotPoint(order.Id, null);
+            await _dbRepository.CreateBinanceOrderWithPivotPoints(pivotPoint);
         }
         else
         {
