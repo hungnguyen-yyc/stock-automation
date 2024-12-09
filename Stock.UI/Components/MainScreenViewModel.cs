@@ -558,6 +558,13 @@ namespace Stock.UI.Components
                                 _strategy.CheckForTouchingDownTrendLine(ticker, prices.ToList(), swingPointStrategyParameter);
                                 _strategy.CheckForTouchingUpTrendLine(ticker, prices.ToList(), swingPointStrategyParameter);
                                 hmaEmaStrategy.Run(ticker, prices.ToList(), hmaEmaStrategyParameter);
+                                
+                                var immediateSwingLowEntryParameter = ImmediateSwingLowParameterProvider.GetEntryParameter(ticker);
+                                immediateSwingLowEntryParameter.Timeframe = timeframe;
+                                var immediateSwingLowExitParameter = ImmediateSwingLowParameterProvider.GetExitParameter(ticker);
+                                immediateSwingLowExitParameter.Timeframe = timeframe;
+                                immediateSwingLowStrategy.CheckForBullishEntry(ticker, prices.ToList(), immediateSwingLowEntryParameter);
+                                immediateSwingLowStrategy.CheckForBullishExit(ticker, prices.ToList(), immediateSwingLowExitParameter);
                             });
 
                         }

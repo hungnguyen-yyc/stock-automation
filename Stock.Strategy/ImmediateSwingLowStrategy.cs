@@ -24,7 +24,7 @@ public class ImmediateSwingLowStrategy : IStrategy
         var lastSwingLow = swingLows.Last();
         var indexOfSecondLastSwingLowInPrices = prices.ToList().IndexOf(lastSwingLow);
         var indexOfLastPrice = prices.Count - 1;
-        var movingAwayFromLastSwingLow = indexOfLastPrice - indexOfSecondLastSwingLowInPrices == swingPointsParameters.NumberOfCandlesticksToLookBack / 2;
+        var movingAwayFromLastSwingLow = indexOfLastPrice - indexOfSecondLastSwingLowInPrices == swingPointsParameters.NumberOfCandlesticksToLookBack;
         var lastPriceCloseAboveLastSwingLow = lastPrice.Close > swingLows.Last().Low;
         
         var lastTema = temas.Last().Tema ?? 0;

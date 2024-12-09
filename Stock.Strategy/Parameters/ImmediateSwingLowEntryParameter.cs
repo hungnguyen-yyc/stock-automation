@@ -17,12 +17,17 @@ public class ImmediateSwingLowParameterProvider
         NumberOfCandlesticksToLookBack = 10,
         Timeframe = Timeframe.Hour1,
         StopLoss = 0,
-        TakeProfit = 0
+        TakeProfit = Int32.MaxValue
     };
     
     public static ImmediateSwingLowEntryParameter GetEntryParameter(string ticker)
     {
         return DefaultEntryParameter;
+    }
+    
+    public static ImmediateSwingLowExitParameter GetExitParameter(string ticker)
+    {
+        return DefaultExitParameter;
     }
 }
 
