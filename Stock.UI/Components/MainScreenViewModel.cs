@@ -516,7 +516,7 @@ namespace Stock.UI.Components
                 try
                 {
                     var tickers = TickersWithoutAll;
-                    var timeframes = new[] { Timeframe.Daily };
+                    var timeframes = new[] { Timeframe.Daily, Timeframe.Hour1 };
 
                     foreach (var timeframe in timeframes)
                     {
