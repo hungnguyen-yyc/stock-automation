@@ -493,7 +493,6 @@ namespace Stock.UI.Components
         private async Task RunInRelease()
         {
             var highChangeInOpenInterestStrategy = new HighChangeInOpenInterestStrategy(_repo);
-            highChangeInOpenInterestStrategy.AlertCreated += Strategy_AlertCreated;
             
             var hmaEmaStrategy = new HmaEmaPriceStrategy();
             hmaEmaStrategy.AlertCreated += Strategy_AlertCreated;
@@ -503,6 +502,9 @@ namespace Stock.UI.Components
             
             var immediateSwingLowStrategy = new ImmediateSwingLowStrategy();
             immediateSwingLowStrategy.AlertCreated += Strategy_AlertCreated;
+            
+            var immediateSwingLowAndSwingPointStrategy = new ImmediateSwingLowAndSwingPointStrategy();
+            immediateSwingLowAndSwingPointStrategy.AlertCreated += Strategy_AlertCreated;
             while (true)
             {
                 var minutesToWait = 10;
@@ -559,12 +561,14 @@ namespace Stock.UI.Components
                                 _strategy.CheckForTouchingUpTrendLine(ticker, prices.ToList(), swingPointStrategyParameter);
                                 hmaEmaStrategy.Run(ticker, prices.ToList(), hmaEmaStrategyParameter);
                                 
-                                var immediateSwingLowEntryParameter = ImmediateSwingLowParameterProvider.GetEntryParameter(ticker);
-                                immediateSwingLowEntryParameter.Timeframe = timeframe;
-                                var immediateSwingLowExitParameter = ImmediateSwingLowParameterProvider.GetExitParameter(ticker);
-                                immediateSwingLowExitParameter.Timeframe = timeframe;
-                                immediateSwingLowStrategy.CheckForBullishEntry(ticker, prices.ToList(), immediateSwingLowEntryParameter);
-                                immediateSwingLowStrategy.CheckForBullishExit(ticker, prices.ToList(), immediateSwingLowExitParameter);
+                                //var immediateSwingLowEntryParameter = ImmediateSwingLowParameterProvider.GetEntryParameter(ticker);
+                                //immediateSwingLowEntryParameter.Timeframe = timeframe;
+                                //var immediateSwingLowExitParameter = ImmediateSwingLowParameterProvider.GetExitParameter(ticker);
+                                //immediateSwingLowExitParameter.Timeframe = timeframe;
+                                //immediateSwingLowStrategy.CheckForBullishEntry(ticker, prices.ToList(), immediateSwingLowEntryParameter);
+                                //immediateSwingLowStrategy.CheckForBullishExit(ticker, prices.ToList(), immediateSwingLowExitParameter);
+                                
+                                immediateSwingLowAndSwingPointStrategy.CheckForBullishEntry(ticker, prices.ToList(), swingPointStrategyParameter);
                             });
 
                         }
