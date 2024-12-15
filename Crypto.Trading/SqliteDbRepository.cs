@@ -197,6 +197,26 @@ internal class SqliteDbRepository
         }
     }
     
+    public async Task<long> GetNextBinanceOrderId()
+    {
+        try
+        {
+            await using var connection = new SQLiteConnection($"Data Source={_sqliteDbInitializer.DbPath};Version=3;");
+            connection.Open();
+        
+            var selectCommand = connection.CreateCommand();
+            selectCommand.CommandText = @"SELECT MAX(BinanceOrderId) FROM BinanceOrdersWithStopLoss;";
+        
+            var result = await selectCommand.ExecuteScalarAsync();
+            return result == DBNull.Value ? 1 : (long)(result ?? throw new InvalidOperationException("Error casting order id from db to long")) + 1;
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Error getting next Binance order ID from database");
+            return 0;
+        }
+    }
+    
     public async Task<BinanceTradePivotPoint?> GetBinanceOrderWithPivotPoints(long binanceOrderId)
     {
         try

@@ -47,7 +47,7 @@ internal class SqliteDbInitializer
             var createBinanceOrderWithPivotPoints = connection.CreateCommand();
             createBinanceOrderWithPivotPoints.CommandText = @"CREATE TABLE BinanceOrdersWithStopLoss (
                 BinanceOrderId INTEGER PRIMARY KEY,
-                PivotPointJson TEXT,
+                PivotPointJson TEXT
             );";
             createBinanceOrderWithPivotPoints.ExecuteNonQuery();
             

@@ -27,14 +27,16 @@ public partial class MainScreenViewModel
         var fastKama = new FastKamaIncreaseStrategy();
         var kaufmanTouchingStrategy = new PriceTouchKaufmanStrategy();
         var temaReversalStrategy = new TEMATrendFollowingStrategy();
+        var immediateSwingLowAndSwingPointStrategy = new ImmediateSwingLowAndSwingPointStrategy();
+        immediateSwingLowAndSwingPointStrategy.AlertCreated += StrategyEntryAlertCreated;
         
         var cryptoStrategyMap = new Dictionary<CryptoToTradeEnum, ICryptoStrategy>();
-        cryptoStrategyMap.Add(CryptoToTradeEnum.Btc, immediateSwingLowStrategy);
-        cryptoStrategyMap.Add(CryptoToTradeEnum.Eth, immediateSwingLowStrategy);
-        cryptoStrategyMap.Add(CryptoToTradeEnum.Shib, immediateSwingLowStrategy);
-        cryptoStrategyMap.Add(CryptoToTradeEnum.Sol, kaufmanTouchingStrategy);
-        cryptoStrategyMap.Add(CryptoToTradeEnum.Doge, fastKama);
-        cryptoStrategyMap.Add(CryptoToTradeEnum.Sui, temaReversalStrategy);
+        cryptoStrategyMap.Add(CryptoToTradeEnum.Btc, immediateSwingLowAndSwingPointStrategy);
+        cryptoStrategyMap.Add(CryptoToTradeEnum.Eth, immediateSwingLowAndSwingPointStrategy);
+        cryptoStrategyMap.Add(CryptoToTradeEnum.Shib, immediateSwingLowAndSwingPointStrategy);
+        cryptoStrategyMap.Add(CryptoToTradeEnum.Sol, immediateSwingLowAndSwingPointStrategy);
+        cryptoStrategyMap.Add(CryptoToTradeEnum.Doge, immediateSwingLowAndSwingPointStrategy);
+        cryptoStrategyMap.Add(CryptoToTradeEnum.Sui, immediateSwingLowAndSwingPointStrategy);
 
         var tradingService = TradingServiceInitializer.Init();
         foreach (var cryptoStrategy in cryptoStrategyMap)
@@ -66,18 +68,18 @@ public partial class MainScreenViewModel
                         
                     var priceToStartTesting = hour1Prices.First(x => x.Date >= DateTime.Now.AddMonths(-12));
                         
-                    var hour4Index = 0;
+                    var priceIndex = 0;
                     for (int i = 0; i < hour1Prices.Count; i++)
                     {
                         var price = hour1Prices.ElementAt(i);
                         if (price.Date == priceToStartTesting.Date)
                         {
-                            hour4Index = i;
+                            priceIndex = i;
                             break;
                         }
                     }
                         
-                    for (int i = hour4Index; i < hour1Prices.Count; i++)
+                    for (int i = priceIndex; i < hour1Prices.Count; i++)
                     {
                         _tickerAndPrices[barcharCrypto] = hour1Prices.Take(i).ToList();
                         UpdateFilteredTrendLines(barcharCrypto);
@@ -100,11 +102,25 @@ public partial class MainScreenViewModel
                                 exitParam.TakeProfit = await tradingService.GetTakeProfitPrice(crypto) ?? Decimal.MaxValue;
                                 immediateSwingLowStrategy.CheckForBullishExit(crypto, hour1Prices.Take(i).ToList(), exitParam);
                             }
+                            else if (strategy is ImmediateSwingLowAndSwingPointStrategy)
+                            {
+                                var param =
+                                    new ImmediateSwingLowAndSwingPointStrategyExitParameter
+                                    {
+                                        StopLoss = await tradingService.GetStopLossPrice(crypto) ?? Decimal.MinValue,
+                                        NumberOfCandlesticksToLookBack = 5,
+                                        Timeframe = timeframe
+                                    };
+                                cryptoStrategyMap[crypto].CheckForBullishEntry(crypto, hour1Prices.Take(i).ToList(), swingPointStrategyParameter);
+                                cryptoStrategyMap[crypto].CheckForBullishExit(crypto, hour1Prices.Take(i).ToList(), param);
+                            }
                             else
                             {
-                                cryptoStrategyMap[crypto].CheckForBullishEntry(crypto, hour1Prices.Take(i).ToList(), entryParam);
-                                cryptoStrategyMap[crypto].CheckForBullishExit(crypto, hour1Prices.Take(i).ToList(), entryParam);
+                                cryptoStrategyMap[crypto].CheckForBullishEntry(crypto, hour1Prices.Take(i).ToList(), swingPointStrategyParameter);
+                                cryptoStrategyMap[crypto].CheckForBullishExit(crypto, hour1Prices.Take(i).ToList(), swingPointStrategyParameter);
                             }
+                            
+                            
                             
                             // await cryptoHmaEmaStrategy.Run(ticker, _repo, hmaEmaStrategyParameter);
                             //_strategy.CheckForTopBottomTouch(ticker, prices.Take(i).ToList(), swingPointStrategyParameter);
