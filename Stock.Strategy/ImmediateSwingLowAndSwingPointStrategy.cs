@@ -91,7 +91,7 @@ public class ImmediateSwingLowAndSwingPointStrategy : IStrategy
                 var alert = new Alert
                 {
                     Ticker = ticker,
-                    Message = $"{ticker} Enter position at {price.Close} at {price.Date:yyyy-MM-dd HH:mm:ss} after {numberOfBarsBetweenSwingLows} bars and just crossed pivot level {latestLevel.Level.OHLC4}",
+                    Message = $"{ticker} Enter position at {price.Close} at {price.Date:yyyy-MM-dd HH:mm:ss} after {numberOfBarsBetweenSwingLows} bars and just crossed pivot level {center}",
                     CreatedAt = price.Date,
                     Strategy = "SwingPointsLiveTradingStrategy",
                     OrderPosition = OrderPosition.Long,
