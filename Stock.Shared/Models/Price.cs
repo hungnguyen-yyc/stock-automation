@@ -52,10 +52,8 @@ namespace Stock.Shared.Models
                 {
                     return new NumericRange(Close, High);
                 }
-                else
-                {
-                    return new NumericRange(Open, High);
-                }
+
+                return new NumericRange(Open, High);
             }
         }
 
@@ -67,10 +65,8 @@ namespace Stock.Shared.Models
                 {
                     return new NumericRange(Open, Low);
                 }
-                else
-                {
-                    return new NumericRange(Close, Low);
-                }
+
+                return new NumericRange(Close, Low);
             }
         }
 

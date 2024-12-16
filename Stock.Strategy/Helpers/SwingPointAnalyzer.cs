@@ -63,13 +63,13 @@ namespace Stock.Strategies.Helpers
                     var currentSwingLow = swingLows[i];
                     var nextSwingLow = swingLows[j];
 
-                    if (currentSwingLow.CandleRange.Intersect(nextSwingLow.CandleRange))
+                    if (currentSwingLow.CandleRange.Intersect(nextSwingLow.RangeBetweenBodyAndLow))
                     {
-                        var hasKey = result.Keys.Any(x => x.CandleRange.Intersect(currentSwingLow.CandleRange));
+                        var hasKey = result.Keys.Any(x => x.CandleRange.Intersect(currentSwingLow.RangeBetweenBodyAndLow));
 
                         if (hasKey)
                         {
-                            var key = result.Keys.First(x => x.CandleRange.Intersect(currentSwingLow.CandleRange));
+                            var key = result.Keys.First(x => x.CandleRange.Intersect(currentSwingLow.RangeBetweenBodyAndLow));
                             result[key].Add(nextSwingLow);
                         }
                         else
@@ -101,13 +101,13 @@ namespace Stock.Strategies.Helpers
                     var currentSwingHigh = swingHighs[i];
                     var nextSwingHigh = swingHighs[j];
 
-                    if (currentSwingHigh.CandleRange.Intersect(nextSwingHigh.CandleRange))
+                    if (currentSwingHigh.CandleRange.Intersect(nextSwingHigh.RangeBetweenBodyAndHigh))
                     {
-                        var hasKey = result.Keys.Any(x => x.CandleRange.Intersect(currentSwingHigh.CandleRange));
+                        var hasKey = result.Keys.Any(x => x.CandleRange.Intersect(currentSwingHigh.RangeBetweenBodyAndHigh));
 
                         if (hasKey)
                         {
-                            var key = result.Keys.First(x => x.CandleRange.Intersect(currentSwingHigh.CandleRange));
+                            var key = result.Keys.First(x => x.CandleRange.Intersect(currentSwingHigh.RangeBetweenBodyAndHigh));
                             result[key].Add(nextSwingHigh);
                         }
                         else
