@@ -8,6 +8,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Text;
 using System.Windows.Data;
+using System.Windows.Threading;
 using Microsoft.Toolkit.Uwp.Notifications;
 using Stock.Shared.Models.Parameters;
 using Stock.Strategies.EventArgs;
@@ -39,8 +40,11 @@ namespace Stock.UI.Components
         private ObservableCollection<TrendLine> _filteredTrendLines;
         private ObservableCollection<OptionsScreeningResult> _allOptionsScreeningResults;
         private ObservableCollection<OptionsScreeningResult> _filteredOptionsScreeningResults;
+        private ObservableCollection<string> _tickers;
 
         private Dictionary<string, IReadOnlyCollection<Price>> _tickerAndPrices;
+        private readonly ObservableCollection<string> _timeframes;
+        private readonly ObservableCollection<LogEventArg> _logs;
 
         public MainScreenViewModel(StockDataRetrievalService repo, ISwingPointStrategy strategy)
         {
@@ -58,7 +62,10 @@ namespace Stock.UI.Components
             BindingOperations.EnableCollectionSynchronization(_filteredTrendLines, _lock);
             BindingOperations.EnableCollectionSynchronization(_filteredAlerts, _lock);
 
-            Logs = new ObservableCollection<LogEventArg>();
+            _tickers = new ObservableCollection<string>();
+            BindingOperations.EnableCollectionSynchronization(_tickers, _lock);
+            
+            _logs = new ObservableCollection<LogEventArg>();
             BindingOperations.EnableCollectionSynchronization(Logs, _lock);
 
             _allOptionChain = new ObservableCollection<string>();
@@ -76,7 +83,7 @@ namespace Stock.UI.Components
                 Logs.Add(message);
             };
 
-            Tickers = new ObservableCollection<string>
+            _tickers = new ObservableCollection<string>
             {
                 ALL
             };
@@ -86,7 +93,7 @@ namespace Stock.UI.Components
                 Tickers.Add(ticker);
             }
 
-            Timeframes = new ObservableCollection<string>
+            _timeframes = new ObservableCollection<string>
             {
                 ALL,
                 Timeframe.Minute15.ToString(),
@@ -106,12 +113,23 @@ namespace Stock.UI.Components
 
         public ObservableCollection<OptionPrice> OptionPrices => _optionPrices;
 
-        public ObservableCollection<string> Timeframes { get; }
+        public ObservableCollection<string> Timeframes => _timeframes;
 
-        public ObservableCollection<string> Tickers { get; }
+        public ObservableCollection<string> Tickers
+        {
+            get { return _tickers; }
+            set
+            {
+                if (_tickers != value)
+                {
+                    _tickers = value;
+                    OnPropertyChanged(nameof(Tickers));
+                }
+            }
+        }
 
-        public ObservableCollection<LogEventArg> Logs { get; }
-        
+        public ObservableCollection<LogEventArg> Logs => _logs;
+
         public string SelectedTickerOptionFlowOverview
         {
             get => _selectedTickerOptionFlowOverview;
@@ -493,75 +511,27 @@ namespace Stock.UI.Components
         private async Task RunInRelease()
         {
             var highChangeInOpenInterestStrategy = new HighChangeInOpenInterestStrategy(_repo);
+            highChangeInOpenInterestStrategy.AlertCreated += Strategy_AlertCreated;
             
-            var hmaEmaStrategy = new HmaEmaPriceStrategy();
-            hmaEmaStrategy.AlertCreated += Strategy_AlertCreated;
+            Tickers.Clear();
+            Tickers.Add(ALL);
             
-            var chainedHighOpenInterestAndLevelStrategy = new ChainedHighOpenInterestAndLevelStrategy(_repo, highChangeInOpenInterestStrategy);
-            chainedHighOpenInterestAndLevelStrategy.AlertCreated += Strategy_AlertCreated;
             while (true)
             {
-                var minutesToWait = 10;
-                var minuteModule = DateTime.Now.Minute % minutesToWait;
+                var secondsToWait = 60;
+                var minuteModule = DateTime.Now.Second % secondsToWait;
                 if (minuteModule != 0)
                 {
-                    var timeToDelay = Math.Max(minutesToWait - minuteModule, 0);
-                    await Task.Delay(TimeSpan.FromMinutes(timeToDelay));
+                    var timeToDelay = Math.Max(secondsToWait - minuteModule, 0);
+                    await Task.Delay(TimeSpan.FromSeconds(timeToDelay));
                 }
                 
                 try
                 {
-                    var tickers = TickersWithoutAll;
-                    var timeframes = new[] { Timeframe.Daily };
-
-                    foreach (var timeframe in timeframes)
-                    {
-                        _strategy.AlertCreated -= Strategy_AlertCreated;
-                        _strategy.TrendLineCreated -= Strategy_TrendLineCreated;
-                        _strategy.PivotLevelCreated -= Strategy_PivotLevelCreated;
-                        
-                        _strategy = new SwingPointsLiveTradingHighTimeframesStrategy();
-                        
-                        _strategy.AlertCreated += Strategy_AlertCreated;
-                        _strategy.TrendLineCreated += Strategy_TrendLineCreated;
-                        _strategy.PivotLevelCreated += Strategy_PivotLevelCreated;
-
-                        Logs.Add(new LogEventArg($"Started running strategy at {DateTime.Now}"));
-
-                        foreach (var ticker in tickers)
-                        {
-                            var swingPointStrategyParameter = SwingPointParametersProvider.GetSwingPointStrategyParameter(ticker, timeframe);
-                            var hmaEmaStrategyParameter = new HmaEmaPriceStrategyParameter
-                            {
-                                Timeframe = timeframe,
-                            };
-
-                            IReadOnlyCollection<Price> prices;
-                            if (timeframe == Timeframe.Daily)
-                            {
-                                prices = await _repo.GetStockDataForHighTimeframesAsc(ticker, timeframe, DateTime.Now.AddYears(-10), DateTime.Now.AddDays(1));
-                            }
-                            else
-                            {
-                                prices = await _repo.GetStockDataForHighTimeframesAsc(ticker, timeframe, DateTime.Now.AddYears(-5), DateTime.Now.AddDays(1));
-                            }
-                            
-                            _tickerAndPrices[ticker] = prices;
-                            UpdateFilteredTrendLines(ticker);
-
-                            await Task.Run(() => {
-                                _strategy.CheckForTopBottomTouch(ticker, prices.ToList(), swingPointStrategyParameter);
-                                _strategy.CheckForTouchingDownTrendLine(ticker, prices.ToList(), swingPointStrategyParameter);
-                                _strategy.CheckForTouchingUpTrendLine(ticker, prices.ToList(), swingPointStrategyParameter);
-                                hmaEmaStrategy.Run(ticker, prices.ToList(), hmaEmaStrategyParameter);
-                            });
-
-                        }
-                    }
-                        
                     await Task.Run(() => {
                         var screeningParams = HighChangeInOpenInterestStrategy.OptionsScreeningParams;
-                        highChangeInOpenInterestStrategy.Run(screeningParams, 20);
+                        highChangeInOpenInterestStrategy.RunAgainstPreviousDay(screeningParams, 20);
+                        highChangeInOpenInterestStrategy.RunAgainstPreviousSnapshot(screeningParams, 2);
                     });
                 }
                 catch (Exception ex)
@@ -586,8 +556,7 @@ namespace Stock.UI.Components
             {
                 var alert = e.Alert;
                 var existedAlert = _allAlerts
-                    .FirstOrDefault(x =>
-                        x.Ticker == alert.Ticker && x.Timeframe == alert.Timeframe && x.CreatedAt == alert.CreatedAt);
+                    .FirstOrDefault(x => x.GetHashCode() == alert.GetHashCode());
                 
                 if (existedAlert != null)
                 {
@@ -597,15 +566,26 @@ namespace Stock.UI.Components
                 {
                     // in release, we only want to show toast notification for new alerts
 #if !DEBUG
-                    new ToastContentBuilder()
+                    /*new ToastContentBuilder()
                     .AddText($"{alert.Ticker} {alert.OrderPosition} {alert.CreatedAt:yyyy-MM-dd HH:mm}")
                     .AddText(alert.Message)
-                    .Show();
+                    .Show();*/
 #endif
                 }
-                    
+                
                 _allAlerts.Add(alert);
                 UpdateFilteredAlerts();
+
+                var tickers = _allAlerts.Select(a => a.Ticker).Distinct().ToList();
+                var stupidAssTickers = new ObservableCollection<string>();
+                foreach (var ticker in tickers)
+                {
+                    stupidAssTickers.Add(ticker);
+                }
+                
+                stupidAssTickers.Insert(0, ALL);
+                Tickers = stupidAssTickers;
+                OnPropertyChanged(nameof(Tickers));
             }
         }
 

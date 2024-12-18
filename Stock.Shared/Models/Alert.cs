@@ -30,13 +30,7 @@ namespace Stock.Shared.Models
             }
 
             var alert = (Alert)obj;
-            return Ticker == alert.Ticker
-                   && Timeframe == alert.Timeframe
-                   && CreatedAt == alert.CreatedAt
-                   && Message == alert.Message
-                   && Strategy == alert.Strategy
-                   && OrderPosition == alert.OrderPosition
-                   && PositionAction == alert.PositionAction;
+            return GetHashCode() == alert.GetHashCode();
         }
 
         public override int GetHashCode()
@@ -66,5 +60,12 @@ namespace Stock.Shared.Models
     public class HighChangeInOpenInterestStrategyAlert : Alert
     {
         public string OptionTicker { get; set; }
+        
+        public long OpenInterest { get; set; }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Ticker, Timeframe, OptionTicker, Strategy, OpenInterest);
+        }
     }
 }

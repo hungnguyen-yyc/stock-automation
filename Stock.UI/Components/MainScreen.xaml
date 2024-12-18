@@ -7,7 +7,7 @@
       xmlns:local="clr-namespace:Stock.UI.Components"
       mc:Ignorable="d" 
       d:DesignHeight="450" d:DesignWidth="1600"
-      Title="MainScreen">
+      Title="Options Screening">
     <Grid Margin="0,0,0,0">
 
         <Grid.RowDefinitions>
@@ -16,8 +16,8 @@
         </Grid.RowDefinitions>
 
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="10*"/>
-            <ColumnDefinition Width="55*"/>
+            <ColumnDefinition Width="7*"/>
+            <ColumnDefinition Width="58*"/>
             <ColumnDefinition Width="25*"/>
             <ColumnDefinition Width="10*"/>
         </Grid.ColumnDefinitions>
@@ -51,7 +51,7 @@
                           Margin="5 10 5 0">
                     <ListView.View>
                         <GridView>
-                            <GridViewColumn Header="Tickers" />
+                            <GridViewColumn Header="Tickers" Width="100"/>
                         </GridView>
                     </ListView.View>
                 </ListView>
@@ -110,7 +110,7 @@
                             </GridViewColumn>
                             <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding OrderPosition}">
                                 <GridViewColumn.Header>
-                                    <GridViewColumnHeader Tag="OrderType" Click="lsvAlertsColumnHeader_Click">Order Type</GridViewColumnHeader>
+                                    <GridViewColumnHeader Tag="OrderPosition" Click="lsvAlertsColumnHeader_Click">Order Type</GridViewColumnHeader>
                                 </GridViewColumn.Header>
                             </GridViewColumn>
                             <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Message}">
