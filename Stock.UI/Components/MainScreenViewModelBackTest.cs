@@ -1,18 +1,8 @@
-﻿using Stock.Data;
-using Stock.Data.EventArgs;
-using Stock.Shared;
+﻿using Stock.Data.EventArgs;
 using Stock.Shared.Models;
 using Stock.Strategies;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.IO;
-using System.Text;
-using System.Windows.Data;
-using Microsoft.Toolkit.Uwp.Notifications;
 using Newtonsoft.Json;
-using Stock.Shared.Models.Parameters;
-using Stock.Strategies.EventArgs;
-using Stock.Strategies.Parameters;
 
 namespace Stock.UI.Components;
 
@@ -20,40 +10,7 @@ public partial class MainScreenViewModel
 {
     private async Task RunBackTest()
     {
-        var highChangeInOpenInterestStrategy = new HighChangeInOpenInterestStrategy(_repo);
-        highChangeInOpenInterestStrategy.AlertCreated += Strategy_AlertCreated;
-            
-        Tickers.Clear();
-        Tickers.Add(ALL);
-            
-        while (true)
-        {
-            var secondsToWait = 60;
-            var minuteModule = DateTime.Now.Second % secondsToWait;
-            if (minuteModule != 0)
-            {
-                var timeToDelay = Math.Max(secondsToWait - minuteModule, 0);
-                await Task.Delay(TimeSpan.FromSeconds(timeToDelay));
-            }
-                
-            try
-            {
-                await Task.Run(() => {
-                    var screeningParams = HighChangeInOpenInterestStrategy.OptionsScreeningParams;
-                    highChangeInOpenInterestStrategy.RunAgainstPreviousDay(screeningParams, 20);
-                    highChangeInOpenInterestStrategy.RunAgainstPreviousSnapshot(screeningParams, 2);
-                });
-            }
-            catch (Exception ex)
-            {
-                Logs.Add(new LogEventArg(ex.Message));
-            }
-            finally
-            {
-                await Task.Delay(TimeSpan.FromMinutes(1));
-            }
-        }
-        /*var tickers = TickersWithoutAll;
+        var tickers = TickersWithoutAll;
         Tickers.Clear();
         var timeframes = new[] { Timeframe.Daily };
         var hmaEmaStrategy = new HmaEmaPriceStrategy();
@@ -62,8 +19,8 @@ public partial class MainScreenViewModel
         var highOpenInterestStrategy = new HighChangeInOpenInterestStrategy(_repo);
         //highOpenInterestStrategy.AlertCreated += Strategy_AlertCreated;
         
-        var optionScreeningFolder = "OptionsScreeningResults";
-        var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        var optionScreeningFolder = "testjson";
+        var localAppData = "C:\\Users\\hnguyen\\Documents";
         var optionScreeningPath = Path.Combine(localAppData, optionScreeningFolder);
         
         // read all files in the directory
@@ -84,9 +41,12 @@ public partial class MainScreenViewModel
                 var currentContent = await File.ReadAllTextAsync(current);
                 var previousContent = await File.ReadAllTextAsync(previous);
             
-                var currentResults = JsonConvert.DeserializeObject<List<OptionsScreeningResult>>(currentContent);
-                var previousResults = JsonConvert.DeserializeObject<List<OptionsScreeningResult>>(previousContent);
+                var newResponse = JsonConvert.DeserializeObject<EquityOptionsResponse>(currentContent);
+                var oldResponse = JsonConvert.DeserializeObject<EquityOptionsResponse>(previousContent);
 
+                var currentResults = newResponse.EquityOptions;
+                var previousResults = oldResponse.EquityOptions;
+                
                 for (var optionIndex = 0; optionIndex < currentResults.Count; optionIndex++)
                 {
                     var currentResult = currentResults[optionIndex];
@@ -107,8 +67,8 @@ public partial class MainScreenViewModel
                     {
                         if (previousResult.OpenInterest != currentResult.OpenInterest)
                         {
-                            Console.WriteLine($"Previous {Path.GetFileNameWithoutExtension(previous)}: {previousResult.UnderlyingSymbol}|{previousResult.Strike}{previousResult.Type.ToUpper().Substring(0, 1)}|{previousResult.ExpirationDateFormatted}: {previousResult.OpenInterest} at {previousResult.TradeTime}");
-                            Console.WriteLine($"Current  {Path.GetFileNameWithoutExtension(current)}: {currentResult.UnderlyingSymbol}|{currentResult.Strike}{currentResult.Type.ToUpper().Substring(0, 1)}|{currentResult.ExpirationDateFormatted}: {currentResult.OpenInterest} at {currentResult.TradeTime}");
+                            Console.WriteLine($"Previous {Path.GetFileNameWithoutExtension(previous)}: {previousResult.UnderlyingSymbol}|{previousResult.Strike}{previousResult.Type}|{previousResult.ExpirationDate}: {previousResult.OpenInterest}");
+                            Console.WriteLine($"Current  {Path.GetFileNameWithoutExtension(current)}: {currentResult.UnderlyingSymbol}|{currentResult.Strike}{currentResult.Type}|{currentResult.ExpirationDate}: {currentResult.OpenInterest}");
                         }
                     }
                 }
@@ -117,7 +77,7 @@ public partial class MainScreenViewModel
         catch (Exception e)
         {
             Console.WriteLine(e);
-        }*/
+        }
             
         /*foreach (var timeframe in timeframes)
         {
