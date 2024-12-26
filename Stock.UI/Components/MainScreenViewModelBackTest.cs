@@ -24,8 +24,8 @@ public partial class MainScreenViewModel
         var hmaEmaStrategy = new HmaEmaPriceStrategy();
         hmaEmaStrategy.AlertCreated += Strategy_AlertCreated;
         
-        var immediateSwingLowStrategy = new ImmediateSwingLowAndSwingPointStrategy();
-        immediateSwingLowStrategy.AlertCreated += Strategy_AlertCreated;
+        var chainedSwingPointsStrategy = new ChainedSwingPointsStrategy();
+        chainedSwingPointsStrategy.AlertCreated += Strategy_AlertCreated;
             
         foreach (var timeframe in timeframes)
         {
@@ -52,7 +52,7 @@ public partial class MainScreenViewModel
                     }
                     else
                     {
-                        prices = await _repo.GetStockDataForHighTimeframesAsc(ticker, timeframe, DateTime.Now.AddYears(-5), DateTime.Now.AddDays(1));
+                        prices = await _repo.GetStockDataForHighTimeframesAsc(ticker, timeframe, DateTime.Now.AddYears(-2), DateTime.Now.AddDays(1));
                     }
                         
                     var priceToStartTesting = prices.First(x => x.Date >= DateTime.Now.AddMonths(-5));
@@ -84,13 +84,15 @@ public partial class MainScreenViewModel
                             _strategy.CheckForTouchingDownTrendLine(ticker, prices.Take(i).ToList(), swingPointStrategyParameter);
                             _strategy.CheckForTouchingUpTrendLine(ticker, prices.Take(i).ToList(), swingPointStrategyParameter);*/
                             
-                            var immediateSwingLowEntryParameter = ImmediateSwingLowParameterProvider.GetEntryParameter(ticker);
+                            chainedSwingPointsStrategy.Run(ticker, prices.Take(i).ToList(), swingPointStrategyParameter);
+                            
+                            /*var immediateSwingLowEntryParameter = ImmediateSwingLowParameterProvider.GetEntryParameter(ticker);
                             immediateSwingLowEntryParameter.Timeframe = timeframe;
                             immediateSwingLowEntryParameter.NumberOfCandlesticksToLookBack = 30;
                             var immediateSwingLowExitParameter = ImmediateSwingLowParameterProvider.GetExitParameter(ticker);
                             immediateSwingLowExitParameter.Timeframe = timeframe;
                             immediateSwingLowExitParameter.NumberOfCandlesticksToLookBack = 30;
-                            immediateSwingLowStrategy.CheckForBullishEntry(ticker, prices.Take(i).ToList(), swingPointStrategyParameter);
+                            chainedSwingPointsStrategy.CheckForBullishEntry(ticker, prices.Take(i).ToList(), swingPointStrategyParameter);*/
                             //immediateSwingLowStrategy.CheckForBullishExit(ticker, prices.Take(i).ToList(), immediateSwingLowExitParameter);
                         });
                     }
