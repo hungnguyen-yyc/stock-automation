@@ -49,7 +49,8 @@ namespace Stock.Strategies
                     CreatedAt = signalPriceAtLevel.Value.Item1.Date,
                     OrderPosition = OrderPosition.Long,
                     Message = $"Price {signalPriceAtLevel.Value.Item1.Close} at level {signalPriceAtLevel.Value.Item2} and breaking above downtrend line {signalPriceAtDownTrendLine.Value.Item2.DateAsString} && {signalPriceAtDownTrendLine.Value.Item3.DateAsString}",
-                    PriceClosed = signalPriceAtLevel.Value.Item1.Close
+                    PriceClosed = signalPriceAtLevel.Value.Item1.Close,
+                    Strategy = nameof(ChainedSwingPointsStrategy)
                 };
                 AlertCreated?.Invoke(this, new AlertEventArgs(alert));
             }
@@ -62,7 +63,8 @@ namespace Stock.Strategies
                     CreatedAt = signalPriceAtLevel.Value.Item1.Date,
                     OrderPosition = OrderPosition.Short,
                     Message = $"Price {signalPriceAtLevel.Value.Item1.Close} at level {signalPriceAtLevel.Value.Item2.Low}-{signalPriceAtLevel.Value.Item2.High} and breaking below uptrend line {signalPriceAtUpTrendLine.Value.Item2.DateAsString} && {signalPriceAtUpTrendLine.Value.Item3.DateAsString}",
-                    PriceClosed = signalPriceAtLevel.Value.Item1.Close
+                    PriceClosed = signalPriceAtLevel.Value.Item1.Close,
+                    Strategy = nameof(ChainedSwingPointsStrategy)
                 };
                 AlertCreated?.Invoke(this, new AlertEventArgs(alert));
             }

@@ -505,6 +505,9 @@ namespace Stock.UI.Components
             
             var immediateSwingLowAndSwingPointStrategy = new ImmediateSwingLowAndSwingPointStrategy();
             immediateSwingLowAndSwingPointStrategy.AlertCreated += Strategy_AlertCreated;
+
+            var swingPointStrategy = new ChainedSwingPointsStrategy();
+            swingPointStrategy.AlertCreated += Strategy_AlertCreated;
             while (true)
             {
                 var minutesToWait = 10;
@@ -569,6 +572,7 @@ namespace Stock.UI.Components
                                 //immediateSwingLowStrategy.CheckForBullishExit(ticker, prices.ToList(), immediateSwingLowExitParameter);
                                 
                                 immediateSwingLowAndSwingPointStrategy.CheckForBullishEntry(ticker, prices.ToList(), swingPointStrategyParameter);
+                                swingPointStrategy.Run(ticker, prices.ToList(), swingPointStrategyParameter);
                             });
 
                         }
