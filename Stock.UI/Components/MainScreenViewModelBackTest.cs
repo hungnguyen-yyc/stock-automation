@@ -23,9 +23,6 @@ public partial class MainScreenViewModel
         var timeframes = new[] { Timeframe.Hour1 };
         var hmaEmaStrategy = new HmaEmaPriceStrategy();
         hmaEmaStrategy.AlertCreated += Strategy_AlertCreated;
-        
-        var chainedSwingPointsStrategy = new ChainedSwingPointsStrategy();
-        chainedSwingPointsStrategy.AlertCreated += Strategy_AlertCreated;
             
         foreach (var timeframe in timeframes)
         {
@@ -83,8 +80,6 @@ public partial class MainScreenViewModel
                             /*_strategy.CheckForTopBottomTouch(ticker, prices.Take(i).ToList(), swingPointStrategyParameter);
                             _strategy.CheckForTouchingDownTrendLine(ticker, prices.Take(i).ToList(), swingPointStrategyParameter);
                             _strategy.CheckForTouchingUpTrendLine(ticker, prices.Take(i).ToList(), swingPointStrategyParameter);*/
-                            
-                            chainedSwingPointsStrategy.Run(ticker, prices.Take(i).ToList(), swingPointStrategyParameter);
                             
                             /*var immediateSwingLowEntryParameter = ImmediateSwingLowParameterProvider.GetEntryParameter(ticker);
                             immediateSwingLowEntryParameter.Timeframe = timeframe;
