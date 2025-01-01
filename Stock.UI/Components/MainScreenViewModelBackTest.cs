@@ -13,6 +13,7 @@ using Stock.Shared.Models.Parameters;
 using Stock.Strategies.Cryptos;
 using Stock.Strategies.EventArgs;
 using Stock.Strategies.Parameters;
+using Stock.Strategies.Trend;
 using Stock.Trading;
 
 namespace Stock.UI.Components;
@@ -60,13 +61,13 @@ public partial class MainScreenViewModel
                 {
                     var swingPointStrategyParameter = SwingPointParametersProvider.GetSwingPointStrategyParameter(barcharCrypto, timeframe);
                     
-                    IReadOnlyCollection<Price> hour1Prices = await _repo.GetStockDataForHighTimeframesAsc(barcharCrypto, timeframe, DateTime.Now.AddMonths(-13), DateTime.Now.AddDays(1));
+                    IReadOnlyCollection<Price> hour1Prices = await _repo.GetStockDataForHighTimeframesAsc(barcharCrypto, timeframe, DateTime.Now.AddMonths(-3), DateTime.Now.AddDays(1));
                     IReadOnlyCollection<Price> dailyPrices = await _repo.GetStockDataForHighTimeframesAsc(barcharCrypto, Timeframe.Daily, DateTime.Now.AddYears(-3), DateTime.Now.AddDays(1));
                         
-                    var priceToStartTesting = hour1Prices.First(x => x.Date >= DateTime.Now.AddMonths(-6));
+                    var priceToStartTesting = hour1Prices.First(x => x.Date >= DateTime.Now.AddMonths(-2));
                         
                     var priceIndex = 0;
-                    for (int i = 0; i < hour1Prices.Count; i++)
+                    for (var i = 0; i < hour1Prices.Count; i++)
                     {
                         var price = hour1Prices.ElementAt(i);
                         if (price.Date == priceToStartTesting.Date)
@@ -78,19 +79,28 @@ public partial class MainScreenViewModel
                         
                     for (int i = priceIndex; i < hour1Prices.Count; i++)
                     {
-                        _tickerAndPrices[barcharCrypto] = hour1Prices.Take(i).ToList();
-                        UpdateFilteredTrendLines(barcharCrypto);
+                        //_tickerAndPrices[barcharCrypto] = hour1Prices.Take(i).ToList();
+                        //UpdateFilteredTrendLines(barcharCrypto);
                         var hmaEmaStrategyParameter = new HmaEmaPriceStrategyParameter
                         {
                             Timeframe = timeframe,
                             HmaPeriod = 50
                         };
+                        
+                        var last10Prices = hour1Prices.TakeLast(10).ToList();
+                        var lastPrice = last10Prices.Last();
+                        var channel = new ChannelV2(last10Prices.Take(9).ToList());
+                        
                         await Task.Run(() =>
                         {
                             var entryParam = ImmediateSwingLowParameterProvider.GetEntryParameter(barcharCrypto);
                             var exitParam = ImmediateSwingLowParameterProvider.GetExitParameter(barcharCrypto);
                             var crypto = CryptosToTrade.BARCHART_CRYPTO_MAP[barcharCrypto];
                             var strategy = cryptoStrategyMap[crypto];
+                            
+                            
+                        
+                            swingPointsLiveTradingHighTimeframesStrategy.CheckForTopBottomTouch(barcharCrypto, hour1Prices.Take(i).ToList(), swingPointStrategyParameter);
                             /*if (strategy is ImmediateSwingLowStrategy)
                             {
                                 immediateSwingLowStrategy.CheckForBullishEntry(crypto, hour1Prices.Take(i).ToList(), entryParam);
@@ -119,7 +129,7 @@ public partial class MainScreenViewModel
                             
                             // await cryptoHmaEmaStrategy.Run(ticker, _repo, hmaEmaStrategyParameter);
                             
-                            swingPointsLiveTradingHighTimeframesStrategy.CheckForTopBottomTouch(barcharCrypto, hour1Prices.Take(i).ToList(), swingPointStrategyParameter);
+                            // swingPointsLiveTradingHighTimeframesStrategy.CheckForTopBottomTouch(barcharCrypto, hour1Prices.Take(i).ToList(), swingPointStrategyParameter);
                             //_strategy.CheckForTouchingDownTrendLine(barcharCrypto, hour1Prices.Take(i).ToList(), swingPointStrategyParameter);
                             //_strategy.CheckForTouchingUpTrendLine(barcharCrypto, hour1Prices.Take(i).ToList(), swingPointStrategyParameter);
                         });

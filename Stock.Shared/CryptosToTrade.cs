@@ -36,7 +36,7 @@
         // This list is used for fetching data from Barchart
         public static readonly List<string> BarchartCryptoNames = new List<string>
         {
-            "^BTCUSD",
+            "^BTCUSDT",
             "^ETHUSD",
             "^DOGEUSD",
             "^SHIBUSD",
@@ -46,7 +46,7 @@
         
         public static readonly Dictionary<CryptoToTradeEnum, string> CryptoEnumToBarchartName = new()
         {
-            { CryptoToTradeEnum.Btc, "^BTCUSD" },
+            { CryptoToTradeEnum.Btc, "^BTCUSDT" },
             { CryptoToTradeEnum.Eth, "^ETHUSD" },
             { CryptoToTradeEnum.Doge, "^DOGEUSD" },
             { CryptoToTradeEnum.Shib, "^SHIBUSD" },
@@ -57,7 +57,7 @@
         public static readonly IReadOnlyDictionary<string, CryptoToTradeEnum> BARCHART_CRYPTO_MAP =
             new Dictionary<string, CryptoToTradeEnum>
             {
-                { "^BTCUSD", CryptoToTradeEnum.Btc },
+                { "^BTCUSDT", CryptoToTradeEnum.Btc },
                 { "^ETHUSD", CryptoToTradeEnum.Eth },
                 { "^DOGEUSD", CryptoToTradeEnum.Doge },
                 { "^SHIBUSD", CryptoToTradeEnum.Shib },

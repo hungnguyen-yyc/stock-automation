@@ -9,7 +9,7 @@ namespace Stock.Strategies
 {
     public sealed class SwingPointsLiveTradingHighTimeframesStrategy : ISwingPointStrategy
     {
-        private const decimal OFFSET = 0.01m;
+        private const decimal OFFSET = 0.005m;
         private readonly VolumeCheckingHelper _volumeCheckingHelper;
         
         public SwingPointsLiveTradingHighTimeframesStrategy()
@@ -27,7 +27,12 @@ namespace Stock.Strategies
         
         public void Run(string ticker, IReadOnlyCollection<Price> prices, IStrategyParameter parameter)
         {
-            throw new NotImplementedException();
+            var param = (SwingPointStrategyParameter)parameter;
+            var swingHighs = SwingPointAnalyzer.FindSwingHighs(prices.ToList(), param.NumberOfCandlesticksToLookBack);
+            var swingLows = SwingPointAnalyzer.FindSwingLows(prices.ToList(), param.NumberOfCandlesticksToLookBack);
+            
+            var allSwingPoints = swingHighs.Concat(swingLows).OrderBy(x => x.Date).ToList();
+            var levels = SwingPointAnalyzer.GetLevels(prices.ToList(), param.NumberOfCandlesticksToLookBack).ToList();
         }
 
         public string Description => "This strategy looks back a number of candles (specified in parameters) and calculates swing highs and lows. \n"
@@ -46,7 +51,6 @@ namespace Stock.Strategies
                 var levels = allLevels
                     .Where(x => x.Value.Count + 1 >= parameter.NumberOfCandlesticksIntersectForTopsAndBottoms) // + 1 because we need to include the key
                     .ToList();
-                var atr = ascSortedByDatePrice.GetAtr(14);
                 
                 var pivotLevels = levels.Select(x =>
                 {
@@ -70,11 +74,45 @@ namespace Stock.Strategies
                     return new PivotLevel(parameter.Timeframe, ticker, averageOhlcPrice, combineValuesAndKey.Count + 1);
                 }).ToList();
                 
+                // check this list of pivot levels again, if 2 pivot levels are too close to each other, remove the one with lower number of swing points intersected
+                var pivotLevelsToRemove = new List<PivotLevel>();
+                for (var i = 0; i < pivotLevels.Count; i++)
+                {
+                    for (var j = i + 1; j < pivotLevels.Count; j++)
+                    {
+                        var pivotLevel1 = pivotLevels[i];
+                        var pivotLevel2 = pivotLevels[j];
+                        var pivotLevel1Range = new NumericRange(pivotLevel1.Level.OHLC4 - (pivotLevel1.Level.OHLC4 * OFFSET), pivotLevel1.Level.OHLC4 + (pivotLevel1.Level.OHLC4 * OFFSET));
+                        var pivotLevel2Range = new NumericRange(pivotLevel2.Level.OHLC4 - (pivotLevel2.Level.OHLC4 * OFFSET), pivotLevel2.Level.OHLC4 + (pivotLevel2.Level.OHLC4 * OFFSET));
+                        if (pivotLevel1Range.Intersect(pivotLevel2Range))
+                        {
+                            if (pivotLevel1.NumberOfSwingPointsIntersected > pivotLevel2.NumberOfSwingPointsIntersected)
+                            {
+                                pivotLevelsToRemove.Add(pivotLevel2);
+                            }
+                            else
+                            {
+                                pivotLevelsToRemove.Add(pivotLevel1);
+                            }
+                        }
+                    }
+                }
+                
+                pivotLevels = pivotLevels.Except(pivotLevelsToRemove).ToList();
+                
                 PivotLevelCreated?.Invoke(this, new PivotLevelEventArgs(pivotLevels));
                 
-                var hmVolumeCheck = _volumeCheckingHelper.CheckHeatmapVolume(ascSortedByDatePrice, parameter);
-                var isValidCandleForLong = price.IsGreenCandle && price.IsContentCandle;
-                var isValidCandleForShort = price.IsRedCandle && price.IsContentCandle;
+                // check if last price is Nov 3rd 2024
+                if (price.Date.Date == new DateTime(2024, 11, 3))
+                {
+                    var a = 1;
+                }
+                
+                // check if last price is Nov 5th 2024 and at 5pm
+                if (price.Date.Date == new DateTime(2024, 11, 4) && price.Date.Hour == 15)
+                {
+                    var a = 1;
+                }
 
                 var levelSecondLastPriceTouched = pivotLevels
                     .Where(x =>
@@ -101,46 +139,25 @@ namespace Stock.Strategies
                     var priceIntersectSecondLastPrice = price.CandleRange.Intersect(secondLastPrice.CandleRange); // to make sure current price is not too far from previous price to make sure it move gradually and healthily
                     var secondLastPriceIntersectCenterLevelPoint = secondLastPrice.CandleRange.Intersect(centerPoint); // to make sure previous price touched the pivot level
                     var priceNotIntersectCenterLevelPoint = !price.CandleRange.Intersect(centerPoint); // to make sure the current price is not too out of the pivot level which means it's heading toward a direction (up or down).
-
+                    
                     if (secondLastPriceIntersectCenterLevelPoint
                         && secondLastPrice.High > centerPoint.High
-                        && price.Close > secondLastPrice.Close
                         && price.Close > centerPoint.High
                         && priceIntersectSecondLastPrice
                         && priceNotIntersectCenterLevelPoint)
                     {
-                        var message = $"Price {price.Close} ({price.Date:s}) > {centerPoint.High} ({levelLow} - {levelHigh})";
+                        var message = $"Price {price.Close} ({price.Date:s}) > {center} ({centerPoint.Low} - {centerPoint.High})";
 
-                        if (hmVolumeCheck && isValidCandleForLong)
+                        alert = new Alert
                         {
-                            alert = new TopNBottomStrategyAlert
-                            {
-                                Ticker = ticker,
-                                Message = "(O)" + message,
-                                CreatedAt = price.Date,
-                                Strategy = "SwingPointsLiveTradingStrategy",
-                                OrderPosition = OrderPosition.Long,
-                                PositionAction = PositionAction.Open,
-                                Timeframe = parameter.Timeframe,
-                                High = secondLastPrice.Low,
-                                Center = center,
-                                PriceClosed = price.Close,
-                                ATR = (decimal)atr.Last().Atr,
-                            };
-                        }
-                        else
-                        {
-                            alert = new Alert
-                            {
-                                Ticker = ticker,
-                                Message = message,
-                                CreatedAt = price.Date,
-                                Strategy = "SwingPointsLiveTradingStrategy",
-                                OrderPosition = OrderPosition.Long,
-                                PositionAction = PositionAction.Open,
-                                Timeframe = parameter.Timeframe
-                            };
-                        }
+                            Ticker = ticker,
+                            Message = message,
+                            CreatedAt = price.Date,
+                            Strategy = "SwingPointsLiveTradingStrategy",
+                            OrderPosition = OrderPosition.Long,
+                            PositionAction = PositionAction.Open,
+                            Timeframe = parameter.Timeframe
+                        };
                         
                     }
                     else if (secondLastPriceIntersectCenterLevelPoint
@@ -150,38 +167,18 @@ namespace Stock.Strategies
                         && priceIntersectSecondLastPrice
                         && priceNotIntersectCenterLevelPoint)
                     {
-                        var message = $"Price {price.Close} ({price.Date:s}) < {centerPoint.Low} ({levelLow} - {levelHigh})";
+                        var message = $"Price {price.Close} ({price.Date:s}) < {center} ({centerPoint.Low} - {centerPoint.High})";
 
-                        if (hmVolumeCheck && isValidCandleForShort)
+                        alert = new Alert
                         {
-                            alert = new TopNBottomStrategyAlert
-                            {
-                                Ticker = ticker,
-                                Message = "(O)" + message,
-                                CreatedAt = price.Date,
-                                Strategy = "SwingPointsLiveTradingStrategy",
-                                OrderPosition = OrderPosition.Short,
-                                PositionAction = PositionAction.Open,
-                                Timeframe = parameter.Timeframe,
-                                High = secondLastPrice.High,
-                                Center = center,
-                                PriceClosed = price.Close,
-                                ATR = (decimal)atr.Last().Atr
-                            };
-                        }
-                        else
-                        {
-                            alert = new Alert
-                            {
-                                Ticker = ticker,
-                                Message = message,
-                                CreatedAt = price.Date,
-                                Strategy = "SwingPointsLiveTradingStrategy",
-                                OrderPosition = OrderPosition.Short,
-                                PositionAction = PositionAction.Open,
-                                Timeframe = parameter.Timeframe
-                            };
-                        }
+                            Ticker = ticker,
+                            Message = message,
+                            CreatedAt = price.Date,
+                            Strategy = "SwingPointsLiveTradingStrategy",
+                            OrderPosition = OrderPosition.Short,
+                            PositionAction = PositionAction.Open,
+                            Timeframe = parameter.Timeframe
+                        };
                     }
                 }
 

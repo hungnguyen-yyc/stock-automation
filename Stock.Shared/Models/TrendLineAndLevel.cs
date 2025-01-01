@@ -1,21 +1,28 @@
 namespace Stock.Shared.Models;
 
-public class PivotLevel
+public class PivotPrice
+{
+    public PivotPrice(Price level, int numberOfSwingPointsIntersected)
+    {
+        Level = level;
+        NumberOfSwingPointsIntersected = numberOfSwingPointsIntersected;
+    }
+    
+    public Price Level { get; }
+    
+    public int NumberOfSwingPointsIntersected { get; }
+}
+
+public class PivotLevel : PivotPrice
 {
     public Timeframe Timeframe { get; }
     
     public string Ticker { get; }
     
-    public Price Level { get; }
-    
-    public int NumberOfSwingPointsIntersected { get; }
-    
-    public PivotLevel(Timeframe timeframe, string ticker, Price level, int numberOfSwingPointsIntersected)
+    public PivotLevel(Timeframe timeframe, string ticker, Price level, int numberOfSwingPointsIntersected) : base(level, numberOfSwingPointsIntersected)
     {
         Timeframe = timeframe;
         Ticker = ticker;
-        Level = level;
-        NumberOfSwingPointsIntersected = numberOfSwingPointsIntersected;
     }
 
     public override bool Equals(object? obj)

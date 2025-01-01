@@ -7,9 +7,65 @@ namespace Stock.Strategies.Helpers
 {
     internal class SwingPointAnalyzer
     {
+        public static List<PivotPrice> GetPivotPrices(List<Price> prices, int numberOfCandlesticksToLookBack, int numberOfCandlesticksIntersectForTopsAndBottoms, decimal offset = 0.005m)
+        {
+            var allLevels = SwingPointAnalyzer.GetLevels(prices, numberOfCandlesticksToLookBack).ToList();
+            var levels = allLevels
+                .Where(x => x.Value.Count + 1 >= numberOfCandlesticksIntersectForTopsAndBottoms) // + 1 because we need to include the key
+                .ToList();
+            
+            var pivotLevels = levels.Select(x =>
+            {
+                var combineValuesAndKey = x.Value.Concat(new List<Price> { x.Key }).ToList();
+                var averageHigh = combineValuesAndKey.Select(y => y.High).Average();
+                var averageLow = combineValuesAndKey.Select(y => y.Low).Average();
+                var averageVolume = combineValuesAndKey.Select(y => y.Volume).Average();
+                var averageClose = combineValuesAndKey.Select(y => y.Close).Average();
+                var averageOpen = combineValuesAndKey.Select(y => y.Open).Average();
+                var sortedByDate = combineValuesAndKey.OrderBy(y => y.Date).ToList();
+                var mostRecent = sortedByDate.Last();
+                var averageOhlcPrice = new Price
+                {
+                    Date = mostRecent.Date,
+                    Open = Math.Round(averageOpen, 2),
+                    High = Math.Round(averageHigh, 2),
+                    Low = Math.Round(averageLow, 2),
+                    Close = Math.Round(averageClose, 2),
+                    Volume = averageVolume
+                };
+                return new PivotPrice( averageOhlcPrice, combineValuesAndKey.Count + 1);
+            }).ToList();
+            
+            var pivotPricesToRemove = new List<PivotPrice>();
+            for (var i = 0; i < pivotLevels.Count; i++)
+            {
+                for (var j = i + 1; j < pivotLevels.Count; j++)
+                {
+                    var pivotLevel1 = pivotLevels[i];
+                    var pivotLevel2 = pivotLevels[j];
+                    var pivotLevel1Range = new NumericRange(pivotLevel1.Level.OHLC4 - (pivotLevel1.Level.OHLC4 * offset), pivotLevel1.Level.OHLC4 + (pivotLevel1.Level.OHLC4 * offset));
+                    var pivotLevel2Range = new NumericRange(pivotLevel2.Level.OHLC4 - (pivotLevel2.Level.OHLC4 * offset), pivotLevel2.Level.OHLC4 + (pivotLevel2.Level.OHLC4 * offset));
+                    if (pivotLevel1Range.Intersect(pivotLevel2Range))
+                    {
+                        if (pivotLevel1.NumberOfSwingPointsIntersected > pivotLevel2.NumberOfSwingPointsIntersected)
+                        {
+                            pivotPricesToRemove.Add(pivotLevel2);
+                        }
+                        else
+                        {
+                            pivotPricesToRemove.Add(pivotLevel1);
+                        }
+                    }
+                }
+            }
+                
+            pivotLevels = pivotLevels.Except(pivotPricesToRemove).ToList();
+
+            return pivotLevels;
+        }
+        
         public static IReadOnlyDictionary<Price, HashSet<Price>> GetLevels(List<Price> prices, int numberOfCandlesToLookBack)
         {
-            // TODO: there are cases where the swings points are not intersected at top/bottom half but intersected whole candles instead. How to handle this?
             var tops = GetNTops(prices, numberOfCandlesToLookBack);
             var bottoms = GetNBottoms(prices, numberOfCandlesToLookBack);
             var combined = new Dictionary<Price, HashSet<Price>>();
@@ -119,107 +175,6 @@ namespace Stock.Strategies.Helpers
             }
 
             return result;
-        }
-
-        /**
-         * TODO: fix this method, it's not working properly
-         * 
-         * check the last n consecutive candles to see if they are forming a descending channel
-         * number of candles to check is the number of candles to look back to check for the channel
-         * number of candles to look back is the number of candles to look back to find the swing highs and lows, we want to keep this number small because we're checking for consecutive candles
-         */
-        public static Channel? CheckRunningCandlesFormingChannel(List<Price> prices, int numberOfCandlesToCheck = 10, int numberOfCandlesToLookBack = 3)
-        {
-            var priceToCheck = prices.Skip(prices.Count - numberOfCandlesToCheck).Take(numberOfCandlesToCheck).ToList();
-            var swingLows = priceToCheck;
-            var swingHighs = priceToCheck;
-
-            if (prices.Count < numberOfCandlesToCheck || swingLows.Count < 2 || swingHighs.Count < 2)
-                return null;
-
-            var swingHighLines = swingHighs.Select(x => priceToCheck.GetPriceHighLineCoordinate(x)).ToList();
-            var swingLowLines = swingLows.Select(x => priceToCheck.GetPriceLowLineCoordinate(x)).ToList();
-
-            // check for channel with swing highs
-            var i = 0;
-            var j = swingHighs.Count - 1;
-            var count = 0;
-            var lineAndCount = new Dictionary<Tuple<Price, Price>, int>();
-            while (i < j)
-            {
-                var currentSwingHigh = swingHighs[i];
-                var lastSwingHigh = swingHighs[j];
-                var currentPointIndex = priceToCheck.IndexOf(currentSwingHigh);
-                var runningPointIndex = priceToCheck.IndexOf(lastSwingHigh);
-                var lineFromCurrentToLastPoint = new Line(new Point(currentPointIndex, currentSwingHigh.High), new Point(runningPointIndex, lastSwingHigh.High));
-                for (var k = i; k < j; k++)
-                {
-                    var currentPoint = swingHighs[k];
-                    var currentPointHighLine = priceToCheck.GetPriceHighLineCoordinate(currentPoint);
-                    var currentPointLowLine = priceToCheck.GetPriceBodyStartToLowLineCoordinate(currentPoint);
-                    if (DoLinesIntersect(lineFromCurrentToLastPoint.Start, lineFromCurrentToLastPoint.End, currentPointHighLine.Start, currentPointHighLine.End))
-                    {
-                        count++;
-                    }
-                    else if (DoLinesIntersect(lineFromCurrentToLastPoint.Start, lineFromCurrentToLastPoint.End, currentPointLowLine.Start, currentPointLowLine.End))
-                    {
-                        count = 0;
-                        break;
-                    }
-                }
-
-                if (count > 0)
-                {
-                    lineAndCount.Add(new Tuple<Price, Price>(currentSwingHigh, lastSwingHigh), count);
-                }
-                i++;
-                j--;
-            }
-
-            var highLineWithMostCrosses = lineAndCount.OrderByDescending(x => x.Value).FirstOrDefault().Key;
-
-            // check for channel with swing lows
-            i = 0;
-            j = swingLows.Count - 1;
-            count = 0;
-            lineAndCount = new Dictionary<Tuple<Price, Price>, int>();
-            while (i < j)
-            {
-                var currentSwingLow = swingLows[i];
-                var lastSwingLow = swingLows[j];
-                var currentPointIndex = priceToCheck.IndexOf(currentSwingLow);
-                var runningPointIndex = priceToCheck.IndexOf(lastSwingLow);
-                var lineFromCurrentToLastPoint = new Line(new Point(currentPointIndex, currentSwingLow.Low), new Point(runningPointIndex, lastSwingLow.Low));
-                for (var k = i; k < j; k++)
-                {
-                    var currentPoint = swingLows[k];
-                    var currentPointHighLine = priceToCheck.GetPriceBodyStartToHighLineCoordinate(currentPoint);
-                    var currentPointLowLine = priceToCheck.GetPriceLowLineCoordinate(currentPoint);
-                    if (DoLinesIntersect(lineFromCurrentToLastPoint.Start, lineFromCurrentToLastPoint.End, currentPointLowLine.Start, currentPointLowLine.End))
-                    {
-                        count++;
-                    }
-                    else if (DoLinesIntersect(lineFromCurrentToLastPoint.Start, lineFromCurrentToLastPoint.End, currentPointHighLine.Start, currentPointHighLine.End))
-                    {
-                        count = 0;
-                        break;
-                    }
-                }
-
-                if (count > 0)
-                {
-                    lineAndCount.Add(new Tuple<Price, Price>(currentSwingLow, lastSwingLow), count);
-                }
-                i++;
-                j--;
-            }
-
-            var lowLineWithMostCrosses = lineAndCount.OrderByDescending(x => x.Value).FirstOrDefault().Key;
-
-            if (highLineWithMostCrosses == null || lowLineWithMostCrosses == null)
-                return null;
-
-            return new Channel(priceToCheck, highLineWithMostCrosses, lowLineWithMostCrosses);
         }
 
         /**
@@ -371,39 +326,47 @@ namespace Stock.Strategies.Helpers
 
         public static List<Price> FindSwingLows(List<Price> prices, int numberOfCandlesToLookBack)
         {
-            return FindSwingPoints(prices, numberOfCandlesToLookBack, (price, currentPrice) => price.Low < currentPrice.Low);
+            return FindSwingPoints(prices, numberOfCandlesToLookBack, (price, currentPrice) => price.Low <= currentPrice.Low);
         }
 
         public static List<Price> FindSwingHighs(List<Price> prices, int numberOfCandlesToLookBack)
         {
-            return FindSwingPoints(prices, numberOfCandlesToLookBack, (price, currentPrice) => price.High > currentPrice.High);
+            return FindSwingPoints(prices, numberOfCandlesToLookBack, (price, currentPrice) => price.High >= currentPrice.High);
         }
 
         private static List<Price> FindSwingPoints(List<Price> prices, int numberOfCandlesToLookBack, Func<Price, Price, bool> compare)
         {
-            List<Price> swingPoints = new List<Price>();
+            var swingPoints = new List<Price>();
 
-            for (int i = numberOfCandlesToLookBack; i < prices.Count; i++)
+            // Ensure we have enough data to look back
+            if (prices.Count <= numberOfCandlesToLookBack * 2) 
+                return swingPoints;
+
+            for (var i = numberOfCandlesToLookBack; i < prices.Count - numberOfCandlesToLookBack; i++)
             {
                 var currentPrice = prices[i];
+                var isSwingPoint = true;
 
-                bool isSwingPoint = true;
-                var innerRange = i < prices.Count - numberOfCandlesToLookBack ? i + numberOfCandlesToLookBack : prices.Count - 1;
-
-                for (int j = i - numberOfCandlesToLookBack; j <= innerRange; j++)
+                // Check previous candles
+                for (var j = i - numberOfCandlesToLookBack; j < i; j++)
                 {
-                    if (j == i)
-                        continue;
-
-                    var price = prices[j];
-
-                    // < instead of <= because we want to allow for equal lows/highs
-                    // having <= would mean that the current price is not a swing low/high if it is equal to a previous low/high
-                    // meaning we would miss out on a swing low/high
-                    if (compare(price, currentPrice))
+                    if (compare(prices[j], currentPrice))
                     {
                         isSwingPoint = false;
                         break;
+                    }
+                }
+
+                // If it's still potentially a swing point, check future candles
+                if (isSwingPoint)
+                {
+                    for (var j = i + 1; j <= i + numberOfCandlesToLookBack && j < prices.Count; j++)
+                    {
+                        if (compare(prices[j], currentPrice))
+                        {
+                            isSwingPoint = false;
+                            break;
+                        }
                     }
                 }
 

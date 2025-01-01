@@ -7,6 +7,65 @@ using System.Threading.Tasks;
 
 namespace Stock.Strategies.Trend
 {
+    public enum ChannelType
+    {
+        Ascending,
+        Descending,
+        Sideways,
+        Indeterminate
+    }
+    
+    public class ChannelV2
+    {
+        public ChannelV2(List<Price> prices)
+        {
+            Prices = prices;
+            
+            CalculateChannel();
+        }
+
+        public ChannelType ChannelType { get; private set; }
+        public List<Price> Prices { get; private set; }
+
+        private void CalculateChannel()
+        {
+            var highs = Prices.Select(p => p.High).ToArray();
+            var lows = Prices.Select(p => p.Low).ToArray();
+            var highSlope = CalculateSlope(highs);
+            var lowSlope = CalculateSlope(lows);
+
+            ChannelType = highSlope switch
+            {
+                > 0 when lowSlope > 0 => ChannelType.Ascending,
+                < 0 when lowSlope < 0 => ChannelType.Descending,
+                0 when lowSlope == 0 => ChannelType.Sideways,
+                _ => ChannelType.Indeterminate
+            };
+        }
+        
+        private decimal CalculateSlope(decimal[] values)
+        {
+            var n = values.Length;
+            decimal sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+
+            for (var i = 0; i < n; i++)
+            {
+                sumX += i;
+                sumY += values[i];
+                sumXY += i * values[i];
+                sumX2 += i * i;
+            }
+
+            var m = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+            return m;
+        }
+        
+        public override string ToString()
+        {
+            return ChannelType.ToString() + " channel: from " + Prices.First().DateAsString + " to " + Prices.Last().DateAsString;
+        }
+    }
+    
     public class Channel
     {
 
