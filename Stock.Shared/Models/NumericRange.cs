@@ -33,5 +33,11 @@
         {
             return HashCode.Combine(Low, High);
         }
+        
+        public override string ToString()
+        {
+            var center = (Low + High) / 2;
+            return $"{center:F} ({Low:F} - {High:F})";
+        }
     }
 }
