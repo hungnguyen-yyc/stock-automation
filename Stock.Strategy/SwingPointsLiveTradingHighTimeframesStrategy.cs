@@ -47,58 +47,9 @@ namespace Stock.Strategies
                 var secondLastPrice = ascSortedByDatePrice[ascSortedByDatePrice.Count - 2];
                 var price = ascSortedByDatePrice.Last();
                 var excludeLastPrice = ascSortedByDatePrice.GetRange(0, ascSortedByDatePrice.Count - 1);
-                var allLevels = SwingPointAnalyzer.GetLevels(excludeLastPrice, parameter.NumberOfCandlesticksToLookBack).ToList();
-                var levels = allLevels
-                    .Where(x => x.Value.Count + 1 >= parameter.NumberOfCandlesticksIntersectForTopsAndBottoms) // + 1 because we need to include the key
-                    .ToList();
                 
-                var pivotLevels = levels.Select(x =>
-                {
-                    var combineValuesAndKey = x.Value.Concat(new List<Price> { x.Key }).ToList();
-                    var averageHigh = combineValuesAndKey.Select(y => y.High).Average();
-                    var averageLow = combineValuesAndKey.Select(y => y.Low).Average();
-                    var averageVolume = combineValuesAndKey.Select(y => y.Volume).Average();
-                    var averageClose = combineValuesAndKey.Select(y => y.Close).Average();
-                    var averageOpen = combineValuesAndKey.Select(y => y.Open).Average();
-                    var sortedByDate = combineValuesAndKey.OrderBy(y => y.Date).ToList();
-                    var mostRecent = sortedByDate.Last();
-                    var averageOhlcPrice = new Price
-                    {
-                        Date = mostRecent.Date,
-                        Open = Math.Round(averageOpen, 2),
-                        High = Math.Round(averageHigh, 2),
-                        Low = Math.Round(averageLow, 2),
-                        Close = Math.Round(averageClose, 2),
-                        Volume = averageVolume
-                    };
-                    return new PivotLevel(parameter.Timeframe, ticker, averageOhlcPrice, combineValuesAndKey.Count + 1);
-                }).ToList();
-                
-                // check this list of pivot levels again, if 2 pivot levels are too close to each other, remove the one with lower number of swing points intersected
-                var pivotLevelsToRemove = new List<PivotLevel>();
-                for (var i = 0; i < pivotLevels.Count; i++)
-                {
-                    for (var j = i + 1; j < pivotLevels.Count; j++)
-                    {
-                        var pivotLevel1 = pivotLevels[i];
-                        var pivotLevel2 = pivotLevels[j];
-                        var pivotLevel1Range = new NumericRange(pivotLevel1.Level.OHLC4 - (pivotLevel1.Level.OHLC4 * OFFSET), pivotLevel1.Level.OHLC4 + (pivotLevel1.Level.OHLC4 * OFFSET));
-                        var pivotLevel2Range = new NumericRange(pivotLevel2.Level.OHLC4 - (pivotLevel2.Level.OHLC4 * OFFSET), pivotLevel2.Level.OHLC4 + (pivotLevel2.Level.OHLC4 * OFFSET));
-                        if (pivotLevel1Range.Intersect(pivotLevel2Range))
-                        {
-                            if (pivotLevel1.NumberOfSwingPointsIntersected > pivotLevel2.NumberOfSwingPointsIntersected)
-                            {
-                                pivotLevelsToRemove.Add(pivotLevel2);
-                            }
-                            else
-                            {
-                                pivotLevelsToRemove.Add(pivotLevel1);
-                            }
-                        }
-                    }
-                }
-                
-                pivotLevels = pivotLevels.Except(pivotLevelsToRemove).ToList();
+                var pivotPrices = SwingPointAnalyzer.GetPivotPrices(excludeLastPrice, parameter.NumberOfCandlesticksToLookBack, parameter.NumberOfCandlesticksIntersectForTopsAndBottoms, OFFSET);
+                var pivotLevels = pivotPrices.Select(x => new PivotLevel(parameter.Timeframe, ticker, x.Level, x.NumberOfSwingPointsIntersected)).ToList();
                 
                 PivotLevelCreated?.Invoke(this, new PivotLevelEventArgs(pivotLevels));
                 
