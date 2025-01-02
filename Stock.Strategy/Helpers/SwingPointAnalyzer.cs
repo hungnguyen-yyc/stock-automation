@@ -7,7 +7,7 @@ namespace Stock.Strategies.Helpers
 {
     internal class SwingPointAnalyzer
     {
-        public static List<PivotPrice> GetPivotPrices(List<Price> prices, int numberOfCandlesticksToLookBack, int numberOfCandlesticksIntersectForTopsAndBottoms, decimal offset = 0.005m)
+         public static List<PivotPrice> GetPivotPrices(List<Price> prices, int numberOfCandlesticksToLookBack, int numberOfCandlesticksIntersectForTopsAndBottoms, decimal offset = 0.005m)
         {
             var allLevels = SwingPointAnalyzer.GetLevels(prices, numberOfCandlesticksToLookBack).ToList();
             var levels = allLevels
@@ -184,11 +184,13 @@ namespace Stock.Strategies.Helpers
          * we want to make sure that lines don't cross body part of the candle
          * then we check for lines that has more than 3 crosses
          */
-        public static Tuple<Price, Price>[] GetTrendlines(List<Price> prices, SwingPointStrategyParameter param, bool isSwingHigh = true)
+        public static Tuple<Price, Price>[] GetTrendlines(
+            List<Price> prices, 
+            int numberOfCandlesToLookBack = 10,
+            int numberOfTouchesToDrawTrendLine = 2,
+            int numberOfSwingPointsToLookBack = 3,
+            bool isSwingHigh = true)
         {
-            var numberOfCandlesToLookBack = param.NumberOfCandlesticksToLookBack;
-            var numberOfTouchesToDrawTrendLine = param.NumberOfTouchesToDrawTrendLine;
-            var numberOfSwingPointsToLookBack = param.NumberOfSwingPointsToLookBack;
             var pointLines = new List<Tuple<Price, Price>>();
 
             var swingPoints = isSwingHigh ? 
