@@ -9,7 +9,6 @@ namespace Stock.Strategies
 {
     public sealed class SwingPointsLiveTradingHighTimeframesStrategy : ISwingPointStrategy
     {
-        private const decimal OFFSET = 0.005m;
         private readonly VolumeCheckingHelper _volumeCheckingHelper;
         
         public SwingPointsLiveTradingHighTimeframesStrategy()
@@ -35,17 +34,33 @@ namespace Stock.Strategies
                 var price = ascSortedByDatePrice.Last();
                 var excludeLastPrice = ascSortedByDatePrice.GetRange(0, ascSortedByDatePrice.Count - 1);
                 
-                var pivotPrices = SwingPointAnalyzer.GetPivotPrices(excludeLastPrice, parameter.NumberOfCandlesticksToLookBack, parameter.NumberOfCandlesticksIntersectForTopsAndBottoms, OFFSET);
+                var pivotPrices = SwingPointAnalyzer.GetPivotPrices(
+                    excludeLastPrice, 
+                    parameter.NumberOfCandlesticksToLookBack!.Value, 
+                    parameter.NumberOfCandlesticksIntersectForTopsAndBottoms!.Value, 
+                    parameter.Offset!.Value);
                 var pivotLevels = pivotPrices.Select(x => new PivotLevel(parameter.Timeframe, ticker, x.Level, x.NumberOfSwingPointsIntersected)).ToList();
                 
                 PivotLevelCreated?.Invoke(this, new PivotLevelEventArgs(pivotLevels));
                 
-                var levelPriceBoundOffAbove = PriceBoundOffAbovePivotLevels(ascSortedByDatePrice, pivotLevels);
-                var levelPriceBoundOffBelow = PriceBoundOffBelowPivotLevels(ascSortedByDatePrice, pivotLevels);
+                var levelPriceBoundOffAbove = PriceBoundOffAbovePivotLevels(ascSortedByDatePrice, pivotLevels, parameter.Offset!.Value);
+                var levelPriceBoundOffBelow = PriceBoundOffBelowPivotLevels(ascSortedByDatePrice, pivotLevels, parameter.Offset!.Value);
                 
                 if (levelPriceBoundOffAbove != null)
                 {
                     var message = $"Price {price.Close:F} is bound off above pivot level {levelPriceBoundOffAbove}";
+                    var rebounds = PriceReboundOffAbovePivotLevels(
+                        ascSortedByDatePrice, 
+                        pivotLevels, 
+                        levelPriceBoundOffAbove, 
+                        parameter.NumberOfCandlesticksToLookBackForRebound!.Value,
+                        parameter.Offset!.Value);
+                    
+                    if (rebounds >= 1)
+                    {
+                        message = $"(Rebound ({rebounds})) Price {price.Close:F} is bound off above pivot level {levelPriceBoundOffAbove}";
+                    }
+                    
                     var alert = new Alert
                     {
                         Ticker = ticker,
@@ -62,6 +77,18 @@ namespace Stock.Strategies
                 else if (levelPriceBoundOffBelow != null)
                 {
                     var message = $"Price {price.Close:F} is bound off below pivot level {levelPriceBoundOffBelow}";
+                    var rebounds = PriceReboundOffBelowPivotLevels(
+                        ascSortedByDatePrice, 
+                        pivotLevels, 
+                        levelPriceBoundOffBelow, 
+                        parameter.NumberOfCandlesticksToLookBackForRebound!.Value,
+                        parameter.Offset!.Value);
+                    
+                    if (rebounds >= 1)
+                    {
+                        message = $"(Rebound ({rebounds})) Price {price.Close:F} is bound off below pivot level {levelPriceBoundOffBelow}";
+                    }
+                    
                     var alert = new Alert
                     {
                         Ticker = ticker,
@@ -83,14 +110,56 @@ namespace Stock.Strategies
             
         }
 
-        private NumericRange? PriceBoundOffAbovePivotLevels(List<Price> ascSortedByDatePrice, List<PivotLevel> pivotLevels)
+        private int PriceReboundOffAbovePivotLevels(
+            List<Price> ascSortedByDatePrice,
+            List<PivotLevel> pivotLevels,
+            NumericRange targetLevel,
+            int numberOfCandlesticksToLookBack,
+            decimal offset)
+        {
+            var numberOfRebound = 0;
+            for (var i = ascSortedByDatePrice.Count - numberOfCandlesticksToLookBack; i < ascSortedByDatePrice.Count; i++)
+            {
+                var subList = ascSortedByDatePrice.Take(i).ToList();
+                var boundOffLevel = PriceBoundOffAbovePivotLevels(subList, pivotLevels, offset);
+                if (boundOffLevel != null && boundOffLevel.Intersect(targetLevel))
+                {
+                    numberOfRebound++;
+                }
+            }
+            
+            return numberOfRebound;
+        }
+        
+        private int PriceReboundOffBelowPivotLevels(
+            List<Price> ascSortedByDatePrice,
+            List<PivotLevel> pivotLevels,
+            NumericRange targetLevel,
+            int numberOfCandlesticksToLookBack,
+            decimal offset)
+        {
+            var numberOfRebound = 0;
+            for (var i = ascSortedByDatePrice.Count - numberOfCandlesticksToLookBack; i < ascSortedByDatePrice.Count; i++)
+            {
+                var subList = ascSortedByDatePrice.Take(i).ToList();
+                var boundOffLevel = PriceBoundOffBelowPivotLevels(subList, pivotLevels, offset);
+                if (boundOffLevel != null && boundOffLevel.Intersect(targetLevel))
+                {
+                    numberOfRebound++;
+                }
+            }
+            
+            return numberOfRebound;
+        }
+
+        private NumericRange? PriceBoundOffAbovePivotLevels(List<Price> ascSortedByDatePrice, List<PivotLevel> pivotLevels, decimal offset)
         {
             var price = ascSortedByDatePrice.Last();
             var secondLastPrice = ascSortedByDatePrice[^2];
             var levelSecondLastPriceTouched = pivotLevels
                     .Where(x =>
                     {
-                        var centerPoint = GetCenterPoint(x);
+                        var centerPoint = GetCenterPoint(x, offset);
                         return secondLastPrice.CandleRange.Intersect(centerPoint);
                     })
                     .ToList();
@@ -98,7 +167,7 @@ namespace Stock.Strategies
             if (levelSecondLastPriceTouched.Any())
             {
                 var latestLevel = levelSecondLastPriceTouched.Last();
-                var centerPoint = GetCenterPoint(latestLevel);
+                var centerPoint = GetCenterPoint(latestLevel, offset);
 
                 var priceIntersectSecondLastPrice = price.CandleRange.Intersect(secondLastPrice.CandleRange); // to make sure current price is not too far from previous price to make sure it move gradually and healthily
                 var secondLastPriceIntersectCenterLevelPoint = secondLastPrice.CandleRange.Intersect(centerPoint); // to make sure previous price touched the pivot level
@@ -117,14 +186,14 @@ namespace Stock.Strategies
             return null;
         }
         
-        private NumericRange?  PriceBoundOffBelowPivotLevels(List<Price> ascSortedByDatePrice, List<PivotLevel> pivotLevels)
+        private NumericRange?  PriceBoundOffBelowPivotLevels(List<Price> ascSortedByDatePrice, List<PivotLevel> pivotLevels, decimal offset)
         {
             var price = ascSortedByDatePrice.Last();
             var secondLastPrice = ascSortedByDatePrice[^2];
             var levelSecondLastPriceTouched = pivotLevels
                 .Where(x =>
                 {
-                    var centerPoint = GetCenterPoint(x);
+                    var centerPoint = GetCenterPoint(x, offset);
                     return secondLastPrice.CandleRange.Intersect(centerPoint);
                 })
                 .ToList();
@@ -132,7 +201,7 @@ namespace Stock.Strategies
             if (levelSecondLastPriceTouched.Any())
             {
                 var latestLevel = levelSecondLastPriceTouched.Last();
-                var centerPoint = GetCenterPoint(latestLevel);
+                var centerPoint = GetCenterPoint(latestLevel, offset);
 
                 var priceIntersectSecondLastPrice = price.CandleRange.Intersect(secondLastPrice.CandleRange); // to make sure current price is not too far from previous price to make sure it move gradually and healthily
                 var secondLastPriceIntersectCenterLevelPoint = secondLastPrice.CandleRange.Intersect(centerPoint); // to make sure previous price touched the pivot level
@@ -151,10 +220,10 @@ namespace Stock.Strategies
             return null;
         }
         
-        private NumericRange GetCenterPoint(PivotLevel pivotLevel)
+        private NumericRange GetCenterPoint(PivotLevel pivotLevel, decimal offset)
         {
             var center = pivotLevel.Level.OHLC4;
-            var centerOffset = center * OFFSET;
+            var centerOffset = center * offset;
             return new NumericRange(center - centerOffset, center + centerOffset);
         }
 
@@ -162,9 +231,14 @@ namespace Stock.Strategies
         {
             var last6MonthAction = ascSortedByDatePrice.Where(x => x.Date >= DateTime.Now.Date.AddMonths(-12)).ToList();
             var parameter = (SwingPointStrategyParameter)strategyParameter;
-            var highLines = SwingPointAnalyzer.GetTrendlines(last6MonthAction, parameter, true);
+            var highLines = SwingPointAnalyzer.GetTrendlines(
+                last6MonthAction,
+                parameter.NumberOfCandlesticksToLookBack!.Value,
+                parameter.NumberOfTouchesToDrawTrendLine!.Value,
+                parameter.NumberOfCandlesticksToSkipAfterSwingPoint!.Value, 
+                true);
             var trendingDownLines = highLines.Where(x => x.Item2.High < x.Item1.High).ToList();
-            var nTops = SwingPointAnalyzer.GetNTops(last6MonthAction, parameter.NumberOfCandlesticksToLookBack);
+            var nTops = SwingPointAnalyzer.GetNTops(last6MonthAction, parameter.NumberOfCandlesticksToLookBack!.Value);
 
             var thirdLastPriceIndex = last6MonthAction.Count - 3;
             var secondLastPriceIndex = last6MonthAction.Count - 2;
@@ -286,10 +360,15 @@ namespace Stock.Strategies
         {
             var last6MonthAction = ascSortedByDatePrice.Where(x => x.Date >= DateTime.Now.Date.AddMonths(-12)).ToList();
             var parameter = (SwingPointStrategyParameter)strategyParameter;
-            var lowLines = SwingPointAnalyzer.GetTrendlines(last6MonthAction, parameter, false);
+            var lowLines = SwingPointAnalyzer.GetTrendlines(
+                last6MonthAction, 
+                parameter.NumberOfCandlesticksToLookBack!.Value,
+                parameter.NumberOfTouchesToDrawTrendLine!.Value,
+                parameter.NumberOfCandlesticksToSkipAfterSwingPoint!.Value,
+                false);
             var trendingUpLines = lowLines.Where(x => x.Item2.Low > x.Item1.Low).ToList();
 
-            var nBottoms = SwingPointAnalyzer.GetNBottoms(last6MonthAction, parameter.NumberOfCandlesticksToLookBack);
+            var nBottoms = SwingPointAnalyzer.GetNBottoms(last6MonthAction, parameter.NumberOfCandlesticksToLookBack!.Value);
 
             var thirdLastPriceIndex = last6MonthAction.Count - 3;
             var secondLastPriceIndex = last6MonthAction.Count - 2;
