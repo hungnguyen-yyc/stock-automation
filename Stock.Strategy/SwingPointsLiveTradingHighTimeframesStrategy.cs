@@ -23,16 +23,6 @@ namespace Stock.Strategies
         public event TrendLineEventHandler TrendLineCreated;
         
         public event PivotLevelEventHandler PivotLevelCreated;
-        
-        public void Run(string ticker, IReadOnlyCollection<Price> prices, IStrategyParameter parameter)
-        {
-            var param = (SwingPointStrategyParameter)parameter;
-            var swingHighs = SwingPointAnalyzer.FindSwingHighs(prices.ToList(), param.NumberOfCandlesticksToLookBack);
-            var swingLows = SwingPointAnalyzer.FindSwingLows(prices.ToList(), param.NumberOfCandlesticksToLookBack);
-            
-            var allSwingPoints = swingHighs.Concat(swingLows).OrderBy(x => x.Date).ToList();
-            var levels = SwingPointAnalyzer.GetLevels(prices.ToList(), param.NumberOfCandlesticksToLookBack).ToList();
-        }
 
         public string Description => "This strategy looks back a number of candles (specified in parameters) and calculates swing highs and lows. \n"
             + "The order then will be created at 2 candles after most recent swing lows or highs found. \n"

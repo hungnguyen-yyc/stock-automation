@@ -18,13 +18,13 @@ public class ImmediateSwingLowAndSwingPointStrategy : ICryptoStrategy
     {
         var ticker = CryptosToTrade.CryptoEnumToName[crypto];
         var swingPointsParameters = (SwingPointStrategyParameter)parameter;
-        var swingLows = SwingPointAnalyzer.FindSwingLows(prices.ToList(), swingPointsParameters.NumberOfCandlesticksToLookBack).OrderBy(x => x.Date).ToList();
+        var swingLows = SwingPointAnalyzer.FindSwingLows(prices.ToList(), swingPointsParameters.NumberOfCandlesticksToLookBack!.Value).OrderBy(x => x.Date).ToList();
         var price = prices.Last();
         var secondLastPrice = prices.ElementAt(prices.Count - 2);
         var excludeLastPrice = prices.Take(prices.Count - 1).ToList();
-        var allLevels = SwingPointAnalyzer.GetLevels(excludeLastPrice, swingPointsParameters.NumberOfCandlesticksToLookBack).ToList();
+        var allLevels = SwingPointAnalyzer.GetLevels(excludeLastPrice, swingPointsParameters.NumberOfCandlesticksToLookBack!.Value).ToList();
         var levels = allLevels
-            .Where(x => x.Value.Count + 1 >= swingPointsParameters.NumberOfCandlesticksIntersectForTopsAndBottoms) // + 1 because we need to include the key
+            .Where(x => x.Value.Count + 1 >= swingPointsParameters.NumberOfCandlesticksIntersectForTopsAndBottoms!.Value) // + 1 because we need to include the key
             .ToList();
         
         var pivotLevels = levels.Select(x =>
@@ -112,7 +112,7 @@ public class ImmediateSwingLowAndSwingPointStrategy : ICryptoStrategy
         var param = (ImmediateSwingLowAndSwingPointStrategyExitParameter)parameter;
         var lastPrice = prices.Last();
         var ticker = CryptosToTrade.CryptoEnumToName[crypto];
-        var swingLows = SwingPointAnalyzer.FindSwingLows(prices.ToList(), param.NumberOfCandlesticksToLookBack).OrderBy(x => x.Date).ToList();
+        var swingLows = SwingPointAnalyzer.FindSwingLows(prices.ToList(), param.NumberOfCandlesticksToLookBack!.Value).OrderBy(x => x.Date).ToList();
         var lastSwingLow = swingLows.Last();
         var stopLoss = param.StopLoss;
 
