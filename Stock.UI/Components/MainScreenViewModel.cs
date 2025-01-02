@@ -493,15 +493,11 @@ namespace Stock.UI.Components
         private async Task RunInRelease()
         {
             var highChangeInOpenInterestStrategy = new HighChangeInOpenInterestStrategy(_repo);
-            
-            var hmaEmaStrategy = new HmaEmaPriceStrategy();
-            hmaEmaStrategy.AlertCreated += Strategy_AlertCreated;
-            
             var chainedHighOpenInterestAndLevelStrategy = new ChainedHighOpenInterestAndLevelStrategy(_repo, highChangeInOpenInterestStrategy);
             chainedHighOpenInterestAndLevelStrategy.AlertCreated += Strategy_AlertCreated;
             while (true)
             {
-                var minutesToWait = 10;
+                var minutesToWait = 5;
                 var minuteModule = DateTime.Now.Minute % minutesToWait;
                 if (minuteModule != 0)
                 {
@@ -531,10 +527,6 @@ namespace Stock.UI.Components
                         foreach (var ticker in tickers)
                         {
                             var swingPointStrategyParameter = SwingPointParametersProvider.GetSwingPointStrategyParameter(ticker, timeframe);
-                            var hmaEmaStrategyParameter = new HmaEmaPriceStrategyParameter
-                            {
-                                Timeframe = timeframe,
-                            };
 
                             IReadOnlyCollection<Price> prices;
                             if (timeframe == Timeframe.Daily)
@@ -553,7 +545,6 @@ namespace Stock.UI.Components
                                 _strategy.CheckForTopBottomTouch(ticker, prices.ToList(), swingPointStrategyParameter);
                                 _strategy.CheckForTouchingDownTrendLine(ticker, prices.ToList(), swingPointStrategyParameter);
                                 _strategy.CheckForTouchingUpTrendLine(ticker, prices.ToList(), swingPointStrategyParameter);
-                                hmaEmaStrategy.Run(ticker, prices.ToList(), hmaEmaStrategyParameter);
                             });
 
                         }
