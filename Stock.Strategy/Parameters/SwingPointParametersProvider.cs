@@ -90,7 +90,7 @@ public class SwingPointParametersProvider
             NumberOfTouchesToDrawTrendLine = 2,
             NumberOfCandlesBetweenCurrentPriceAndLastLineEndPoint = 390,
             NumberOfCandlesticksBeforeCurrentPriceToLookBack = 7,
-            NumberOfCandlesticksToLookBackForRebound = 70,
+            NumberOfCandlesticksToLookBackForRebound = 10,
             Offset = 0.005m,
         };
     }
