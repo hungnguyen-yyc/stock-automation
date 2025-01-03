@@ -430,39 +430,47 @@ namespace Stock.Strategies.Helpers
 
         public static List<Price> FindSwingLows(List<Price> prices, int numberOfCandlesToLookBack)
         {
-            return FindSwingPoints(prices, numberOfCandlesToLookBack, (price, currentPrice) => price.Low < currentPrice.Low);
+            return FindSwingPoints(prices, numberOfCandlesToLookBack, (price, currentPrice) => price.Low <= currentPrice.Low);
         }
 
         public static List<Price> FindSwingHighs(List<Price> prices, int numberOfCandlesToLookBack)
         {
-            return FindSwingPoints(prices, numberOfCandlesToLookBack, (price, currentPrice) => price.High > currentPrice.High);
+            return FindSwingPoints(prices, numberOfCandlesToLookBack, (price, currentPrice) => price.High >= currentPrice.High);
         }
 
         private static List<Price> FindSwingPoints(List<Price> prices, int numberOfCandlesToLookBack, Func<Price, Price, bool> compare)
         {
-            List<Price> swingPoints = new List<Price>();
+            var swingPoints = new List<Price>();
 
-            for (int i = numberOfCandlesToLookBack; i < prices.Count; i++)
+            // Ensure we have enough data to look back
+            if (prices.Count <= numberOfCandlesToLookBack * 2) 
+                return swingPoints;
+
+            for (var i = numberOfCandlesToLookBack; i < prices.Count - numberOfCandlesToLookBack; i++)
             {
                 var currentPrice = prices[i];
+                var isSwingPoint = true;
 
-                bool isSwingPoint = true;
-                var innerRange = i < prices.Count - numberOfCandlesToLookBack ? i + numberOfCandlesToLookBack : prices.Count - 1;
-
-                for (int j = i - numberOfCandlesToLookBack; j <= innerRange; j++)
+                // Check previous candles
+                for (var j = i - numberOfCandlesToLookBack; j < i; j++)
                 {
-                    if (j == i)
-                        continue;
-
-                    var price = prices[j];
-
-                    // < instead of <= because we want to allow for equal lows/highs
-                    // having <= would mean that the current price is not a swing low/high if it is equal to a previous low/high
-                    // meaning we would miss out on a swing low/high
-                    if (compare(price, currentPrice))
+                    if (compare(prices[j], currentPrice))
                     {
                         isSwingPoint = false;
                         break;
+                    }
+                }
+
+                // If it's still potentially a swing point, check future candles
+                if (isSwingPoint)
+                {
+                    for (var j = i + 1; j <= i + numberOfCandlesToLookBack && j < prices.Count; j++)
+                    {
+                        if (compare(prices[j], currentPrice))
+                        {
+                            isSwingPoint = false;
+                            break;
+                        }
                     }
                 }
 

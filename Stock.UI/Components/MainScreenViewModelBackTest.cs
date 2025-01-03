@@ -20,7 +20,7 @@ public partial class MainScreenViewModel
     private async Task RunBackTest()
     {
         var tickers = TickersWithoutAll;
-        var timeframes = new[] { Timeframe.Daily };
+        var timeframes = new[] { Timeframe.Daily, Timeframe.Hour1 };
         var hmaEmaStrategy = new HmaEmaPriceStrategy();
         hmaEmaStrategy.AlertCreated += Strategy_AlertCreated;
             
@@ -52,7 +52,7 @@ public partial class MainScreenViewModel
                         prices = await _repo.GetStockDataForHighTimeframesAsc(ticker, timeframe, DateTime.Now.AddYears(-5), DateTime.Now.AddDays(1));
                     }
                         
-                    var priceToStartTesting = prices.First(x => x.Date >= DateTime.Now.AddMonths(-5));
+                    var priceToStartTesting = prices.First(x => x.Date >= DateTime.Now.AddMonths(-1));
                         
                     var index = 0;
                     for (int i = 0; i < prices.Count; i++)
